@@ -9,7 +9,7 @@
  * This fixes the earlier cache-first bug where users were stuck on a stale version.
  * Bump CACHE_VERSION on each release so old caches are purged on activate.
  */
-const CACHE_VERSION = "loungelens-v7-2026-06-22-cardart";
+const CACHE_VERSION = "loungelens-v8-2026-06-22-lounges";
 const SHELL = [
   "./",
   "./index.html",
