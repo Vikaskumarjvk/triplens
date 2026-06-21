@@ -39,6 +39,7 @@
       <button data-view="recommend">⭐ Get a Card</button>
       <button data-view="addcard">➕ Add Cards</button>
       <button data-view="health">🩺 Data Health</button>
+      <button data-view="profile">👤 Profile / Sync</button>
       <button data-view="about">ℹ️ About</button>
       <button id="install-btn" class="install-btn" hidden>⬇️ Install app</button>
     </nav>
@@ -149,6 +150,45 @@
       <div id="roadmap"></div>
     </section>
 
+    <!-- PROFILE / SYNC (free serverless "login") -->
+    <section id="view-profile" class="view">
+      <div class="hero">
+        <h2>Your profile</h2>
+        <p>Free and private. There's no server and no password — your stuff is saved on this device, and a sync code carries it to your other devices.</p>
+      </div>
+
+      <div class="about-card">
+        <h3>👤 Name</h3>
+        <p class="card-sub" style="margin-bottom:8px;">Optional. Just so it feels like yours.</p>
+        <input id="profile-name" class="leg-input" placeholder="Your name" />
+      </div>
+
+      <div class="about-card">
+        <h3>📲 Move to another device</h3>
+        <p class="card-sub" style="margin-bottom:10px;">Generate a sync code here, paste it on your other phone/laptop, and your cards, visits and trip come along. Or use a file backup.</p>
+        <div class="row">
+          <button class="act mini" id="gen-code">Generate sync code</button>
+          <button class="act ghost mini" id="copy-code">Copy</button>
+          <button class="act ghost mini" id="profile-export-file">⬇️ Save as file</button>
+        </div>
+        <textarea id="sync-code-out" class="sync-box" readonly placeholder="Your sync code appears here…"></textarea>
+
+        <div class="section-h" style="margin-top:18px;">Restore on this device</div>
+        <p class="card-sub" style="margin-bottom:8px;">Paste a sync code from your other device, or import a backup file. This MERGES (it won't wipe what's already here).</p>
+        <textarea id="sync-code-in" class="sync-box" placeholder="Paste a sync code here…"></textarea>
+        <div class="row">
+          <button class="act mini" id="apply-code">Restore from code</button>
+          <button class="act ghost mini" id="profile-import-file">⬆️ Import file</button>
+          <input type="file" id="profile-file" accept="application/json,.txt" style="display:none;" />
+        </div>
+      </div>
+
+      <div class="about-card muted-card">
+        <h3>Why no real login?</h3>
+        <p>Real accounts need a paid server that stores your data — which also makes whoever runs it responsible for protecting it (sensitive: it's about which cards you hold). LoungeLens stays free and private by keeping everything on your own device and letting YOU carry it with a code. Treat the code like the data itself: don't post it publicly.</p>
+      </div>
+    </section>
+
     <!-- ABOUT / TRUST -->
     <section id="view-about" class="view">
       <div class="hero">
@@ -208,8 +248,10 @@
   <script src="data/cards.js"></script>
   <script src="data/lounges.js"></script>
   <script src="data/meta.js"></script>
+  <script src="data/sources.js"></script>
   <script src="engine.js"></script>
   <script src="selfcheck.js"></script>
+  <script src="profile.js"></script>
   <script src="app.js"></script>
   <script>
     // PWA: register service worker for offline + installability.

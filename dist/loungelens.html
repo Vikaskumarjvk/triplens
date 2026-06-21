@@ -204,6 +204,22 @@ button.act.big { width: 100%; padding: 13px; font-size: 16px; margin-top: 8px; b
 .chip.type-credit { background: #102a43; color: #6cb6ff; border-color: #1c4a7a; font-size: 9px; }
 .chip.type-debit { background: #2a1a3a; color: #c98bff; border-color: #4a2d6a; font-size: 9px; }
 
+/* source / integration links */
+.src-block { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.src-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.src-lbl { font-size: 11px; color: var(--dim); margin-right: 4px; }
+.src-link { font-size: 12px; text-decoration: none; padding: 4px 9px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--chip); color: var(--txt); display: inline-flex; gap: 5px; align-items: center; }
+.src-link:hover { border-color: var(--accent); }
+.src-link.access { background: #0f2e1a; border-color: #1c3a23; color: #7ee08a; }
+.src-link .rel { font-size: 8px; color: var(--accent); letter-spacing: -1px; }
+body.simple-mode .src-link .rel { display: none; }
+
+/* sync code box */
+.sync-box { width: 100%; min-height: 70px; background: var(--panel2); border: 1px solid var(--line);
+  color: var(--txt); border-radius: 9px; padding: 10px; font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px; resize: vertical; margin-top: 8px; word-break: break-all; }
+
 /* install button */
 .install-btn { background: var(--good) !important; color: #fff !important; border-color: var(--good) !important; }
 
@@ -258,6 +274,7 @@ button.act.big { width: 100%; padding: 13px; font-size: 16px; margin-top: 8px; b
       <button data-view="recommend">⭐ Get a Card</button>
       <button data-view="addcard">➕ Add Cards</button>
       <button data-view="health">🩺 Data Health</button>
+      <button data-view="profile">👤 Profile / Sync</button>
       <button data-view="about">ℹ️ About</button>
       <button id="install-btn" class="install-btn" hidden>⬇️ Install app</button>
     </nav>
@@ -366,6 +383,45 @@ button.act.big { width: 100%; padding: 13px; font-size: 16px; margin-top: 8px; b
 
       <div class="section-h">🪜 The roadmap to real-time (honest)</div>
       <div id="roadmap"></div>
+    </section>
+
+    <!-- PROFILE / SYNC (free serverless "login") -->
+    <section id="view-profile" class="view">
+      <div class="hero">
+        <h2>Your profile</h2>
+        <p>Free and private. There's no server and no password — your stuff is saved on this device, and a sync code carries it to your other devices.</p>
+      </div>
+
+      <div class="about-card">
+        <h3>👤 Name</h3>
+        <p class="card-sub" style="margin-bottom:8px;">Optional. Just so it feels like yours.</p>
+        <input id="profile-name" class="leg-input" placeholder="Your name" />
+      </div>
+
+      <div class="about-card">
+        <h3>📲 Move to another device</h3>
+        <p class="card-sub" style="margin-bottom:10px;">Generate a sync code here, paste it on your other phone/laptop, and your cards, visits and trip come along. Or use a file backup.</p>
+        <div class="row">
+          <button class="act mini" id="gen-code">Generate sync code</button>
+          <button class="act ghost mini" id="copy-code">Copy</button>
+          <button class="act ghost mini" id="profile-export-file">⬇️ Save as file</button>
+        </div>
+        <textarea id="sync-code-out" class="sync-box" readonly placeholder="Your sync code appears here…"></textarea>
+
+        <div class="section-h" style="margin-top:18px;">Restore on this device</div>
+        <p class="card-sub" style="margin-bottom:8px;">Paste a sync code from your other device, or import a backup file. This MERGES (it won't wipe what's already here).</p>
+        <textarea id="sync-code-in" class="sync-box" placeholder="Paste a sync code here…"></textarea>
+        <div class="row">
+          <button class="act mini" id="apply-code">Restore from code</button>
+          <button class="act ghost mini" id="profile-import-file">⬆️ Import file</button>
+          <input type="file" id="profile-file" accept="application/json,.txt" style="display:none;" />
+        </div>
+      </div>
+
+      <div class="about-card muted-card">
+        <h3>Why no real login?</h3>
+        <p>Real accounts need a paid server that stores your data — which also makes whoever runs it responsible for protecting it (sensitive: it's about which cards you hold). LoungeLens stays free and private by keeping everything on your own device and letting YOU carry it with a code. Treat the code like the data itself: don't post it publicly.</p>
+      </div>
     </section>
 
     <!-- ABOUT / TRUST -->
@@ -932,6 +988,114 @@ window.LL_META = {
 </script>
   <script>
 /*
+ * LoungeLens — sources & integrations registry.
+ *
+ * HONEST MODEL: LoungeLens cannot programmatically "grant" lounge access — none of
+ * DreamFolks / Priority Pass / Adani One / HOI / Plaza Premium expose a public API
+ * for a third-party app to open a lounge. Access is granted by YOUR bank's contract
+ * and validated at the desk. What LoungeLens DOES is route you to the OFFICIAL source
+ * to confirm + use access, and to community/info bases to research + cross-verify.
+ *
+ * Two groups:
+ *   ACCESS_SERVICES  - official apps/sites that actually operate or validate lounges
+ *   INFO_SOURCES     - community forums, aggregators, review bases (for cross-checking)
+ *
+ * `reliability` (1-5): how trustworthy/current for INDIA lounge data, our honest rating.
+ *   5 = official primary source, 4 = strong community/expert, 3 = decent aggregator,
+ *   2 = crowd/forum (verify), 1 = marketing/SEO-heavy (low trust).
+ */
+window.LL_SOURCES = {
+  // ---- official access services (route here to confirm + use) ----
+  access: [
+    { id: "dreamfolks", name: "DreamFolks", url: "https://www.dreamfolks.in/", app: "DreamFolks (Play Store / App Store)",
+      what: "Dominant Indian aggregator. Most bank-card domestic + railway lounge access routes through DreamFolks. Their app shows live lounge list and your eligibility.",
+      rails: ["dreamfolks"], reliability: 5 },
+    { id: "prioritypass", name: "Priority Pass", url: "https://www.prioritypass.com/en/lounges", app: "Priority Pass",
+      what: "Global lounge program bundled with premium cards. Official lounge finder shows membership-eligible lounges worldwide.",
+      rails: ["priority"], reliability: 5 },
+    { id: "adanione", name: "Adani One", url: "https://www.adanione.com/", app: "Adani One",
+      what: "Adani-operated airports (Mumbai, Ahmedabad, Lucknow, Jaipur, Guwahati, Thiruvananthapuram, Mangaluru, Navi Mumbai). App sells/validates lounge passes at Adani airports.",
+      rails: ["plaza", "payperuse"], reliability: 4 },
+    { id: "plazapremium", name: "Plaza Premium", url: "https://www.plazapremiumlounge.com/", app: "Plaza Premium",
+      what: "Major global lounge operator with India presence. Pay-per-use or via card programs.",
+      rails: ["plaza", "dreamfolks"], reliability: 4 },
+    { id: "hoi", name: "Encalm / HOI / Travel Food Services", url: "https://www.encalm.com/", app: "operator site",
+      what: "Domestic lounge operators (Encalm, TFS, HOI hospitality). Access usually via DreamFolks/Priority Pass or pay-per-use at the desk.",
+      rails: ["dreamfolks", "priority", "plaza"], reliability: 3 },
+    { id: "rupaylounge", name: "RuPay Lounge Program", url: "https://www.rupay.co.in/rupay-lounge", app: "n/a (eligibility on RuPay site)",
+      what: "Official RuPay lounge program: tiered domestic + railway lounge access on RuPay Select/Platinum cards. Check eligibility list here.",
+      rails: ["rupay"], reliability: 5 },
+    { id: "irctc", name: "IRCTC Executive Lounge", url: "https://www.irctc.co.in/", app: "IRCTC Rail Connect",
+      what: "Railway executive lounges. Usually pay-per-use; some bank/RuPay cards comp via DreamFolks. Confirm at station.",
+      rails: ["payperuse", "rupay", "dreamfolks"], reliability: 3 },
+  ],
+
+  // ---- info / research sources (cross-verify card + lounge claims) ----
+  info: [
+    { id: "technofino", name: "Technofino (forum + reviews)", url: "https://technofino.in/community/", search: "https://www.google.com/search?q=site:technofino.in+",
+      what: "Most active Indian credit-card community + detailed card reviews. Best place to cross-check current lounge rules and spend gates from real users.",
+      reliability: 4 },
+    { id: "cardexpert", name: "CardExpert", url: "https://www.cardexpert.in/", search: "https://www.google.com/search?q=site:cardexpert.in+",
+      what: "Detailed Indian credit-card reviews + lounge access guides. Strong on benefit breakdowns.",
+      reliability: 4 },
+    { id: "reddit-ccindia", name: "r/CreditCardsIndia (Reddit)", url: "https://www.reddit.com/r/CreditCardsIndia/", search: "https://www.reddit.com/r/CreditCardsIndia/search/?q=",
+      what: "Crowd discussion of approvals, lounge changes, devaluations. Recent, but verify — it's anecdotal.",
+      reliability: 3 },
+    { id: "paisabazaar", name: "Paisabazaar", url: "https://www.paisabazaar.com/credit-card/", search: "https://www.google.com/search?q=site:paisabazaar.com+",
+      what: "Aggregator with card comparison + apply links. Decent for fees/eligibility, SEO-heavy so cross-check benefits.",
+      reliability: 3 },
+    { id: "bankbazaar", name: "BankBazaar", url: "https://www.bankbazaar.com/credit-card.html", search: "https://www.google.com/search?q=site:bankbazaar.com+",
+      what: "Aggregator + apply links. Same caveat as Paisabazaar.",
+      reliability: 3 },
+    { id: "google", name: "Google (latest)", url: "https://www.google.com/search?q=", search: "https://www.google.com/search?q=",
+      what: "Catch-all for the freshest news (a devaluation announced last week shows here first).",
+      reliability: 2 },
+  ],
+
+  // disclaimer surfaced wherever sources appear
+  disclaimer:
+    "LoungeLens links you to these sources — it does not grant lounge access itself. " +
+    "No third-party app can open a lounge for you; access comes from your bank's program " +
+    "and is validated at the desk (often by scanning your card in the DreamFolks app). " +
+    "Always confirm in the official app before you rely on access.",
+};
+
+/*
+ * Link builders — given a card or lounge, produce the most useful research links.
+ * Pure string functions, no DOM, testable.
+ */
+window.LL_SOURCE_LINKS = {
+  // for a CARD: issuer page (from card.verify if it's a domain) + community searches
+  forCard: function (card) {
+    const S = window.LL_SOURCES;
+    const q = encodeURIComponent(card.name + " lounge access India 2026");
+    const links = [];
+    // official issuer page if verify looks like a domain
+    const dom = (card.verify || "").match(/([a-z0-9.-]+\.[a-z]{2,})/i);
+    if (dom) links.push({ label: "Official: " + dom[1], url: "https://" + dom[1], reliability: 5, kind: "official" });
+    // community cross-check
+    S.info.forEach((src) => {
+      links.push({ label: src.name, url: (src.search || src.url) + q, reliability: src.reliability, kind: "info" });
+    });
+    return links;
+  },
+  // for a LOUNGE: the access services whose rails match + a finder search
+  forLounge: function (lounge) {
+    const S = window.LL_SOURCES;
+    const railset = new Set(lounge.programs || []);
+    const links = S.access
+      .filter((svc) => (svc.rails || []).some((r) => railset.has(r)))
+      .map((svc) => ({ label: "Open " + svc.name, url: svc.url, app: svc.app, reliability: svc.reliability, kind: "access", what: svc.what }));
+    // always offer a fresh search for the specific lounge
+    const q = encodeURIComponent((lounge.name || "") + " " + (lounge.city || "") + " lounge access 2026");
+    links.push({ label: "Search latest", url: "https://www.google.com/search?q=" + q, reliability: 2, kind: "info" });
+    return links;
+  },
+};
+
+</script>
+  <script>
+/*
  * LoungeLens engine — the brain.
  *
  * Pure functions over (cards dataset, lounges dataset, user wallet, visit log).
@@ -1333,10 +1497,99 @@ window.LL_META = {
 
 </script>
   <script>
+/*
+ * LoungeLens — Profile / sync (free, serverless "login").
+ *
+ * HONEST MODEL: a free static site has no server, so there are no real accounts.
+ * Instead, the user's whole state (cards, visits, spend, trip, experiences,
+ * preferences) lives in localStorage and can be carried between THEIR OWN devices
+ * via a portable "sync code" (a compact encoded blob) or a file. This gives the
+ * felt benefit of "log in and my stuff is here" without a server, without holding
+ * anyone's data, and without privacy/compliance burden.
+ *
+ * A sync code is just the JSON state, JSON->base64 (URL-safe). Paste it on another
+ * device to restore. No password because there's no server to protect — the code IS
+ * the data, so treat it like you'd treat the file (don't post it publicly).
+ *
+ * Pure functions (encode/decode/merge). Node-testable.
+ */
+(function (root) {
+  "use strict";
+
+  // base64 that works in browser AND node
+  function b64encode(str) {
+    if (typeof btoa === "function") return btoa(unescape(encodeURIComponent(str)));
+    return Buffer.from(str, "utf-8").toString("base64");
+  }
+  function b64decode(b64) {
+    if (typeof atob === "function") return decodeURIComponent(escape(atob(b64)));
+    return Buffer.from(b64, "base64").toString("utf-8");
+  }
+
+  // make code URL-safe + tagged so we can validate on import
+  function encodeState(state) {
+    const payload = {
+      t: "LL1", // tag + version
+      name: state.profileName || "",
+      wallet: state.wallet || [],
+      visitLog: state.visitLog || [],
+      spend: state.spend || {},
+      trip: state.trip || [],
+      experiences: state.experiences || [],
+      mode: state.mode || "simple",
+    };
+    const b = b64encode(JSON.stringify(payload));
+    return b.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function decodeState(code) {
+    if (!code || typeof code !== "string") throw new Error("empty code");
+    let b = code.trim().replace(/-/g, "+").replace(/_/g, "/");
+    while (b.length % 4) b += "=";
+    const obj = JSON.parse(b64decode(b));
+    if (!obj || obj.t !== "LL1") throw new Error("not a LoungeLens sync code");
+    return obj;
+  }
+
+  // merge an imported payload into current state.
+  // strategy: imported profile REPLACES name/mode/trip; wallet UNION (don't lose
+  // either device's cards); visitLog + experiences MERGE+DEDUPE (keep all history);
+  // spend takes the higher number per card (you spent at least that much).
+  function mergeInto(state, payload) {
+    state.profileName = payload.name || state.profileName || "";
+    state.mode = payload.mode || state.mode || "simple";
+    if (Array.isArray(payload.trip) && payload.trip.length) state.trip = payload.trip;
+
+    const walletSet = new Set([...(state.wallet || []), ...(payload.wallet || [])]);
+    state.wallet = [...walletSet];
+
+    const vk = (v) => (v.cardId || "") + "|" + (v.ts || "");
+    const seenV = new Set((state.visitLog || []).map(vk));
+    (payload.visitLog || []).forEach((v) => { if (!seenV.has(vk(v))) { state.visitLog.push(v); seenV.add(vk(v)); } });
+
+    const ek = (e) => (e.loungeId || "") + "|" + (e.cardId || "") + "|" + (e.ts || "");
+    const seenE = new Set((state.experiences || []).map(ek));
+    (payload.experiences || []).forEach((e) => { if (!seenE.has(ek(e))) { state.experiences.push(e); seenE.add(ek(e)); } });
+
+    state.spend = state.spend || {};
+    Object.keys(payload.spend || {}).forEach((cid) => {
+      state.spend[cid] = Math.max(Number(state.spend[cid]) || 0, Number(payload.spend[cid]) || 0);
+    });
+    return state;
+  }
+
+  const Profile = { encodeState, decodeState, mergeInto };
+  if (typeof module !== "undefined" && module.exports) module.exports = Profile;
+  root.LL_PROFILE = Profile;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+  <script>
 /* LoungeLens app controller — DOM glue over LL_ENGINE. Simple + Advanced modes. */
 (function () {
   "use strict";
   const E = window.LL_ENGINE, CARDS = window.LL_CARDS, LOUNGES = window.LL_LOUNGES, META = window.LL_META, SELF = window.LL_SELF;
+  const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const NOW = new Date();
@@ -1350,7 +1603,7 @@ window.LL_META = {
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "" }; }
   function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
 
   // ---- helpers -----------------------------------------------------------
@@ -1375,6 +1628,19 @@ window.LL_META = {
   const typeBadge = (c) => cardType(c) === "debit"
     ? `<span class="chip type-debit">DEBIT</span>`
     : `<span class="chip type-credit">CREDIT</span>`;
+  // render a row of external source links (official access apps + research bases).
+  // Honest: these LINK OUT — the app can't grant access itself.
+  const relDots = (n) => "●".repeat(n) + "○".repeat(5 - n);
+  function sourceLinksHtml(links, ctx) {
+    if (!links || !links.length) return "";
+    const access = links.filter((l) => l.kind === "access");
+    const info = links.filter((l) => l.kind !== "access");
+    const btn = (l) => `<a class="src-link ${l.kind}" href="${l.url}" target="_blank" rel="noopener noreferrer" title="${(l.what || "").replace(/"/g, "'")}">${l.label}${l.reliability ? ` <span class="rel">${relDots(l.reliability)}</span>` : ""}</a>`;
+    return `<div class="src-block">
+      ${access.length ? `<div class="src-row"><span class="src-lbl">Use / confirm access:</span>${access.map(btn).join("")}</div>` : ""}
+      <div class="src-row"><span class="src-lbl">Cross-check:</span>${info.map(btn).join("")}</div>
+    </div>`;
+  }
 
   // ---- mode toggle -------------------------------------------------------
   function applyMode() {
@@ -1600,6 +1866,7 @@ window.LL_META = {
         </div>` : ""}
         ${l.notes ? `<div class="notes adv-only">${l.notes}</div>` : ""}
         ${l.verify ? `<span class="verify">✔ ${l.verify}</span>` : ""}
+        ${sourceLinksHtml(SLINKS.forLounge(l), "lounge")}
       </div>`;
     }).join("");
 
@@ -1659,6 +1926,7 @@ window.LL_META = {
         <div class="row">${tags}</div>
         <div class="row"><span class="rec-score">Opens <b>${r.marginalCoverage}</b> new lounge(s) for you${isSimple() ? "" : ` · score ${r.score}`}</span></div>
         ${c.eligibility ? `<div class="notes adv-only">${c.eligibility}</div>` : ""}
+        ${sourceLinksHtml(SLINKS.forCard(c), "card")}
       </div>`;
     }).join("");
     $$("[data-add]").forEach((b) => b.onclick = () => { if (!state.wallet.includes(b.dataset.add)) state.wallet.push(b.dataset.add); save(); render(); });
@@ -1790,6 +2058,60 @@ window.LL_META = {
     e.target.value = "";
   };
 
+  // ============================ PROFILE / SYNC ============================
+  function renderProfile() {
+    const nameInput = $("#profile-name");
+    if (nameInput && document.activeElement !== nameInput) nameInput.value = state.profileName || "";
+  }
+  if ($("#profile-name")) $("#profile-name").oninput = (e) => { state.profileName = e.target.value; save(); };
+  if ($("#gen-code")) $("#gen-code").onclick = () => {
+    const code = PROFILE.encodeState(state);
+    $("#sync-code-out").value = code;
+    toast("Sync code generated. Copy it to your other device.");
+  };
+  if ($("#copy-code")) $("#copy-code").onclick = async () => {
+    const v = $("#sync-code-out").value;
+    if (!v) { toast("Generate a code first."); return; }
+    try { await navigator.clipboard.writeText(v); toast("Copied to clipboard."); }
+    catch (e) { $("#sync-code-out").select(); toast("Select-all done — press Cmd/Ctrl+C."); }
+  };
+  if ($("#apply-code")) $("#apply-code").onclick = () => {
+    const code = ($("#sync-code-in").value || "").trim();
+    if (!code) { toast("Paste a sync code first."); return; }
+    try {
+      const payload = PROFILE.decodeState(code);
+      PROFILE.mergeInto(state, payload);
+      save(); render();
+      toast("Restored and merged. Your cards and trip are here now.");
+      $("#sync-code-in").value = "";
+    } catch (e) { toast("That doesn't look like a valid sync code."); }
+  };
+  if ($("#profile-export-file")) $("#profile-export-file").onclick = () => {
+    const code = PROFILE.encodeState(state);
+    const blob = new Blob([code], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "loungelens-profile.txt";
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  if ($("#profile-import-file")) $("#profile-import-file").onclick = () => $("#profile-file").click();
+  if ($("#profile-file")) $("#profile-file").onchange = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        let txt = r.result.trim();
+        // file may be a raw code OR our older JSON export — handle both
+        let payload;
+        try { payload = PROFILE.decodeState(txt); }
+        catch (_) { const j = JSON.parse(txt); payload = { t: "LL1", wallet: j.wallet || [], experiences: j.experiences || [], visitLog: [], spend: {}, trip: [] }; }
+        PROFILE.mergeInto(state, payload);
+        save(); render(); toast("Imported and merged.");
+      } catch (err) { toast("Couldn't read that file."); }
+    };
+    r.readAsText(file); e.target.value = "";
+  };
+
   // ---- onboarding (first run) -------------------------------------------
   function maybeOnboard() {
     if (state.onboarded) return;
@@ -1829,7 +2151,7 @@ window.LL_META = {
   // ---- master render -----------------------------------------------------
   function render() {
     if (!state.experiences) state.experiences = []; // migrate older saved state
-    renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth();
+    renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
   }
 

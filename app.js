@@ -2,6 +2,7 @@
 (function () {
   "use strict";
   const E = window.LL_ENGINE, CARDS = window.LL_CARDS, LOUNGES = window.LL_LOUNGES, META = window.LL_META, SELF = window.LL_SELF;
+  const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const NOW = new Date();
@@ -15,7 +16,7 @@
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "" }; }
   function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
 
   // ---- helpers -----------------------------------------------------------
@@ -40,6 +41,19 @@
   const typeBadge = (c) => cardType(c) === "debit"
     ? `<span class="chip type-debit">DEBIT</span>`
     : `<span class="chip type-credit">CREDIT</span>`;
+  // render a row of external source links (official access apps + research bases).
+  // Honest: these LINK OUT — the app can't grant access itself.
+  const relDots = (n) => "●".repeat(n) + "○".repeat(5 - n);
+  function sourceLinksHtml(links, ctx) {
+    if (!links || !links.length) return "";
+    const access = links.filter((l) => l.kind === "access");
+    const info = links.filter((l) => l.kind !== "access");
+    const btn = (l) => `<a class="src-link ${l.kind}" href="${l.url}" target="_blank" rel="noopener noreferrer" title="${(l.what || "").replace(/"/g, "'")}">${l.label}${l.reliability ? ` <span class="rel">${relDots(l.reliability)}</span>` : ""}</a>`;
+    return `<div class="src-block">
+      ${access.length ? `<div class="src-row"><span class="src-lbl">Use / confirm access:</span>${access.map(btn).join("")}</div>` : ""}
+      <div class="src-row"><span class="src-lbl">Cross-check:</span>${info.map(btn).join("")}</div>
+    </div>`;
+  }
 
   // ---- mode toggle -------------------------------------------------------
   function applyMode() {
@@ -265,6 +279,7 @@
         </div>` : ""}
         ${l.notes ? `<div class="notes adv-only">${l.notes}</div>` : ""}
         ${l.verify ? `<span class="verify">✔ ${l.verify}</span>` : ""}
+        ${sourceLinksHtml(SLINKS.forLounge(l), "lounge")}
       </div>`;
     }).join("");
 
@@ -324,6 +339,7 @@
         <div class="row">${tags}</div>
         <div class="row"><span class="rec-score">Opens <b>${r.marginalCoverage}</b> new lounge(s) for you${isSimple() ? "" : ` · score ${r.score}`}</span></div>
         ${c.eligibility ? `<div class="notes adv-only">${c.eligibility}</div>` : ""}
+        ${sourceLinksHtml(SLINKS.forCard(c), "card")}
       </div>`;
     }).join("");
     $$("[data-add]").forEach((b) => b.onclick = () => { if (!state.wallet.includes(b.dataset.add)) state.wallet.push(b.dataset.add); save(); render(); });
@@ -455,6 +471,60 @@
     e.target.value = "";
   };
 
+  // ============================ PROFILE / SYNC ============================
+  function renderProfile() {
+    const nameInput = $("#profile-name");
+    if (nameInput && document.activeElement !== nameInput) nameInput.value = state.profileName || "";
+  }
+  if ($("#profile-name")) $("#profile-name").oninput = (e) => { state.profileName = e.target.value; save(); };
+  if ($("#gen-code")) $("#gen-code").onclick = () => {
+    const code = PROFILE.encodeState(state);
+    $("#sync-code-out").value = code;
+    toast("Sync code generated. Copy it to your other device.");
+  };
+  if ($("#copy-code")) $("#copy-code").onclick = async () => {
+    const v = $("#sync-code-out").value;
+    if (!v) { toast("Generate a code first."); return; }
+    try { await navigator.clipboard.writeText(v); toast("Copied to clipboard."); }
+    catch (e) { $("#sync-code-out").select(); toast("Select-all done — press Cmd/Ctrl+C."); }
+  };
+  if ($("#apply-code")) $("#apply-code").onclick = () => {
+    const code = ($("#sync-code-in").value || "").trim();
+    if (!code) { toast("Paste a sync code first."); return; }
+    try {
+      const payload = PROFILE.decodeState(code);
+      PROFILE.mergeInto(state, payload);
+      save(); render();
+      toast("Restored and merged. Your cards and trip are here now.");
+      $("#sync-code-in").value = "";
+    } catch (e) { toast("That doesn't look like a valid sync code."); }
+  };
+  if ($("#profile-export-file")) $("#profile-export-file").onclick = () => {
+    const code = PROFILE.encodeState(state);
+    const blob = new Blob([code], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "loungelens-profile.txt";
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+  if ($("#profile-import-file")) $("#profile-import-file").onclick = () => $("#profile-file").click();
+  if ($("#profile-file")) $("#profile-file").onchange = (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        let txt = r.result.trim();
+        // file may be a raw code OR our older JSON export — handle both
+        let payload;
+        try { payload = PROFILE.decodeState(txt); }
+        catch (_) { const j = JSON.parse(txt); payload = { t: "LL1", wallet: j.wallet || [], experiences: j.experiences || [], visitLog: [], spend: {}, trip: [] }; }
+        PROFILE.mergeInto(state, payload);
+        save(); render(); toast("Imported and merged.");
+      } catch (err) { toast("Couldn't read that file."); }
+    };
+    r.readAsText(file); e.target.value = "";
+  };
+
   // ---- onboarding (first run) -------------------------------------------
   function maybeOnboard() {
     if (state.onboarded) return;
@@ -494,7 +564,7 @@
   // ---- master render -----------------------------------------------------
   function render() {
     if (!state.experiences) state.experiences = []; // migrate older saved state
-    renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth();
+    renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
   }
 

@@ -185,6 +185,22 @@ button.act.big { width: 100%; padding: 13px; font-size: 16px; margin-top: 8px; b
 .chip.type-credit { background: #102a43; color: #6cb6ff; border-color: #1c4a7a; font-size: 9px; }
 .chip.type-debit { background: #2a1a3a; color: #c98bff; border-color: #4a2d6a; font-size: 9px; }
 
+/* source / integration links */
+.src-block { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.src-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.src-lbl { font-size: 11px; color: var(--dim); margin-right: 4px; }
+.src-link { font-size: 12px; text-decoration: none; padding: 4px 9px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--chip); color: var(--txt); display: inline-flex; gap: 5px; align-items: center; }
+.src-link:hover { border-color: var(--accent); }
+.src-link.access { background: #0f2e1a; border-color: #1c3a23; color: #7ee08a; }
+.src-link .rel { font-size: 8px; color: var(--accent); letter-spacing: -1px; }
+body.simple-mode .src-link .rel { display: none; }
+
+/* sync code box */
+.sync-box { width: 100%; min-height: 70px; background: var(--panel2); border: 1px solid var(--line);
+  color: var(--txt); border-radius: 9px; padding: 10px; font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px; resize: vertical; margin-top: 8px; word-break: break-all; }
+
 /* install button */
 .install-btn { background: var(--good) !important; color: #fff !important; border-color: var(--good) !important; }
 

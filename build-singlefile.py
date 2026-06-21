@@ -29,8 +29,10 @@ js_files = [
     "data/cards.js",
     "data/lounges.js",
     "data/meta.js",
+    "data/sources.js",
     "engine.js",
     "selfcheck.js",
+    "profile.js",
     "app.js",
 ]
 
