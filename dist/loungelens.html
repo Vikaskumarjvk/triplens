@@ -544,6 +544,27 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast[hidden] { display: none; }
 
+/* ============================ WALLET STRENGTH GAUGE ============================ */
+.ws-card {
+  display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  background: var(--panel); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; margin-bottom: 16px;
+  box-shadow: var(--shadow-2), inset 0 1px 0 var(--glass-top); position: relative; overflow: hidden;
+}
+.ws-card.grade-elite { box-shadow: var(--shadow-2), inset 0 1px 0 var(--glass-top), 0 0 0 1px rgba(255,215,120,.35); }
+.ws-gauge { flex: 0 0 auto; }
+.ws-arc { transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1); }
+.ws-num { font-size: 30px; font-weight: 800; fill: #fff; }
+.ws-of { font-size: 11px; fill: var(--dim); }
+.ws-body { flex: 1; min-width: 200px; }
+.ws-grade { font-size: 17px; font-weight: 800; letter-spacing: -.3px; margin-bottom: 12px; }
+.ws-factors { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+.ws-factor { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--dim); }
+.ws-factor > span { flex: 0 0 120px; }
+.ws-factor > b { flex: 0 0 38px; text-align: right; color: var(--txt); font-variant-numeric: tabular-nums; }
+.ws-bar { flex: 1; height: 7px; background: rgba(255,255,255,.07); border-radius: 999px; overflow: hidden; }
+.ws-bar-fill { height: 100%; background: var(--accent-grad); border-radius: 999px; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+
 /* ============================ CARD ART (mini credit-card visual) ============================ */
 .cardart {
   position: relative; border-radius: 12px; overflow: hidden;
@@ -722,6 +743,7 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 
     <!-- WALLET -->
     <section id="view-wallet" class="view">
+      <div id="wallet-score"></div>
       <div class="stat-row" id="wallet-stats"></div>
       <div id="gate-warnings"></div>
       <div class="section-h">Your cards</div>
@@ -3121,7 +3143,38 @@ window.LL_SOURCE_LINKS = {
     return sorted.map((m, i) => ({ ...m, useFirst: i === 0 }));
   }
 
+  // ---- walletScore: a 0-100 "how strong is my lounge setup" signal --------
+  // Blends airport coverage, railway coverage, visit volume, and whether any
+  // card gives unlimited access. Pure function, returns score + factor breakdown.
+  function walletScore(wallet, allCards, allLounges, visitLog, spendThisPeriod, now) {
+    const owned = wallet.map((id) => allCards.find((c) => c.id === id)).filter(Boolean);
+    if (owned.length === 0) {
+      return { score: 0, grade: "none", factors: [], hasUnlimited: false, airportPct: 0, railPct: 0, totalVisits: 0 };
+    }
+    const air = coverage(wallet, allCards, allLounges, visitLog, spendThisPeriod, now, { type: "airport" });
+    const rail = coverage(wallet, allCards, allLounges, visitLog, spendThisPeriod, now, { type: "railway" });
+    const airportPct = air.total ? air.openCount / air.total : 0;
+    const railPct = rail.total ? rail.openCount / rail.total : 0;
+    let totalVisits = 0, hasUnlimited = false;
+    owned.forEach((c) => {
+      if (c.domesticVisits === "unlimited") hasUnlimited = true;
+      else totalVisits += Number(c.domesticVisits) || 0;
+    });
+    // weighted score: airport coverage 45, railway 15, visit volume 25, unlimited bonus 15
+    const visitScore = hasUnlimited ? 25 : Math.min(25, totalVisits * 2);
+    const raw = airportPct * 45 + railPct * 15 + visitScore + (hasUnlimited ? 15 : 0);
+    const score = Math.round(Math.min(100, raw));
+    const grade = score >= 85 ? "elite" : score >= 65 ? "strong" : score >= 40 ? "decent" : score > 0 ? "basic" : "none";
+    const factors = [
+      { label: "Airport coverage", pct: Math.round(airportPct * 100) },
+      { label: "Railway coverage", pct: Math.round(railPct * 100) },
+      { label: "Visit volume", pct: hasUnlimited ? 100 : Math.min(100, Math.round(totalVisits / 24 * 100)) },
+    ];
+    return { score, grade, factors, hasUnlimited, airportPct: Math.round(airportPct * 100), railPct: Math.round(railPct * 100), totalVisits };
+  }
+
   const Engine = {
+    walletScore,
     periodKey,
     remainingVisits,
     spendStatus,
@@ -3939,7 +3992,40 @@ window.LL_SOURCE_LINKS = {
   }
 
   // ============================ WALLET ====================================
+  // circular SVG gauge for the wallet-strength score
+  function scoreGauge() {
+    const ws = E.walletScore(state.wallet, CARDS, LOUNGES, state.visitLog, state.spend, NOW);
+    const el = $("#wallet-score");
+    if (!el) return;
+    if (!ws.score) { el.innerHTML = ""; return; }
+    const R = 52, C = 2 * Math.PI * R, off = C * (1 - ws.score / 100);
+    const gradeLabel = { elite: "Elite setup", strong: "Strong", decent: "Decent", basic: "Basic", none: "" }[ws.grade];
+    const bars = ws.factors.map((f) =>
+      `<div class="ws-factor"><span>${f.label}</span><div class="ws-bar"><div class="ws-bar-fill" style="width:${f.pct}%"></div></div><b>${f.pct}%</b></div>`).join("");
+    el.innerHTML = `
+      <div class="ws-card grade-${ws.grade}">
+        <div class="ws-gauge">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="60" cy="60" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/>
+            <circle cx="60" cy="60" r="${R}" fill="none" stroke="url(#wsgrad)" stroke-width="10" stroke-linecap="round"
+              stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 60 60)" class="ws-arc"/>
+            <defs><linearGradient id="wsgrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#9b7bff"/><stop offset="100%" stop-color="#5b8cff"/></linearGradient></defs>
+            <text x="60" y="58" text-anchor="middle" class="ws-num">${ws.score}</text>
+            <text x="60" y="76" text-anchor="middle" class="ws-of">/ 100</text>
+          </svg>
+        </div>
+        <div class="ws-body">
+          <div class="ws-grade">${gradeLabel} wallet ${ws.hasUnlimited ? "👑" : ""}</div>
+          <div class="ws-factors">${bars}</div>
+          <div class="row"><button class="act mini" data-goto="recommend">Improve it — get a card →</button></div>
+        </div>
+      </div>`;
+    wireGoto();
+  }
+
   function renderWallet() {
+    scoreGauge();
     const summary = E.walletSummary(state.wallet, CARDS, state.visitLog, state.spend, NOW);
     $("#wallet-stats").innerHTML = `
       <div class="stat"><div class="num">${summary.cardCount}</div><div class="lbl">Cards</div></div>

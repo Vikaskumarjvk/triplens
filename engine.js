@@ -316,7 +316,38 @@
     return sorted.map((m, i) => ({ ...m, useFirst: i === 0 }));
   }
 
+  // ---- walletScore: a 0-100 "how strong is my lounge setup" signal --------
+  // Blends airport coverage, railway coverage, visit volume, and whether any
+  // card gives unlimited access. Pure function, returns score + factor breakdown.
+  function walletScore(wallet, allCards, allLounges, visitLog, spendThisPeriod, now) {
+    const owned = wallet.map((id) => allCards.find((c) => c.id === id)).filter(Boolean);
+    if (owned.length === 0) {
+      return { score: 0, grade: "none", factors: [], hasUnlimited: false, airportPct: 0, railPct: 0, totalVisits: 0 };
+    }
+    const air = coverage(wallet, allCards, allLounges, visitLog, spendThisPeriod, now, { type: "airport" });
+    const rail = coverage(wallet, allCards, allLounges, visitLog, spendThisPeriod, now, { type: "railway" });
+    const airportPct = air.total ? air.openCount / air.total : 0;
+    const railPct = rail.total ? rail.openCount / rail.total : 0;
+    let totalVisits = 0, hasUnlimited = false;
+    owned.forEach((c) => {
+      if (c.domesticVisits === "unlimited") hasUnlimited = true;
+      else totalVisits += Number(c.domesticVisits) || 0;
+    });
+    // weighted score: airport coverage 45, railway 15, visit volume 25, unlimited bonus 15
+    const visitScore = hasUnlimited ? 25 : Math.min(25, totalVisits * 2);
+    const raw = airportPct * 45 + railPct * 15 + visitScore + (hasUnlimited ? 15 : 0);
+    const score = Math.round(Math.min(100, raw));
+    const grade = score >= 85 ? "elite" : score >= 65 ? "strong" : score >= 40 ? "decent" : score > 0 ? "basic" : "none";
+    const factors = [
+      { label: "Airport coverage", pct: Math.round(airportPct * 100) },
+      { label: "Railway coverage", pct: Math.round(railPct * 100) },
+      { label: "Visit volume", pct: hasUnlimited ? 100 : Math.min(100, Math.round(totalVisits / 24 * 100)) },
+    ];
+    return { score, grade, factors, hasUnlimited, airportPct: Math.round(airportPct * 100), railPct: Math.round(railPct * 100), totalVisits };
+  }
+
   const Engine = {
+    walletScore,
     periodKey,
     remainingVisits,
     spendStatus,

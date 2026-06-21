@@ -520,6 +520,27 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast[hidden] { display: none; }
 
+/* ============================ WALLET STRENGTH GAUGE ============================ */
+.ws-card {
+  display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  background: var(--panel); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; margin-bottom: 16px;
+  box-shadow: var(--shadow-2), inset 0 1px 0 var(--glass-top); position: relative; overflow: hidden;
+}
+.ws-card.grade-elite { box-shadow: var(--shadow-2), inset 0 1px 0 var(--glass-top), 0 0 0 1px rgba(255,215,120,.35); }
+.ws-gauge { flex: 0 0 auto; }
+.ws-arc { transition: stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1); }
+.ws-num { font-size: 30px; font-weight: 800; fill: #fff; }
+.ws-of { font-size: 11px; fill: var(--dim); }
+.ws-body { flex: 1; min-width: 200px; }
+.ws-grade { font-size: 17px; font-weight: 800; letter-spacing: -.3px; margin-bottom: 12px; }
+.ws-factors { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+.ws-factor { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--dim); }
+.ws-factor > span { flex: 0 0 120px; }
+.ws-factor > b { flex: 0 0 38px; text-align: right; color: var(--txt); font-variant-numeric: tabular-nums; }
+.ws-bar { flex: 1; height: 7px; background: rgba(255,255,255,.07); border-radius: 999px; overflow: hidden; }
+.ws-bar-fill { height: 100%; background: var(--accent-grad); border-radius: 999px; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+
 /* ============================ CARD ART (mini credit-card visual) ============================ */
 .cardart {
   position: relative; border-radius: 12px; overflow: hidden;

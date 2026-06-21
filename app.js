@@ -299,7 +299,40 @@
   }
 
   // ============================ WALLET ====================================
+  // circular SVG gauge for the wallet-strength score
+  function scoreGauge() {
+    const ws = E.walletScore(state.wallet, CARDS, LOUNGES, state.visitLog, state.spend, NOW);
+    const el = $("#wallet-score");
+    if (!el) return;
+    if (!ws.score) { el.innerHTML = ""; return; }
+    const R = 52, C = 2 * Math.PI * R, off = C * (1 - ws.score / 100);
+    const gradeLabel = { elite: "Elite setup", strong: "Strong", decent: "Decent", basic: "Basic", none: "" }[ws.grade];
+    const bars = ws.factors.map((f) =>
+      `<div class="ws-factor"><span>${f.label}</span><div class="ws-bar"><div class="ws-bar-fill" style="width:${f.pct}%"></div></div><b>${f.pct}%</b></div>`).join("");
+    el.innerHTML = `
+      <div class="ws-card grade-${ws.grade}">
+        <div class="ws-gauge">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="60" cy="60" r="${R}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/>
+            <circle cx="60" cy="60" r="${R}" fill="none" stroke="url(#wsgrad)" stroke-width="10" stroke-linecap="round"
+              stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 60 60)" class="ws-arc"/>
+            <defs><linearGradient id="wsgrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#9b7bff"/><stop offset="100%" stop-color="#5b8cff"/></linearGradient></defs>
+            <text x="60" y="58" text-anchor="middle" class="ws-num">${ws.score}</text>
+            <text x="60" y="76" text-anchor="middle" class="ws-of">/ 100</text>
+          </svg>
+        </div>
+        <div class="ws-body">
+          <div class="ws-grade">${gradeLabel} wallet ${ws.hasUnlimited ? "👑" : ""}</div>
+          <div class="ws-factors">${bars}</div>
+          <div class="row"><button class="act mini" data-goto="recommend">Improve it — get a card →</button></div>
+        </div>
+      </div>`;
+    wireGoto();
+  }
+
   function renderWallet() {
+    scoreGauge();
     const summary = E.walletSummary(state.wallet, CARDS, state.visitLog, state.spend, NOW);
     $("#wallet-stats").innerHTML = `
       <div class="stat"><div class="num">${summary.cardCount}</div><div class="lbl">Cards</div></div>

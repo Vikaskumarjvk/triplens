@@ -212,5 +212,17 @@ console.log("\n[18] bestCardOrder — which card to use first");
   ok("only one useFirst", order.filter((o) => o.useFirst).length === 1);
 }
 
+console.log("\n[19] walletScore — wallet strength signal");
+{
+  const empty = E.walletScore([], CARDS, LOUNGES, [], {}, NOW);
+  ok("empty wallet scores 0", empty.score === 0 && empty.grade === "none");
+  const elite = E.walletScore(["hdfc-infinia"], CARDS, LOUNGES, [], {}, NOW);
+  ok("unlimited card scores high", elite.score >= 65 && elite.hasUnlimited === true);
+  ok("score capped at 100", elite.score <= 100);
+  ok("returns factor breakdown", Array.isArray(elite.factors) && elite.factors.length === 3);
+  const basic = E.walletScore(["hdfc-moneyback-plus"], CARDS, LOUNGES, [], {}, NOW);
+  ok("no-lounge card scores lower than unlimited", basic.score < elite.score);
+}
+
 console.log(`\n==== ${pass} passed, ${fail} failed ====\n`);
 process.exit(fail === 0 ? 0 : 1);
