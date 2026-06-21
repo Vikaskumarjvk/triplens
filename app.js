@@ -90,6 +90,64 @@
       </div>
     </div>`;
   }
+  // ---- card detail modal: full card profile + the lounges IT opens --------
+  function openCardDetail(cardId) {
+    const c = card(cardId);
+    if (!c) return;
+    // which lounges does THIS card's rails open?
+    const myRails = new Set(c.programs || []);
+    const opens = LOUNGES.filter((l) => (l.programs || []).some((p) => myRails.has(p)));
+    const airports = opens.filter((l) => l.type !== "railway");
+    const railways = opens.filter((l) => l.type === "railway");
+    const inWallet = state.wallet.includes(c.id);
+    const stat = (n, l) => `<div class="dstat"><div class="dstat-n">${n}</div><div class="dstat-l">${l}</div></div>`;
+    const loungeLine = (l) => {
+      const loc = l.type === "railway" ? `🚆 ${l.station || ""}` : `✈️ ${l.airport || ""} ${l.terminal || ""}`.trim();
+      return `<div class="dlounge"><span class="dl-name">${l.name}</span><span class="dl-loc">${loc} · ${l.city}</span></div>`;
+    };
+    const links = (SLINKS && SLINKS.forCard) ? sourceLinksHtml(SLINKS.forCard(c), "card") : "";
+    $("#card-modal-body").innerHTML = `
+      <div class="detail-hero">${cardArt(c)}
+        <div class="detail-head">
+          <div class="card-title" style="font-size:19px;">${c.name} ${confBadge(c.confidence)}</div>
+          <div class="card-sub">${c.issuer} · ${BRAND.networkBrand(c.network).label || c.network} · ${typeBadge(c)}</div>
+          <div class="row" style="margin-top:10px;">
+            ${inWallet ? `<span class="chip good">✓ in your wallet</span>` : `<button class="act mini" data-detail-add="${c.id}">+ Add to wallet</button>`}
+          </div>
+        </div>
+      </div>
+      <div class="dstat-row">
+        ${stat(c.domesticVisits === "unlimited" ? "∞" : (Number(c.domesticVisits) || 0), "Lounge visits / " + (c.period || "yr"))}
+        ${stat(easeWord(c.ease).split(" ")[0], "Ease")}
+        ${stat(c.ltf ? "Yes" : "No", "Lifetime free")}
+        ${stat(c.spendGate ? "Yes" : "No", "Spend gate")}
+      </div>
+      ${c.spendGate ? `<div class="gate-warn" style="margin-top:12px;">⚠️ Spend gate: ${c.spendGate.note || ("spend ₹" + c.spendGate.amount + " per " + c.spendGate.per)}</div>` : ""}
+      <div class="section-h">Fee &amp; eligibility</div>
+      <p class="card-sub">${c.feeNote || ""}${c.eligibility ? "<br>" + c.eligibility : ""}</p>
+      <div class="section-h">Lounges this card can open (${opens.length})</div>
+      <p class="card-sub" style="margin-bottom:8px;">By access rail — actual entry still depends on visits left + any spend gate.</p>
+      ${airports.length ? `<div class="dlounge-group"><b>✈️ Airports (${airports.length})</b>${airports.map(loungeLine).join("")}</div>` : ""}
+      ${railways.length ? `<div class="dlounge-group"><b>🚆 Railway (${railways.length})</b>${railways.map(loungeLine).join("")}</div>` : ""}
+      ${opens.length === 0 ? `<div class="empty" style="padding:20px;">This card has no lounge access rails.</div>` : ""}
+      ${c.verify ? `<div class="verify" style="margin-top:12px;">✔ verify: ${c.verify}</div>` : ""}
+      ${links}
+    `;
+    $("#card-modal").hidden = false;
+    const addBtn = $("[data-detail-add]");
+    if (addBtn) addBtn.onclick = () => {
+      if (!state.wallet.includes(c.id)) state.wallet.push(c.id);
+      save(); render(); openCardDetail(c.id); // refresh modal to show "in wallet"
+      toast("Added to your wallet.");
+    };
+  }
+  // global wiring for any [data-detail] button (works across re-renders)
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest && e.target.closest("[data-detail]");
+    if (t) { e.stopPropagation(); openCardDetail(t.dataset.detail); }
+  });
+  if ($("#card-modal-close")) $("#card-modal-close").onclick = () => { $("#card-modal").hidden = true; };
+
   // render a row of external source links (official access apps + research bases).
   // Honest: these LINK OUT — the app can't grant access itself.
   const relDots = (n) => "●".repeat(n) + "○".repeat(5 - n);
@@ -269,21 +327,25 @@
           <span class="chip ${spend.met ? "good" : "warn"}">${spend.met ? "unlocked" : "locked"}</span>
         </div>` : "";
       return `
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <div class="card-title">${c.name} ${confBadge(c.confidence)}</div>
-            <div class="card-sub">${c.issuer} · ${visitsLabel(c)}${c.railway ? " · 🚆 railway" : ""}</div>
+      <div class="card cardrow">
+        ${cardArt(c)}
+        <div class="cardrow-body">
+          <div class="card-head">
+            <div>
+              <div class="card-title">${c.name} ${confBadge(c.confidence)}</div>
+              <div class="card-sub">${c.issuer} · ${visitsLabel(c)}${c.railway ? " · 🚆 railway" : ""}</div>
+            </div>
+            <button class="act ghost mini" data-remove="${c.id}">Remove</button>
           </div>
-          <button class="act ghost mini" data-remove="${c.id}">Remove</button>
-        </div>
-        <div class="card-sub" style="margin-top:8px;">Visits left: <b>${left}</b> / ${allowance}</div>
-        <div class="quota-bar"><div class="quota-fill ${fill}" style="width:${pct}%"></div></div>
-        ${spendBox}
-        <div class="row adv-only">${rails || '<span class="chip bad">no lounge access</span>'}</div>
-        <div class="row">
-          <button class="act mini" data-logvisit="${c.id}" ${(!quota.unlimited && quota.left === 0) || !spend.met ? "disabled" : ""}>I used this (-1)</button>
-          ${state.visitLog.some((v) => v.cardId === c.id) ? `<button class="act ghost mini" data-undovisit="${c.id}">undo</button>` : ""}
+          <div class="card-sub" style="margin-top:8px;">Visits left: <b>${left}</b> / ${allowance}</div>
+          <div class="quota-bar"><div class="quota-fill ${fill}" style="width:${pct}%"></div></div>
+          ${spendBox}
+          <div class="row">${rails || '<span class="chip bad">no lounge access</span>'}</div>
+          <div class="row">
+            <button class="act mini" data-logvisit="${c.id}" ${(!quota.unlimited && quota.left === 0) || !spend.met ? "disabled" : ""}>I used this (-1)</button>
+            ${state.visitLog.some((v) => v.cardId === c.id) ? `<button class="act ghost mini" data-undovisit="${c.id}">undo</button>` : ""}
+            <button class="act ghost mini" data-detail="${c.id}">Details →</button>
+          </div>
         </div>
       </div>`;
     }).join("");
@@ -409,16 +471,19 @@
         `<span class="chip">${visitsLabel(c)}</span>`,
       ].filter(Boolean).join("");
       return `
-      <div class="card">
-        <div class="card-head">
-          <div><div class="card-title">#${i + 1} ${c.name} ${confBadge(c.confidence)}</div>
-          <div class="card-sub">${c.issuer} · ${c.feeNote}</div></div>
-          <button class="act mini" data-add="${c.id}">Add</button>
+      <div class="card cardrow">
+        <div class="rec-rank">#${i + 1}</div>
+        ${cardArt(c, { small: true })}
+        <div class="cardrow-body">
+          <div class="card-head">
+            <div><div class="card-title">${c.name} ${confBadge(c.confidence)}</div>
+            <div class="card-sub">${c.issuer} · ${c.feeNote}</div></div>
+            <button class="act mini" data-add="${c.id}">Add</button>
+          </div>
+          <div class="row">${tags}</div>
+          <div class="row"><span class="rec-score">Opens <b>${r.marginalCoverage}</b> new lounge(s) for you · score ${r.score}</span></div>
+          <div class="row"><button class="act ghost mini" data-detail="${c.id}">Details →</button></div>
         </div>
-        <div class="row">${tags}</div>
-        <div class="row"><span class="rec-score">Opens <b>${r.marginalCoverage}</b> new lounge(s) for you${isSimple() ? "" : ` · score ${r.score}`}</span></div>
-        ${c.eligibility ? `<div class="notes adv-only">${c.eligibility}</div>` : ""}
-        ${sourceLinksHtml(SLINKS.forCard(c), "card")}
       </div>`;
     }).join("");
     $$("[data-add]").forEach((b) => b.onclick = () => { if (!state.wallet.includes(b.dataset.add)) state.wallet.push(b.dataset.add); save(); render(); });
@@ -505,6 +570,7 @@
             <span class="chip ${picked ? "good" : ""}">${picked ? "✓ added" : "tap to add"}</span>
           </div>
           <div class="row">${tags}</div>
+          <div class="row"><button class="act ghost mini" data-detail="${c.id}">Details →</button></div>
         </div>
       </div>`;
     }).join("") || `<div class="empty">No cards match these filters. <span class="link" id="add-clearfilters">Clear filters</span></div>`;
@@ -989,6 +1055,7 @@
   // ---- modal UX polish: Esc to close, click-backdrop to close -----------
   function closeModals() {
     const lm = $("#login-modal"); if (lm && !lm.hidden) lm.hidden = true;
+    const cm = $("#card-modal"); if (cm && !cm.hidden) cm.hidden = true;
     // onboarding is intentionally NOT esc-closable (first-run guidance)
   }
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModals(); });
