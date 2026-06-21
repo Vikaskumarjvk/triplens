@@ -1,7 +1,10 @@
 # LoungeLens 🛋️
 
+**Live:** https://vikaskumarjvk.github.io/loungelens/ — installable, works offline, free.
+
 Every lounge your wallet *actually* opens — airport **and** railway, India domestic.
-One view across all your cards, with a live "visits left" tracker and a card recommender.
+One view across all your cards, with a live "visits left" tracker, trip planner,
+card comparison, a "worth it?" fee calculator, login, and 114 cards across 28 issuers.
 
 ## Run it
 
