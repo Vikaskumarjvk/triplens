@@ -94,15 +94,23 @@
     document.body.classList.add("advanced-mode");
   }
 
-  // ---- routing -----------------------------------------------------------
+  // ---- routing (hash-based: deep-linkable + back button works) -----------
+  const VIEWS = $$("nav button").map((b) => b.dataset.view).filter(Boolean);
+  function showView(view, push) {
+    if (!VIEWS.includes(view)) view = "trip";
+    $$("nav button").forEach((x) => x.classList.toggle("active", x.dataset.view === view));
+    $$(".view").forEach((v) => v.classList.toggle("active", v.id === "view-" + view));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (push && location.hash !== "#" + view) history.replaceState(null, "", "#" + view);
+  }
   $$("nav button").forEach((b) =>
-    b.addEventListener("click", () => {
-      $$("nav button").forEach((x) => x.classList.remove("active"));
-      b.classList.add("active");
-      $$(".view").forEach((v) => v.classList.remove("active"));
-      $("#view-" + b.dataset.view).classList.add("active");
-    })
+    b.addEventListener("click", () => b.dataset.view && showView(b.dataset.view, true))
   );
+  // respond to back/forward + deep links
+  window.addEventListener("hashchange", () => showView((location.hash || "").replace("#", ""), false));
+  // on load, honor a deep-link hash if present
+  const initialHash = (location.hash || "").replace("#", "");
+  if (initialHash && VIEWS.includes(initialHash)) showView(initialHash, false);
 
   // ======================== TRIP PLANNER (the heart) ======================
   function cityDatalist() {
@@ -201,12 +209,7 @@
   }
 
   function wireGoto() {
-    $$("[data-goto]").forEach((el) => el.onclick = () => {
-      const v = el.dataset.goto;
-      $$("nav button").forEach((x) => x.classList.toggle("active", x.dataset.view === v));
-      $$(".view").forEach((s) => s.classList.toggle("active", s.id === "view-" + v));
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    $$("[data-goto]").forEach((el) => el.onclick = () => showView(el.dataset.goto, true));
   }
 
   // ============================ WALLET ====================================
@@ -951,6 +954,17 @@
     renderAirports(); renderCompare(); renderValue(); renderSuggestions();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
   }
+
+  // ---- modal UX polish: Esc to close, click-backdrop to close -----------
+  function closeModals() {
+    const lm = $("#login-modal"); if (lm && !lm.hidden) lm.hidden = true;
+    // onboarding is intentionally NOT esc-closable (first-run guidance)
+  }
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModals(); });
+  $$(".modal").forEach((m) => m.addEventListener("click", (e) => {
+    // click on the dim backdrop (not the inner box) closes — except onboarding
+    if (e.target === m && m.id !== "onboard") m.hidden = true;
+  }));
 
   // init
   applyMode();

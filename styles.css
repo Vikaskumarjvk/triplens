@@ -15,10 +15,10 @@
   --line: rgba(255, 255, 255, 0.08);
   --line-strong: rgba(255, 255, 255, 0.14);
 
-  /* text */
+  /* text (dim tones tuned to meet WCAG contrast on the dark canvas) */
   --txt: #eef1f8;
-  --dim: #939bb0;
-  --dim-2: #6b7488;
+  --dim: #a6adc0;
+  --dim-2: #8b93a7;
 
   /* brand accent — violet→blue gradient */
   --accent: #8b7bff;
@@ -88,6 +88,14 @@ body::after {
 }
 
 ::selection { background: rgba(123, 110, 255, 0.35); color: #fff; }
+
+/* keyboard accessibility: clear focus ring for tab users, none for mouse */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+:focus:not(:focus-visible) { outline: none; }
 
 /* ============================ HEADER + NAV ============================ */
 header {
