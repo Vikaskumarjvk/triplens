@@ -495,6 +495,59 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast[hidden] { display: none; }
 
+/* ============================ CARD ART (mini credit-card visual) ============================ */
+.cardart {
+  position: relative; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(135deg, var(--ca1), var(--ca2));
+  color: #fff; padding: 12px 13px; min-height: 132px; width: 210px; flex: 0 0 210px;
+  box-shadow: var(--shadow-2), inset 0 1px 0 rgba(255,255,255,.18);
+  display: flex; flex-direction: column; isolation: isolate;
+}
+.cardart.ca-sm { min-height: 116px; width: 188px; flex-basis: 188px; padding: 11px 12px; }
+.cardart .ca-sheen {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(120px 80px at 80% 0%, rgba(255,255,255,.22), transparent 70%),
+    linear-gradient(115deg, transparent 40%, rgba(255,255,255,.10) 50%, transparent 60%);
+}
+.cardart > * { position: relative; z-index: 1; }
+.ca-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.ca-badge {
+  font-weight: 800; font-size: 13px; letter-spacing: .5px;
+  background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.28);
+  padding: 3px 8px; border-radius: 6px; backdrop-filter: blur(4px);
+}
+.ca-lounge { font-size: 11px; font-weight: 700; background: rgba(0,0,0,.28); padding: 3px 7px; border-radius: 999px; white-space: nowrap; }
+.ca-chip {
+  width: 34px; height: 25px; border-radius: 5px; margin: 10px 0 8px;
+  background: linear-gradient(135deg,#f4d27a,#caa548);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.2), inset 0 2px 4px rgba(255,255,255,.5);
+  position: relative;
+}
+.ca-chip::after { content:""; position:absolute; inset:5px 6px; border:1px solid rgba(0,0,0,.22); border-radius:2px; }
+.ca-name { font-weight: 700; font-size: 13.5px; line-height: 1.2; margin-top: auto; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.ca-sm .ca-name { font-size: 12.5px; }
+.ca-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; gap: 8px; }
+.ca-issuer { font-size: 10px; opacity: .85; text-transform: uppercase; letter-spacing: .5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-net { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 5px; letter-spacing: .3px; }
+/* tier flourishes */
+.cardart.tier-elite { box-shadow: var(--shadow-3), inset 0 1px 0 rgba(255,255,255,.3), 0 0 0 1px rgba(255,215,120,.4); }
+.cardart.tier-elite .ca-badge { background: linear-gradient(135deg,#f4d27a,#caa548); color: #3a2a08; border-color: rgba(255,255,255,.5); }
+.cardart.tier-premium { box-shadow: var(--shadow-3), inset 0 1px 0 rgba(255,255,255,.25); }
+.cardart.tier-dead { filter: grayscale(.7) brightness(.8); }
+.cardart.tier-dead::before { content: "DISCONTINUED"; position: absolute; z-index: 2; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-12deg); font-size: 11px; font-weight: 800; letter-spacing: 1px; color: rgba(255,255,255,.9); background: rgba(0,0,0,.45); padding: 3px 10px; border-radius: 4px; }
+
+/* card row: art on the left, body on the right */
+.cardrow { display: flex; gap: 14px; align-items: stretch; }
+.cardrow-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cardrow .cardart { transition: transform .16s ease, box-shadow .16s ease; }
+.cardrow:hover .cardart { transform: translateY(-3px) rotate(-.6deg); box-shadow: var(--shadow-3), inset 0 1px 0 rgba(255,255,255,.22); }
+.cardrow.picked .cardart { box-shadow: var(--shadow-3), 0 0 0 2px var(--good); }
+@media (max-width: 560px) {
+  .cardrow { flex-direction: column; gap: 10px; }
+  .cardart, .cardart.ca-sm { width: 100%; flex-basis: auto; }
+}
+
 /* ============================ FILTER BAR (Add Cards) ============================ */
 .filterbar {
   position: sticky; top: 0; z-index: 10;
@@ -2589,6 +2642,101 @@ window.LL_SOURCE_LINKS = {
 
 </script>
   <script>
+/* brand.js — visual brand system for LoungeLens.
+ * Maps issuers to brand colors + logo initials, and networks to gradients,
+ * so every card renders as real card-art (gradient + issuer badge + network
+ * mark) instead of a plain text row. Pure data + tiny pure helpers, no DOM.
+ * window.LL_BRAND
+ */
+(function (root) {
+  "use strict";
+
+  // ---- issuer brand palettes (primary, secondary, short label) ----
+  // colors approximate each bank's real brand; used for the card-art gradient
+  // and the round logo badge. Unknown issuers fall back to a neutral violet.
+  const ISSUERS = {
+    "HDFC": { c1: "#004C8F", c2: "#0a2a4a", short: "HDFC" },
+    "ICICI": { c1: "#AE275F", c2: "#7a1b42", short: "ICICI" },
+    "Axis": { c1: "#97144D", c2: "#5e0c30", short: "AXIS" },
+    "SBI": { c1: "#22409A", c2: "#14265c", short: "SBI" },
+    "Kotak": { c1: "#C9252C", c2: "#7d1418", short: "KOTAK" },
+    "IDFC FIRST": { c1: "#9C1C2E", c2: "#5c1019", short: "IDFC" },
+    "IndusInd": { c1: "#A6093D", c2: "#640624", short: "INDUS" },
+    "HSBC": { c1: "#DB0011", c2: "#82000a", short: "HSBC" },
+    "Standard Chartered": { c1: "#0473EA", c2: "#0b8a3e", short: "SC" },
+    "Amex": { c1: "#1F6FB2", c2: "#16456e", short: "AMEX" },
+    "Bank of Baroda": { c1: "#F37021", c2: "#9c4413", short: "BOB" },
+    "Federal Bank": { c1: "#0066B3", c2: "#003e6e", short: "FED" },
+    "YES Bank": { c1: "#00518F", c2: "#003157", short: "YES" },
+    "RBL": { c1: "#7A1F2B", c2: "#48121a", short: "RBL" },
+    "AU Small Finance": { c1: "#4C2C92", c2: "#2c1a55", short: "AU" },
+    "Citi": { c1: "#003B70", c2: "#002344", short: "CITI" },
+    "Citi (now Axis)": { c1: "#003B70", c2: "#002344", short: "CITI" },
+    "slice Bank": { c1: "#7A41DC", c2: "#4a2786", short: "SLICE" },
+    "DBS": { c1: "#E2231A", c2: "#8a1510", short: "DBS" },
+    "Canara Bank": { c1: "#00609C", c2: "#003a5e", short: "CAN" },
+    "Punjab National Bank": { c1: "#A6093D", c2: "#640624", short: "PNB" },
+    "Union Bank": { c1: "#C8102E", c2: "#780a1c", short: "UBI" },
+    "Bank of India": { c1: "#F58220", c2: "#9c4f13", short: "BOI" },
+    "Central Bank of India": { c1: "#6A1B9A", c2: "#3f105c", short: "CBI" },
+    "Indian Bank": { c1: "#1565C0", c2: "#0d3c73", short: "IB" },
+    "Indian Overseas Bank": { c1: "#1B5E20", c2: "#0f3813", short: "IOB" },
+    "IDBI Bank": { c1: "#00873C", c2: "#005124", short: "IDBI" },
+    "UCO Bank": { c1: "#1A237E", c2: "#10154c", short: "UCO" },
+    "DCB Bank": { c1: "#E2231A", c2: "#8a1510", short: "DCB" },
+    "CSB Bank": { c1: "#F9A825", c2: "#9c6917", short: "CSB" },
+    "SBM Bank": { c1: "#003B70", c2: "#002344", short: "SBM" },
+    "Tamilnad Mercantile Bank": { c1: "#00609C", c2: "#003a5e", short: "TMB" },
+    "PSU banks": { c1: "#3949AB", c2: "#222c6b", short: "PSU" },
+    "Various PSU": { c1: "#3949AB", c2: "#222c6b", short: "PSU" },
+    "Various": { c1: "#5b6478", c2: "#363c49", short: "•" },
+    "ABN AMRO (exited)": { c1: "#6b7280", c2: "#404654", short: "ABN" },
+    "Barclays (exited)": { c1: "#6b7280", c2: "#404654", short: "BARC" },
+    "Deutsche Bank (exited retail)": { c1: "#6b7280", c2: "#404654", short: "DB" },
+    "Federal/CSB": { c1: "#0066B3", c2: "#003e6e", short: "FED" },
+    "Federal Bank ": { c1: "#0066B3", c2: "#003e6e", short: "FED" },
+    "BoB / SBM / Federal": { c1: "#F37021", c2: "#9c4413", short: "BOB" },
+  };
+  const ISSUER_FALLBACK = { c1: "#7b6eff", c2: "#3b3470", short: "" };
+
+  // ---- network marks (gradient + label) ----
+  const NETWORKS = {
+    visa: { grad: "linear-gradient(135deg,#1a1f71,#2b6cb0)", label: "VISA", color: "#dfe7ff" },
+    mastercard: { grad: "linear-gradient(135deg,#eb001b,#f79e1b)", label: "MC", color: "#fff0e6" },
+    rupay: { grad: "linear-gradient(135deg,#097b3e,#ff671f)", label: "RuPay", color: "#eafff1" },
+    amex: { grad: "linear-gradient(135deg,#006fcf,#2671b9)", label: "AMEX", color: "#e6f2ff" },
+    diners: { grad: "linear-gradient(135deg,#0079be,#00a3e0)", label: "Diners", color: "#e6f7ff" },
+  };
+  const NETWORK_FALLBACK = { grad: "linear-gradient(135deg,#5b6478,#363c49)", label: "", color: "#e6edf3" };
+
+  function issuerBrand(issuer) {
+    return ISSUERS[issuer] || Object.assign({}, ISSUER_FALLBACK, { short: initials(issuer) });
+  }
+  function networkBrand(network) {
+    return NETWORKS[network] || NETWORK_FALLBACK;
+  }
+  // derive up to 4-char initials from an issuer name when no preset exists
+  function initials(name) {
+    if (!name) return "•";
+    const words = String(name).replace(/[^a-zA-Z ]/g, "").trim().split(/\s+/);
+    if (words.length === 1) return words[0].slice(0, 4).toUpperCase();
+    return words.map((w) => w[0]).join("").slice(0, 4).toUpperCase();
+  }
+
+  // tier accent: premium cards get a metallic sheen, lifetime-free a green tag
+  function tierClass(card) {
+    if (card.discontinued) return "tier-dead";
+    if (card.domesticVisits === "unlimited") return "tier-elite";
+    if (card.ease <= 2) return "tier-premium";
+    if (card.ltf) return "tier-ltf";
+    return "tier-std";
+  }
+
+  root.LL_BRAND = { issuerBrand, networkBrand, initials, tierClass };
+})(window);
+
+</script>
+  <script>
 /*
  * LoungeLens engine — the brain.
  *
@@ -3428,6 +3576,7 @@ window.LL_SOURCE_LINKS = {
 (function () {
   "use strict";
   const E = window.LL_ENGINE, CARDS = window.LL_CARDS, LOUNGES = window.LL_LOUNGES, META = window.LL_META, SELF = window.LL_SELF;
+  const BRAND = window.LL_BRAND;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -3488,6 +3637,33 @@ window.LL_SOURCE_LINKS = {
   const typeBadge = (c) => cardType(c) === "debit"
     ? `<span class="chip type-debit">DEBIT</span>`
     : `<span class="chip type-credit">CREDIT</span>`;
+
+  // ---- card-art: render a real mini credit-card visual (gradient + issuer
+  // badge + network mark + chip) instead of a plain text row. Pure string. ----
+  function cardArt(c, opts) {
+    opts = opts || {};
+    const ib = BRAND.issuerBrand(c.issuer);
+    const nb = BRAND.networkBrand(c.network);
+    const tier = BRAND.tierClass(c);
+    const lounge = c.domesticVisits === "unlimited" ? "∞" :
+      (Number(c.domesticVisits) || 0) > 0 ? (c.domesticVisits + "") : "";
+    const loungeTag = lounge
+      ? `<span class="ca-lounge">🛋 ${lounge}${c.domesticVisits === "unlimited" ? "" : "/" + (c.period || "yr").slice(0, 2)}</span>`
+      : "";
+    return `<div class="cardart ${tier} ${opts.small ? "ca-sm" : ""}" style="--ca1:${ib.c1};--ca2:${ib.c2};">
+      <div class="ca-sheen"></div>
+      <div class="ca-top">
+        <span class="ca-badge">${ib.short || BRAND.initials(c.issuer)}</span>
+        ${loungeTag}
+      </div>
+      <div class="ca-chip"></div>
+      <div class="ca-name">${c.name}</div>
+      <div class="ca-foot">
+        <span class="ca-issuer">${c.issuer}</span>
+        <span class="ca-net" style="background:${nb.grad};color:${nb.color};">${nb.label}</span>
+      </div>
+    </div>`;
+  }
   // render a row of external source links (official access apps + research bases).
   // Honest: these LINK OUT — the app can't grant access itself.
   const relDots = (n) => "●".repeat(n) + "○".repeat(5 - n);
@@ -3894,13 +4070,16 @@ window.LL_SOURCE_LINKS = {
         c.discontinued ? `<span class="chip bad">discontinued</span>` : "",
       ].filter(Boolean).join("");
       return `
-      <div class="card selectable ${picked ? "picked" : ""}" data-toggle="${c.id}">
-        <div class="card-head">
-          <div><div class="card-title">${typeBadge(c)} ${c.name} ${confBadge(c.confidence)}</div>
-          <div class="card-sub">${c.issuer} · ${netWord(c.network)} · ${c.feeNote}</div></div>
-          <span class="chip ${picked ? "good" : ""}">${picked ? "✓ added" : "tap to add"}</span>
+      <div class="card cardrow selectable ${picked ? "picked" : ""}" data-toggle="${c.id}">
+        ${cardArt(c, { small: true })}
+        <div class="cardrow-body">
+          <div class="card-head">
+            <div><div class="card-title">${typeBadge(c)} ${c.name} ${confBadge(c.confidence)}</div>
+            <div class="card-sub">${c.issuer} · ${netWord(c.network)} · ${c.feeNote}</div></div>
+            <span class="chip ${picked ? "good" : ""}">${picked ? "✓ added" : "tap to add"}</span>
+          </div>
+          <div class="row">${tags}</div>
         </div>
-        <div class="row">${tags}</div>
       </div>`;
     }).join("") || `<div class="empty">No cards match these filters. <span class="link" id="add-clearfilters">Clear filters</span></div>`;
 

@@ -471,6 +471,59 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast[hidden] { display: none; }
 
+/* ============================ CARD ART (mini credit-card visual) ============================ */
+.cardart {
+  position: relative; border-radius: 12px; overflow: hidden;
+  background: linear-gradient(135deg, var(--ca1), var(--ca2));
+  color: #fff; padding: 12px 13px; min-height: 132px; width: 210px; flex: 0 0 210px;
+  box-shadow: var(--shadow-2), inset 0 1px 0 rgba(255,255,255,.18);
+  display: flex; flex-direction: column; isolation: isolate;
+}
+.cardart.ca-sm { min-height: 116px; width: 188px; flex-basis: 188px; padding: 11px 12px; }
+.cardart .ca-sheen {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(120px 80px at 80% 0%, rgba(255,255,255,.22), transparent 70%),
+    linear-gradient(115deg, transparent 40%, rgba(255,255,255,.10) 50%, transparent 60%);
+}
+.cardart > * { position: relative; z-index: 1; }
+.ca-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.ca-badge {
+  font-weight: 800; font-size: 13px; letter-spacing: .5px;
+  background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.28);
+  padding: 3px 8px; border-radius: 6px; backdrop-filter: blur(4px);
+}
+.ca-lounge { font-size: 11px; font-weight: 700; background: rgba(0,0,0,.28); padding: 3px 7px; border-radius: 999px; white-space: nowrap; }
+.ca-chip {
+  width: 34px; height: 25px; border-radius: 5px; margin: 10px 0 8px;
+  background: linear-gradient(135deg,#f4d27a,#caa548);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.2), inset 0 2px 4px rgba(255,255,255,.5);
+  position: relative;
+}
+.ca-chip::after { content:""; position:absolute; inset:5px 6px; border:1px solid rgba(0,0,0,.22); border-radius:2px; }
+.ca-name { font-weight: 700; font-size: 13.5px; line-height: 1.2; margin-top: auto; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
+.ca-sm .ca-name { font-size: 12.5px; }
+.ca-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; gap: 8px; }
+.ca-issuer { font-size: 10px; opacity: .85; text-transform: uppercase; letter-spacing: .5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ca-net { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 5px; letter-spacing: .3px; }
+/* tier flourishes */
+.cardart.tier-elite { box-shadow: var(--shadow-3), inset 0 1px 0 rgba(255,255,255,.3), 0 0 0 1px rgba(255,215,120,.4); }
+.cardart.tier-elite .ca-badge { background: linear-gradient(135deg,#f4d27a,#caa548); color: #3a2a08; border-color: rgba(255,255,255,.5); }
+.cardart.tier-premium { box-shadow: var(--shadow-3), inset 0 1px 0 rgba(255,255,255,.25); }
+.cardart.tier-dead { filter: grayscale(.7) brightness(.8); }
+.cardart.tier-dead::before { content: "DISCONTINUED"; position: absolute; z-index: 2; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-12deg); font-size: 11px; font-weight: 800; letter-spacing: 1px; color: rgba(255,255,255,.9); background: rgba(0,0,0,.45); padding: 3px 10px; border-radius: 4px; }
+
+/* card row: art on the left, body on the right */
+.cardrow { display: flex; gap: 14px; align-items: stretch; }
+.cardrow-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cardrow .cardart { transition: transform .16s ease, box-shadow .16s ease; }
+.cardrow:hover .cardart { transform: translateY(-3px) rotate(-.6deg); box-shadow: var(--shadow-3), inset 0 1px 0 rgba(255,255,255,.22); }
+.cardrow.picked .cardart { box-shadow: var(--shadow-3), 0 0 0 2px var(--good); }
+@media (max-width: 560px) {
+  .cardrow { flex-direction: column; gap: 10px; }
+  .cardart, .cardart.ca-sm { width: 100%; flex-basis: auto; }
+}
+
 /* ============================ FILTER BAR (Add Cards) ============================ */
 .filterbar {
   position: sticky; top: 0; z-index: 10;

@@ -9,11 +9,12 @@
  * This fixes the earlier cache-first bug where users were stuck on a stale version.
  * Bump CACHE_VERSION on each release so old caches are purged on activate.
  */
-const CACHE_VERSION = "loungelens-v6-2026-06-22-autoupdate";
+const CACHE_VERSION = "loungelens-v7-2026-06-22-cardart";
 const SHELL = [
   "./",
   "./index.html",
   "./styles.css",
+  "./brand.js",
   "./engine.js",
   "./selfcheck.js",
   "./profile.js",

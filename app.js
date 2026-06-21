@@ -2,6 +2,7 @@
 (function () {
   "use strict";
   const E = window.LL_ENGINE, CARDS = window.LL_CARDS, LOUNGES = window.LL_LOUNGES, META = window.LL_META, SELF = window.LL_SELF;
+  const BRAND = window.LL_BRAND;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -62,6 +63,33 @@
   const typeBadge = (c) => cardType(c) === "debit"
     ? `<span class="chip type-debit">DEBIT</span>`
     : `<span class="chip type-credit">CREDIT</span>`;
+
+  // ---- card-art: render a real mini credit-card visual (gradient + issuer
+  // badge + network mark + chip) instead of a plain text row. Pure string. ----
+  function cardArt(c, opts) {
+    opts = opts || {};
+    const ib = BRAND.issuerBrand(c.issuer);
+    const nb = BRAND.networkBrand(c.network);
+    const tier = BRAND.tierClass(c);
+    const lounge = c.domesticVisits === "unlimited" ? "∞" :
+      (Number(c.domesticVisits) || 0) > 0 ? (c.domesticVisits + "") : "";
+    const loungeTag = lounge
+      ? `<span class="ca-lounge">🛋 ${lounge}${c.domesticVisits === "unlimited" ? "" : "/" + (c.period || "yr").slice(0, 2)}</span>`
+      : "";
+    return `<div class="cardart ${tier} ${opts.small ? "ca-sm" : ""}" style="--ca1:${ib.c1};--ca2:${ib.c2};">
+      <div class="ca-sheen"></div>
+      <div class="ca-top">
+        <span class="ca-badge">${ib.short || BRAND.initials(c.issuer)}</span>
+        ${loungeTag}
+      </div>
+      <div class="ca-chip"></div>
+      <div class="ca-name">${c.name}</div>
+      <div class="ca-foot">
+        <span class="ca-issuer">${c.issuer}</span>
+        <span class="ca-net" style="background:${nb.grad};color:${nb.color};">${nb.label}</span>
+      </div>
+    </div>`;
+  }
   // render a row of external source links (official access apps + research bases).
   // Honest: these LINK OUT — the app can't grant access itself.
   const relDots = (n) => "●".repeat(n) + "○".repeat(5 - n);
@@ -468,13 +496,16 @@
         c.discontinued ? `<span class="chip bad">discontinued</span>` : "",
       ].filter(Boolean).join("");
       return `
-      <div class="card selectable ${picked ? "picked" : ""}" data-toggle="${c.id}">
-        <div class="card-head">
-          <div><div class="card-title">${typeBadge(c)} ${c.name} ${confBadge(c.confidence)}</div>
-          <div class="card-sub">${c.issuer} · ${netWord(c.network)} · ${c.feeNote}</div></div>
-          <span class="chip ${picked ? "good" : ""}">${picked ? "✓ added" : "tap to add"}</span>
+      <div class="card cardrow selectable ${picked ? "picked" : ""}" data-toggle="${c.id}">
+        ${cardArt(c, { small: true })}
+        <div class="cardrow-body">
+          <div class="card-head">
+            <div><div class="card-title">${typeBadge(c)} ${c.name} ${confBadge(c.confidence)}</div>
+            <div class="card-sub">${c.issuer} · ${netWord(c.network)} · ${c.feeNote}</div></div>
+            <span class="chip ${picked ? "good" : ""}">${picked ? "✓ added" : "tap to add"}</span>
+          </div>
+          <div class="row">${tags}</div>
         </div>
-        <div class="row">${tags}</div>
       </div>`;
     }).join("") || `<div class="empty">No cards match these filters. <span class="link" id="add-clearfilters">Clear filters</span></div>`;
 

@@ -30,6 +30,7 @@ js_files = [
     "data/lounges.js",
     "data/meta.js",
     "data/sources.js",
+    "brand.js",
     "engine.js",
     "selfcheck.js",
     "profile.js",
