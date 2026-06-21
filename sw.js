@@ -9,7 +9,7 @@
  * This fixes the earlier cache-first bug where users were stuck on a stale version.
  * Bump CACHE_VERSION on each release so old caches are purged on activate.
  */
-const CACHE_VERSION = "loungelens-v5-2026-06-22-fintechdark";
+const CACHE_VERSION = "loungelens-v6-2026-06-22-autoupdate";
 const SHELL = [
   "./",
   "./index.html",
@@ -37,11 +37,17 @@ self.addEventListener("install", (e) => {
 });
 
 self.addEventListener("activate", (e) => {
-  // delete every old cache version so stale files can't survive a release
+  // delete every old cache version so stale files can't survive a release,
+  // take control of open pages, then TELL them a new version is live so they
+  // reload once on their own (fixes the "old design until manual refresh" bug).
   e.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
+      )
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: "window" }))
+      .then((clients) => clients.forEach((c) => c.postMessage({ type: "sw-updated", version: CACHE_VERSION })))
   );
 });
 

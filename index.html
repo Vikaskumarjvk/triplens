@@ -348,16 +348,23 @@
     // PWA: register service worker for offline + installability.
     // Guarded so it never breaks when opened via file:// (SW needs http/https).
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      let reloaded = false;
+      const reloadOnce = () => { if (reloaded) return; reloaded = true; window.location.reload(); };
+      // a fresh SW reaches activate -> claims this page -> posts "sw-updated".
+      // we reload once so the new version applies WITHOUT a manual refresh, even
+      // when a controller already existed (the case controllerchange misses).
+      navigator.serviceWorker.addEventListener("message", (e) => {
+        if (e.data && e.data.type === "sw-updated") reloadOnce();
+      });
+      navigator.serviceWorker.addEventListener("controllerchange", reloadOnce);
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("sw.js").then((reg) => {
-          // when a new SW takes over (new version shipped), reload once so the
-          // user sees the latest automatically — no manual refresh needed.
-          let reloaded = false;
-          navigator.serviceWorker.addEventListener("controllerchange", () => {
-            if (reloaded) return;
-            reloaded = true;
-            window.location.reload();
+          // if a new worker is found, ask it to activate immediately
+          const nudge = (w) => w && w.addEventListener("statechange", () => {
+            if (w.state === "installed" && navigator.serviceWorker.controller) w.postMessage("skipWaiting");
           });
+          if (reg.waiting && navigator.serviceWorker.controller) reg.waiting.postMessage("skipWaiting");
+          reg.addEventListener("updatefound", () => nudge(reg.installing));
           // check for updates on each load + every 60s while open
           reg.update();
           setInterval(() => reg.update(), 60000);
