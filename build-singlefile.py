@@ -35,6 +35,7 @@ js_files = [
     "profile.js",
     "auth.js",
     "suggest.js",
+    "cloud.js",
     "app.js",
 ]
 

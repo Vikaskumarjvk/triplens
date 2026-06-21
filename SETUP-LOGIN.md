@@ -47,9 +47,21 @@ one is present. You just provide it once:
      appId: "…" // paste your real values from step 4
    };
    ```
-6. Add `<script src="firebase-config.js"></script>` in index.html just before `cloud.js`,
-   and tell me — I'll wire `cloud.js` to use it (the adapter is stubbed and ready).
+6. Add `<script src="firebase-config.js"></script>` in index.html on the line just
+   ABOVE `<script src="cloud.js"></script>`. That's the only wiring needed —
+   `cloud.js` is already built and integrated into the login flow (it auto-detects
+   the config, loads the Firebase SDK, and the login modal switches from
+   username+PIN to email+password automatically).
 7. Re-deploy (push, or drag to Netlify). Done — login now syncs across devices.
+
+### Status of the cloud adapter (honest)
+- `cloud.js` is **built, integrated, and tested in its no-config state** (verified inert
+  + device login unaffected). The login modal, save-on-change, load-on-login, and
+  logout all already branch to cloud when `window.LL_CLOUD.available` is true.
+- The **live cloud round-trip** (real sign-up → Firestore write → sign-in on another
+  device → read back) can only be verified once YOUR Firebase project exists, because
+  it needs real credentials. After step 6-7, do one test: sign up on your laptop, add a
+  card, then sign in with the same email on your phone — the card should appear.
 
 ### Honest notes
 - The Firebase **apiKey is safe to expose** in client code (it's an identifier, not a secret);

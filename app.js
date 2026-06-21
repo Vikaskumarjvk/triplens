@@ -614,10 +614,30 @@
   ["#val-trips", "#val-worth"].forEach((s) => { const el = $(s); if (el) el.oninput = renderValue; });
 
   // ============================ LOGIN / LOGOUT ============================
-  // CLOUD adapter: only active if window.LL_FIREBASE config is present AND the
-  // firebase SDK loaded. Until then we run DEVICE mode and say so honestly.
+  // CLOUD adapter: active only if window.LL_FIREBASE config is present AND the
+  // firebase SDK loaded (window.LL_CLOUD.available). Until then we run DEVICE mode.
+  const CLOUD = window.LL_CLOUD || null;
   const cloudConfigured = !!(window.LL_FIREBASE && window.LL_FIREBASE.apiKey);
-  function cloudSync() { /* wired in cloud.js when config provided; device mode = no-op */ }
+  let cloudUser = null; // Firebase user object when signed into cloud
+  function cloudActive() { return CLOUD && CLOUD.available && cloudUser; }
+  // push current state to the cloud for the signed-in user (fire-and-forget).
+  function cloudSync() {
+    if (cloudActive()) {
+      try { CLOUD.save(cloudUser.uid, state).catch(() => {}); } catch (e) { /* ignore */ }
+    }
+  }
+  // if cloud is configured, restore an existing cloud session on load
+  if (CLOUD && cloudConfigured) {
+    CLOUD.onUser(async (u) => {
+      if (u) {
+        cloudUser = u;
+        const remote = await CLOUD.load(u.uid).catch(() => null);
+        if (remote) { state = remote; }
+        activeUser = u.email || "cloud";
+        render(); renderAuthBar();
+      }
+    }).catch(() => {});
+  }
 
   let signupMode = false;
   function renderAuthBar() {
@@ -642,9 +662,20 @@
     $("#login-switch").innerHTML = signupMode
       ? `Already have a profile? <span class="link" id="to-login">Log in</span>`
       : `New here? <span class="link" id="to-signup">Create a profile</span>`;
-    $("#login-cloud-note").textContent = cloudConfigured
-      ? "Cloud sync is on — your profile follows you across devices."
+    const cloudOn = !!(CLOUD && CLOUD.available);
+    $("#login-cloud-note").textContent = cloudOn
+      ? "☁️ Cloud sync is on — your profile follows you across all your devices."
       : "Saved on this device. To sync across devices, use Profile → sync code, or the owner can enable free cloud login (see SETUP-LOGIN.md).";
+    // when cloud is on, fields become email + password; otherwise username + PIN
+    if (cloudOn) {
+      $("#login-user").placeholder = "Email";
+      $("#login-user").type = "email";
+      $("#login-pin").placeholder = "Password (6+ chars)";
+    } else {
+      $("#login-user").placeholder = "Username";
+      $("#login-user").type = "text";
+      $("#login-pin").placeholder = "PIN (4+ digits)";
+    }
     $("#login-error").hidden = true;
     $("#login-user").value = ""; $("#login-pin").value = "";
     $("#login-modal").hidden = false;
@@ -663,6 +694,34 @@
     const u = $("#login-user").value.trim();
     const pin = $("#login-pin").value.trim();
     if (!u) { loginError("Enter a username."); return; }
+    // ---- CLOUD path (Firebase email/password) when configured ----
+    if (CLOUD && CLOUD.available) {
+      const email = u, pwd = pin;
+      const after = async (userPromise) => {
+        try {
+          const user = await userPromise;
+          cloudUser = user;
+          activeUser = user.email || "cloud";
+          if (signupMode) {
+            // new cloud account: seed + push
+            const seed = blank(); seed.profileName = email.split("@")[0]; seed.onboarded = true;
+            state = seed;
+            await CLOUD.save(user.uid, state);
+          } else {
+            const remote = await CLOUD.load(user.uid);
+            state = remote || blank();
+          }
+          $("#login-modal").hidden = true;
+          render(); renderAuthBar();
+          toast(signupMode ? "Cloud account created. Synced." : "Logged in. Synced from cloud.");
+        } catch (e) {
+          loginError((e && e.message ? e.message : "Cloud login failed.").replace(/Firebase:\s*/i, ""));
+        }
+      };
+      after(signupMode ? CLOUD.signUp(email, pwd) : CLOUD.signIn(email, pwd));
+      return;
+    }
+    // ---- DEVICE path (local username + PIN) ----
     if (signupMode) {
       try {
         // new profile starts from a fresh blank state (or current device state if empty)
@@ -689,6 +748,7 @@
   };
   if ($("#logout-btn")) $("#logout-btn").onclick = () => {
     save(); // persist current state to the account before leaving
+    if (cloudActive()) { try { CLOUD.signOut(); } catch (e) { /* ignore */ } cloudUser = null; }
     activeUser = null;
     localStorage.removeItem(SESSION_KEY);
     state = blank(); // logged-out view starts clean (data is safe in the account)
