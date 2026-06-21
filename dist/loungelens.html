@@ -251,6 +251,11 @@ body.simple-mode .src-link .rel { display: none; }
 .val-verdict.bad .val-net { color: var(--bad); }
 .val-tag { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--dim); }
 
+/* suggest form */
+.suggest-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.suggest-form .leg-input { flex: 1; min-width: 140px; }
+.suggest-form .cmp-select { flex: 0 0 auto; width: auto; }
+
 /* auth bar + login */
 .auth-bar { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
 #auth-name { font-size: 13px; font-weight: 600; color: var(--accent); }
@@ -431,6 +436,20 @@ body.simple-mode .src-link .rel { display: none; }
         <button class="act ghost mini" id="import-data">⬆️ Import a file</button>
         <input type="file" id="import-file" accept="application/json" style="display:none;" />
       </div>
+
+      <div class="section-h">➕ Suggest a missing lounge or card</div>
+      <p class="card-sub" style="margin-bottom:8px;">Spotted a lounge or card we don't list? Add it. It shows in your app right away and you can export it to share so it gets verified into the main data.</p>
+      <div class="suggest-form">
+        <select id="sug-kind" class="cmp-select">
+          <option value="lounge">🛋️ Lounge</option>
+          <option value="card">💳 Card</option>
+        </select>
+        <input id="sug-name" class="leg-input" placeholder="Name (e.g. Indore Domestic Lounge)" />
+        <input id="sug-where" class="leg-input" placeholder="City (lounge) or issuer (card)" />
+        <input id="sug-note" class="leg-input" placeholder="Optional note (terminal, which card works…)" />
+        <button class="act mini" id="sug-add">Add suggestion</button>
+      </div>
+      <div id="sug-list"></div>
 
       <div class="section-h">🪜 The roadmap to real-time (honest)</div>
       <div id="roadmap"></div>
@@ -1221,6 +1240,104 @@ window.LL_LOUNGES = [
     programs: ["payperuse", "dreamfolks", "rupay"], confidence: "low", notes: "", verify: "" },
   { id: "rail-adi", name: "Ahmedabad Executive Lounge", station: "ADI", city: "Ahmedabad", type: "railway", area: "domestic",
     programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+
+  // ============================================================
+  // ====  EXPANDED COVERAGE (2026-06-22) — tier-2/3 airports  ===
+  // ============================================================
+  // HONEST: these are airports/stations known to have (or have had) a lounge.
+  // Operators + card-program access at smaller airports change often and are
+  // single-source, so most are confidence "low". Verify before relying. Many
+  // tier-2 lounges are DreamFolks/Priority Pass via bank cards or pay-per-use.
+
+  // ---- North ----
+  { id: "ixc-extra", name: "Chandigarh Lounge (intl wing)", airport: "IXC", terminal: "Intl", city: "Chandigarh", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "atq-amritsar", name: "Amritsar Domestic Lounge", airport: "ATQ", terminal: "Main", city: "Amritsar", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "Confirm operating." },
+  { id: "sxr-srinagar", name: "Srinagar Domestic Lounge", airport: "SXR", terminal: "Main", city: "Srinagar", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "Security-heavy airport; lounge access may be limited.", verify: "" },
+  { id: "ded-dehradun", name: "Dehradun Domestic Lounge", airport: "DED", terminal: "Main", city: "Dehradun", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "vns-varanasi", name: "Varanasi Domestic Lounge", airport: "VNS", terminal: "Main", city: "Varanasi", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+
+  // ---- West ----
+  { id: "stv-surat", name: "Surat Domestic Lounge", airport: "STV", terminal: "Main", city: "Surat", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "udr-udaipur", name: "Udaipur Domestic Lounge", airport: "UDR", terminal: "Main", city: "Udaipur", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "idr-indore", name: "Indore Domestic Lounge", airport: "IDR", terminal: "Main", city: "Indore", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "nag-nagpur", name: "Nagpur Domestic Lounge", airport: "NAG", terminal: "Main", city: "Nagpur", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "bdq-vadodara", name: "Vadodara Domestic Lounge", airport: "BDQ", terminal: "Main", city: "Vadodara", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "raj-rajkot", name: "Rajkot (Hirasar) Lounge", airport: "HSR", terminal: "Main", city: "Rajkot", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "New Hirasar airport.", verify: "" },
+
+  // ---- South ----
+  { id: "cjb-coimbatore", name: "Coimbatore Domestic Lounge", airport: "CJB", terminal: "Main", city: "Coimbatore", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "trv-trivandrum", name: "Trivandrum Domestic Lounge", airport: "TRV", terminal: "Domestic", city: "Thiruvananthapuram", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "ccj-calicut", name: "Calicut (Kozhikode) Lounge", airport: "CCJ", terminal: "Main", city: "Kozhikode", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "vga-vijayawada", name: "Vijayawada Domestic Lounge", airport: "VGA", terminal: "Main", city: "Vijayawada", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "ixm-madurai", name: "Madurai Domestic Lounge", airport: "IXM", terminal: "Main", city: "Madurai", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "ixe-mangalore", name: "Mangaluru Domestic Lounge", airport: "IXE", terminal: "Main", city: "Mangaluru", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "Adani-operated.", verify: "" },
+  { id: "trz-trichy", name: "Tiruchirappalli Lounge", airport: "TRZ", terminal: "Main", city: "Tiruchirappalli", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "hbx-hubli", name: "Hubballi Domestic Lounge", airport: "HBX", terminal: "Main", city: "Hubballi", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "Confirm operating." },
+
+  // ---- East / Northeast ----
+  { id: "pat-patna", name: "Patna Domestic Lounge", airport: "PAT", terminal: "Main", city: "Patna", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "rpr-raipur", name: "Raipur Domestic Lounge", airport: "RPR", terminal: "Main", city: "Raipur", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "ixr-ranchi", name: "Ranchi Domestic Lounge", airport: "IXR", terminal: "Main", city: "Ranchi", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "guw-guwahati", name: "Guwahati Domestic Lounge", airport: "GAU", terminal: "Main", city: "Guwahati", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "Adani-operated.", verify: "" },
+  { id: "ixb-bagdogra", name: "Bagdogra Domestic Lounge", airport: "IXB", terminal: "Main", city: "Bagdogra", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "imf-imphal", name: "Imphal Domestic Lounge", airport: "IMF", terminal: "Main", city: "Imphal", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "Confirm operating." },
+  { id: "ixz-portblair", name: "Port Blair Domestic Lounge", airport: "IXZ", terminal: "Main", city: "Port Blair", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "Confirm operating." },
+  { id: "bbi-extra", name: "Bhubaneswar Lounge (2nd)", airport: "BBI", terminal: "T2", city: "Bhubaneswar", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+
+  // ============================================================
+  // ====  EXPANDED RAILWAY LOUNGES (IRCTC executive lounges)  ===
+  // ============================================================
+  { id: "rail-sdah", name: "Sealdah Executive Lounge", station: "SDAH", city: "Kolkata", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks", "rupay"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-bsb", name: "Varanasi Executive Lounge", station: "BSB", city: "Varanasi", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-agc", name: "Agra Cantt Executive Lounge", station: "AGC", city: "Agra", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-jp", name: "Jaipur Executive Lounge", station: "JP", city: "Jaipur", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks", "rupay"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-cnb", name: "Kanpur Executive Lounge", station: "CNB", city: "Kanpur", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-lko", name: "Lucknow Executive Lounge", station: "LKO", city: "Lucknow", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-bpl", name: "Bhopal Executive Lounge", station: "BPL", city: "Bhopal", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-bct", name: "Mumbai Central Executive Lounge", station: "BCT", city: "Mumbai", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-pune", name: "Pune Executive Lounge", station: "PUNE", city: "Pune", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-sc-extra", name: "Hyderabad Decan Lounge", station: "HYB", city: "Hyderabad", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "Confirm operating at HYB vs SC." },
+  { id: "rail-bbs", name: "Bhubaneswar Executive Lounge", station: "BBS", city: "Bhubaneswar", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-ndls-2", name: "New Delhi Lounge (Ajmeri Gate side)", station: "NDLS", city: "New Delhi", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks", "rupay"], confidence: "low", notes: "Second lounge, other side of NDLS.", verify: "" },
 ];
 
 </script>
@@ -2026,11 +2143,76 @@ window.LL_SOURCE_LINKS = {
 
 </script>
   <script>
+/*
+ * LoungeLens — user suggestions (crowdsource missing lounges/cards).
+ *
+ * HONEST MODEL: no server, so suggestions are stored locally and can be EXPORTED
+ * as a file the user shares (with the maintainer or friends). The maintainer folds
+ * good ones into the seed data each refresh. This crowdsources completeness without
+ * a backend. Suggestions also immediately appear in the user's OWN app (as
+ * "pending, your addition") so they get value right away.
+ *
+ * A suggestion: { id, kind: "lounge"|"card", name, city/issuer, note, ts }
+ * Pure validation + merge helpers. Node-testable.
+ */
+(function (root) {
+  "use strict";
+
+  function validate(s) {
+    if (!s || typeof s !== "object") return { ok: false, reason: "empty" };
+    if (s.kind !== "lounge" && s.kind !== "card") return { ok: false, reason: "kind must be lounge or card" };
+    if (!s.name || !String(s.name).trim()) return { ok: false, reason: "name required" };
+    return { ok: true };
+  }
+
+  // build a normalized suggestion record (caller supplies ts to keep it pure)
+  function make(kind, name, where, note, ts) {
+    return {
+      id: "sug-" + (ts || 0) + "-" + (name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 24),
+      kind,
+      name: String(name || "").trim(),
+      where: String(where || "").trim(),   // city for lounge, issuer for card
+      note: String(note || "").trim(),
+      ts: ts || 0,
+      status: "pending",
+    };
+  }
+
+  function add(list, suggestion) {
+    const v = validate(suggestion);
+    if (!v.ok) throw new Error(v.reason);
+    list = Array.isArray(list) ? list.slice() : [];
+    // dedupe on id
+    if (!list.some((x) => x.id === suggestion.id)) list.push(suggestion);
+    return list;
+  }
+
+  // turn a user's lounge suggestion into a real (low-confidence, pending) lounge
+  // record so it shows in their own app immediately.
+  function asPendingLounge(s) {
+    if (s.kind !== "lounge") return null;
+    return {
+      id: s.id, name: s.name, city: s.where || "Unknown", code: "??",
+      airport: "??", station: "??", type: "airport", area: "domestic",
+      programs: ["dreamfolks"], confidence: "low",
+      notes: "Your suggestion (pending verification). " + (s.note || ""),
+      verify: "You added this — confirm at the airport / share it so it can be verified.",
+      pending: true,
+    };
+  }
+
+  const Suggest = { validate, make, add, asPendingLounge };
+  if (typeof module !== "undefined" && module.exports) module.exports = Suggest;
+  root.LL_SUGGEST = Suggest;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+  <script>
 /* LoungeLens app controller — DOM glue over LL_ENGINE. Simple + Advanced modes. */
 (function () {
   "use strict";
   const E = window.LL_ENGINE, CARDS = window.LL_CARDS, LOUNGES = window.LL_LOUNGES, META = window.LL_META, SELF = window.LL_SELF;
-  const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH;
+  const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const NOW = new Date();
@@ -2044,7 +2226,7 @@ window.LL_SOURCE_LINKS = {
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "" }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [] }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -2771,6 +2953,34 @@ window.LL_SOURCE_LINKS = {
     r.readAsText(file); e.target.value = "";
   };
 
+  // ============================ SUGGESTIONS ===============================
+  function renderSuggestions() {
+    if (!$("#sug-list")) return;
+    const list = state.suggestions || [];
+    if (!list.length) { $("#sug-list").innerHTML = ""; return; }
+    $("#sug-list").innerHTML = `<div class="card-sub" style="margin:8px 0;">Your suggestions (${list.length}) — <span class="link" id="sug-export">export to share</span>:</div>` +
+      list.map((s) => `<div class="lint-row"><span class="chip ${s.kind === "lounge" ? "rail" : ""}">${s.kind}</span> <b>${s.name}</b> ${s.where ? `<span class="card-sub">· ${s.where}</span>` : ""} ${s.note ? `<span class="card-sub">— ${s.note}</span>` : ""} <span class="link" data-sugdel="${s.id}">remove</span></div>`).join("");
+    const ex = $("#sug-export");
+    if (ex) ex.onclick = () => {
+      const blob = new Blob([JSON.stringify({ kind: "loungelens-suggestions", v: 1, suggestions: list }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "loungelens-suggestions.json"; a.click(); URL.revokeObjectURL(a.href);
+    };
+    $$("[data-sugdel]").forEach((b) => b.onclick = () => { state.suggestions = (state.suggestions || []).filter((x) => x.id !== b.dataset.sugdel); save(); render(); });
+  }
+  if ($("#sug-add")) $("#sug-add").onclick = () => {
+    const kind = $("#sug-kind").value, name = $("#sug-name").value, where = $("#sug-where").value, note = $("#sug-note").value;
+    if (!name.trim()) { toast("Give the lounge/card a name."); return; }
+    try {
+      const ts = Date.now();
+      const s = SUGGEST.make(kind, name, where, note, ts);
+      state.suggestions = SUGGEST.add(state.suggestions || [], s);
+      save();
+      $("#sug-name").value = ""; $("#sug-where").value = ""; $("#sug-note").value = "";
+      render();
+      toast("Added. It's in your app and ready to export/share.");
+    } catch (e) { toast(e.message); }
+  };
+
   // ---- onboarding (first run) -------------------------------------------
   function maybeOnboard() {
     if (state.onboarded) return;
@@ -2811,7 +3021,7 @@ window.LL_SOURCE_LINKS = {
   function render() {
     if (!state.experiences) state.experiences = []; // migrate older saved state
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
-    renderAirports(); renderCompare(); renderValue();
+    renderAirports(); renderCompare(); renderValue(); renderSuggestions();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
   }
 

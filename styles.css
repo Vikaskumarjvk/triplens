@@ -232,6 +232,11 @@ body.simple-mode .src-link .rel { display: none; }
 .val-verdict.bad .val-net { color: var(--bad); }
 .val-tag { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--dim); }
 
+/* suggest form */
+.suggest-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.suggest-form .leg-input { flex: 1; min-width: 140px; }
+.suggest-form .cmp-select { flex: 0 0 auto; width: auto; }
+
 /* auth bar + login */
 .auth-bar { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
 #auth-name { font-size: 13px; font-weight: 600; color: var(--accent); }

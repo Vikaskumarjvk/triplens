@@ -2,7 +2,7 @@
 (function () {
   "use strict";
   const E = window.LL_ENGINE, CARDS = window.LL_CARDS, LOUNGES = window.LL_LOUNGES, META = window.LL_META, SELF = window.LL_SELF;
-  const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH;
+  const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
   const NOW = new Date();
@@ -16,7 +16,7 @@
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "" }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [] }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -743,6 +743,34 @@
     r.readAsText(file); e.target.value = "";
   };
 
+  // ============================ SUGGESTIONS ===============================
+  function renderSuggestions() {
+    if (!$("#sug-list")) return;
+    const list = state.suggestions || [];
+    if (!list.length) { $("#sug-list").innerHTML = ""; return; }
+    $("#sug-list").innerHTML = `<div class="card-sub" style="margin:8px 0;">Your suggestions (${list.length}) — <span class="link" id="sug-export">export to share</span>:</div>` +
+      list.map((s) => `<div class="lint-row"><span class="chip ${s.kind === "lounge" ? "rail" : ""}">${s.kind}</span> <b>${s.name}</b> ${s.where ? `<span class="card-sub">· ${s.where}</span>` : ""} ${s.note ? `<span class="card-sub">— ${s.note}</span>` : ""} <span class="link" data-sugdel="${s.id}">remove</span></div>`).join("");
+    const ex = $("#sug-export");
+    if (ex) ex.onclick = () => {
+      const blob = new Blob([JSON.stringify({ kind: "loungelens-suggestions", v: 1, suggestions: list }, null, 2)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "loungelens-suggestions.json"; a.click(); URL.revokeObjectURL(a.href);
+    };
+    $$("[data-sugdel]").forEach((b) => b.onclick = () => { state.suggestions = (state.suggestions || []).filter((x) => x.id !== b.dataset.sugdel); save(); render(); });
+  }
+  if ($("#sug-add")) $("#sug-add").onclick = () => {
+    const kind = $("#sug-kind").value, name = $("#sug-name").value, where = $("#sug-where").value, note = $("#sug-note").value;
+    if (!name.trim()) { toast("Give the lounge/card a name."); return; }
+    try {
+      const ts = Date.now();
+      const s = SUGGEST.make(kind, name, where, note, ts);
+      state.suggestions = SUGGEST.add(state.suggestions || [], s);
+      save();
+      $("#sug-name").value = ""; $("#sug-where").value = ""; $("#sug-note").value = "";
+      render();
+      toast("Added. It's in your app and ready to export/share.");
+    } catch (e) { toast(e.message); }
+  };
+
   // ---- onboarding (first run) -------------------------------------------
   function maybeOnboard() {
     if (state.onboarded) return;
@@ -783,7 +811,7 @@
   function render() {
     if (!state.experiences) state.experiences = []; // migrate older saved state
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
-    renderAirports(); renderCompare(); renderValue();
+    renderAirports(); renderCompare(); renderValue(); renderSuggestions();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
   }
 

@@ -153,6 +153,20 @@
         <input type="file" id="import-file" accept="application/json" style="display:none;" />
       </div>
 
+      <div class="section-h">➕ Suggest a missing lounge or card</div>
+      <p class="card-sub" style="margin-bottom:8px;">Spotted a lounge or card we don't list? Add it. It shows in your app right away and you can export it to share so it gets verified into the main data.</p>
+      <div class="suggest-form">
+        <select id="sug-kind" class="cmp-select">
+          <option value="lounge">🛋️ Lounge</option>
+          <option value="card">💳 Card</option>
+        </select>
+        <input id="sug-name" class="leg-input" placeholder="Name (e.g. Indore Domestic Lounge)" />
+        <input id="sug-where" class="leg-input" placeholder="City (lounge) or issuer (card)" />
+        <input id="sug-note" class="leg-input" placeholder="Optional note (terminal, which card works…)" />
+        <button class="act mini" id="sug-add">Add suggestion</button>
+      </div>
+      <div id="sug-list"></div>
+
       <div class="section-h">🪜 The roadmap to real-time (honest)</div>
       <div id="roadmap"></div>
     </section>
@@ -321,13 +335,26 @@
   <script src="selfcheck.js"></script>
   <script src="profile.js"></script>
   <script src="auth.js"></script>
+  <script src="suggest.js"></script>
   <script src="app.js"></script>
   <script>
     // PWA: register service worker for offline + installability.
     // Guarded so it never breaks when opened via file:// (SW needs http/https).
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("sw.js").catch(() => {});
+        navigator.serviceWorker.register("sw.js").then((reg) => {
+          // when a new SW takes over (new version shipped), reload once so the
+          // user sees the latest automatically — no manual refresh needed.
+          let reloaded = false;
+          navigator.serviceWorker.addEventListener("controllerchange", () => {
+            if (reloaded) return;
+            reloaded = true;
+            window.location.reload();
+          });
+          // check for updates on each load + every 60s while open
+          reg.update();
+          setInterval(() => reg.update(), 60000);
+        }).catch(() => {});
       });
     }
     // Install button: capture the browser's install prompt, show our own button.

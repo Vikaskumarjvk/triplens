@@ -99,4 +99,102 @@ window.LL_LOUNGES = [
     programs: ["payperuse", "dreamfolks", "rupay"], confidence: "low", notes: "", verify: "" },
   { id: "rail-adi", name: "Ahmedabad Executive Lounge", station: "ADI", city: "Ahmedabad", type: "railway", area: "domestic",
     programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+
+  // ============================================================
+  // ====  EXPANDED COVERAGE (2026-06-22) — tier-2/3 airports  ===
+  // ============================================================
+  // HONEST: these are airports/stations known to have (or have had) a lounge.
+  // Operators + card-program access at smaller airports change often and are
+  // single-source, so most are confidence "low". Verify before relying. Many
+  // tier-2 lounges are DreamFolks/Priority Pass via bank cards or pay-per-use.
+
+  // ---- North ----
+  { id: "ixc-extra", name: "Chandigarh Lounge (intl wing)", airport: "IXC", terminal: "Intl", city: "Chandigarh", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "atq-amritsar", name: "Amritsar Domestic Lounge", airport: "ATQ", terminal: "Main", city: "Amritsar", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "Confirm operating." },
+  { id: "sxr-srinagar", name: "Srinagar Domestic Lounge", airport: "SXR", terminal: "Main", city: "Srinagar", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "Security-heavy airport; lounge access may be limited.", verify: "" },
+  { id: "ded-dehradun", name: "Dehradun Domestic Lounge", airport: "DED", terminal: "Main", city: "Dehradun", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "vns-varanasi", name: "Varanasi Domestic Lounge", airport: "VNS", terminal: "Main", city: "Varanasi", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+
+  // ---- West ----
+  { id: "stv-surat", name: "Surat Domestic Lounge", airport: "STV", terminal: "Main", city: "Surat", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "udr-udaipur", name: "Udaipur Domestic Lounge", airport: "UDR", terminal: "Main", city: "Udaipur", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "idr-indore", name: "Indore Domestic Lounge", airport: "IDR", terminal: "Main", city: "Indore", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "nag-nagpur", name: "Nagpur Domestic Lounge", airport: "NAG", terminal: "Main", city: "Nagpur", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "bdq-vadodara", name: "Vadodara Domestic Lounge", airport: "BDQ", terminal: "Main", city: "Vadodara", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "raj-rajkot", name: "Rajkot (Hirasar) Lounge", airport: "HSR", terminal: "Main", city: "Rajkot", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "New Hirasar airport.", verify: "" },
+
+  // ---- South ----
+  { id: "cjb-coimbatore", name: "Coimbatore Domestic Lounge", airport: "CJB", terminal: "Main", city: "Coimbatore", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "trv-trivandrum", name: "Trivandrum Domestic Lounge", airport: "TRV", terminal: "Domestic", city: "Thiruvananthapuram", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "ccj-calicut", name: "Calicut (Kozhikode) Lounge", airport: "CCJ", terminal: "Main", city: "Kozhikode", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "vga-vijayawada", name: "Vijayawada Domestic Lounge", airport: "VGA", terminal: "Main", city: "Vijayawada", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "ixm-madurai", name: "Madurai Domestic Lounge", airport: "IXM", terminal: "Main", city: "Madurai", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "ixe-mangalore", name: "Mangaluru Domestic Lounge", airport: "IXE", terminal: "Main", city: "Mangaluru", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "Adani-operated.", verify: "" },
+  { id: "trz-trichy", name: "Tiruchirappalli Lounge", airport: "TRZ", terminal: "Main", city: "Tiruchirappalli", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "hbx-hubli", name: "Hubballi Domestic Lounge", airport: "HBX", terminal: "Main", city: "Hubballi", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "Confirm operating." },
+
+  // ---- East / Northeast ----
+  { id: "pat-patna", name: "Patna Domestic Lounge", airport: "PAT", terminal: "Main", city: "Patna", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+  { id: "rpr-raipur", name: "Raipur Domestic Lounge", airport: "RPR", terminal: "Main", city: "Raipur", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "ixr-ranchi", name: "Ranchi Domestic Lounge", airport: "IXR", terminal: "Main", city: "Ranchi", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "guw-guwahati", name: "Guwahati Domestic Lounge", airport: "GAU", terminal: "Main", city: "Guwahati", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "Adani-operated.", verify: "" },
+  { id: "ixb-bagdogra", name: "Bagdogra Domestic Lounge", airport: "IXB", terminal: "Main", city: "Bagdogra", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "imf-imphal", name: "Imphal Domestic Lounge", airport: "IMF", terminal: "Main", city: "Imphal", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "Confirm operating." },
+  { id: "ixz-portblair", name: "Port Blair Domestic Lounge", airport: "IXZ", terminal: "Main", city: "Port Blair", type: "airport", area: "domestic",
+    programs: ["dreamfolks"], confidence: "low", notes: "", verify: "Confirm operating." },
+  { id: "bbi-extra", name: "Bhubaneswar Lounge (2nd)", airport: "BBI", terminal: "T2", city: "Bhubaneswar", type: "airport", area: "domestic",
+    programs: ["dreamfolks", "priority"], confidence: "low", notes: "", verify: "" },
+
+  // ============================================================
+  // ====  EXPANDED RAILWAY LOUNGES (IRCTC executive lounges)  ===
+  // ============================================================
+  { id: "rail-sdah", name: "Sealdah Executive Lounge", station: "SDAH", city: "Kolkata", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks", "rupay"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-bsb", name: "Varanasi Executive Lounge", station: "BSB", city: "Varanasi", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-agc", name: "Agra Cantt Executive Lounge", station: "AGC", city: "Agra", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-jp", name: "Jaipur Executive Lounge", station: "JP", city: "Jaipur", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks", "rupay"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-cnb", name: "Kanpur Executive Lounge", station: "CNB", city: "Kanpur", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-lko", name: "Lucknow Executive Lounge", station: "LKO", city: "Lucknow", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-bpl", name: "Bhopal Executive Lounge", station: "BPL", city: "Bhopal", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-bct", name: "Mumbai Central Executive Lounge", station: "BCT", city: "Mumbai", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-pune", name: "Pune Executive Lounge", station: "PUNE", city: "Pune", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-sc-extra", name: "Hyderabad Decan Lounge", station: "HYB", city: "Hyderabad", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "Confirm operating at HYB vs SC." },
+  { id: "rail-bbs", name: "Bhubaneswar Executive Lounge", station: "BBS", city: "Bhubaneswar", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks"], confidence: "low", notes: "", verify: "" },
+  { id: "rail-ndls-2", name: "New Delhi Lounge (Ajmeri Gate side)", station: "NDLS", city: "New Delhi", type: "railway", area: "domestic",
+    programs: ["payperuse", "dreamfolks", "rupay"], confidence: "low", notes: "Second lounge, other side of NDLS.", verify: "" },
 ];

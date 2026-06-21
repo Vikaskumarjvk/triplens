@@ -34,6 +34,7 @@ js_files = [
     "selfcheck.js",
     "profile.js",
     "auth.js",
+    "suggest.js",
     "app.js",
 ]
 
@@ -65,7 +66,7 @@ for rel in js_files:
     # use a replacement FUNCTION so backslashes in JS (e.g. regex \s) are inserted
     # literally and never interpreted as re replacement-template escapes.
     replacement = "<script>\n" + code + "\n</script>"
-    html = pattern.sub(lambda _m: replacement, html)
+    html = pattern.sub(lambda _m, r=replacement: r, html)
 
 # 5. sanity: no remaining external src= local script/style refs
 leftovers = re.findall(r'(?:src|href)="(?!data:|https?:|#)([^"]+)"', html)

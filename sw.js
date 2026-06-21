@@ -1,34 +1,43 @@
 /*
- * LoungeLens service worker — offline support.
+ * LoungeLens service worker — offline support, NETWORK-FIRST.
  *
- * Strategy: cache-first for the app shell (HTML/CSS/JS/data). The app is fully
- * static and self-contained, so once cached it works with NO internet — important
- * at an airport on bad wifi. Bump CACHE_VERSION whenever shell files change so
- * users get the update on next load.
+ * Strategy: NETWORK-FIRST with cache fallback. Every load tries the network first,
+ * so users ALWAYS get the latest version automatically (no hard-refresh, no
+ * ?cachebust needed). If the network is unavailable (airport on bad wifi), it
+ * falls back to the last-cached copy so the app still works offline.
+ *
+ * This fixes the earlier cache-first bug where users were stuck on a stale version.
+ * Bump CACHE_VERSION on each release so old caches are purged on activate.
  */
-const CACHE_VERSION = "loungelens-v2-2026-06-21b";
+const CACHE_VERSION = "loungelens-v3-2026-06-22";
 const SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./engine.js",
   "./selfcheck.js",
+  "./profile.js",
+  "./auth.js",
+  "./suggest.js",
   "./app.js",
   "./data/cards.js",
   "./data/lounges.js",
   "./data/meta.js",
+  "./data/sources.js",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
 ];
 
 self.addEventListener("install", (e) => {
+  // pre-cache the shell, then activate immediately
   e.waitUntil(
     caches.open(CACHE_VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener("activate", (e) => {
+  // delete every old cache version so stale files can't survive a release
   e.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
@@ -39,19 +48,22 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
+  if (new URL(req.url).origin !== self.location.origin) return; // don't touch cross-origin
+  // NETWORK-FIRST: try fresh, update cache, fall back to cache when offline.
   e.respondWith(
-    caches.match(req).then((hit) => {
-      if (hit) return hit;
-      return fetch(req)
-        .then((res) => {
-          // cache same-origin successful responses for next time
-          if (res && res.status === 200 && new URL(req.url).origin === self.location.origin) {
-            const copy = res.clone();
-            caches.open(CACHE_VERSION).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => caches.match("./index.html")); // offline fallback to shell
-    })
+    fetch(req)
+      .then((res) => {
+        if (res && res.status === 200) {
+          const copy = res.clone();
+          caches.open(CACHE_VERSION).then((c) => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(req).then((hit) => hit || caches.match("./index.html")))
   );
+});
+
+// let the page tell us to activate a waiting SW immediately
+self.addEventListener("message", (e) => {
+  if (e.data === "skipWaiting") self.skipWaiting();
 });
