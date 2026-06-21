@@ -196,6 +196,42 @@ button.act.big { width: 100%; padding: 13px; font-size: 16px; margin-top: 8px; b
 .src-link .rel { font-size: 8px; color: var(--accent); letter-spacing: -1px; }
 body.simple-mode .src-link .rel { display: none; }
 
+/* airports view */
+.ap-group { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.ap-group.has-open { border-left: 3px solid var(--good); }
+.ap-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ap-code { font-size: 17px; font-weight: 800; letter-spacing: .5px; }
+.ap-lounge { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 7px 0; border-top: 1px solid var(--line); }
+.ap-lounge:first-of-type { border-top: none; }
+
+/* compare view */
+.compare-pick { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.cmp-select { flex: 1; min-width: 150px; background: var(--panel); border: 1px solid var(--line);
+  color: var(--txt); padding: 10px; border-radius: 9px; font-size: 14px; }
+.vs { font-weight: 800; color: var(--dim); }
+.cmp-table { width: 100%; border-collapse: collapse; margin-top: 12px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.cmp-table th, .cmp-table td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--line); font-size: 14px; }
+.cmp-table th { background: var(--panel2); font-size: 13px; }
+.cmp-table .cmp-label { color: var(--dim); font-size: 13px; }
+.cmp-table td.win { color: var(--good); font-weight: 700; background: #0f2e1a; }
+
+/* value view */
+.value-inputs { display: flex; gap: 14px; flex-wrap: wrap; }
+.value-inputs label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--dim); }
+.value-inputs input { background: var(--panel2); border: 1px solid var(--line); color: var(--txt);
+  padding: 9px 11px; border-radius: 8px; font-size: 15px; width: 150px; }
+.val-row { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; margin-bottom: 8px; }
+.val-row.good { border-left: 3px solid var(--good); }
+.val-row.bad { border-left: 3px solid var(--bad); opacity: .82; }
+.val-verdict { text-align: right; min-width: 90px; }
+.val-net { font-size: 17px; font-weight: 800; }
+.val-verdict.good .val-net { color: var(--good); }
+.val-verdict.bad .val-net { color: var(--bad); }
+.val-tag { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--dim); }
+
 /* auth bar + login */
 .auth-bar { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
 #auth-name { font-size: 13px; font-weight: 600; color: var(--accent); }

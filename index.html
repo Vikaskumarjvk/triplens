@@ -39,8 +39,11 @@
     <nav>
       <button data-view="trip" class="active">✈️ Plan a Trip</button>
       <button data-view="wallet">💳 My Cards</button>
+      <button data-view="airports">🛫 Airports</button>
       <button data-view="lounges">🛋️ All Lounges</button>
       <button data-view="recommend">⭐ Get a Card</button>
+      <button data-view="compare">⚖️ Compare</button>
+      <button data-view="value">🧮 Worth It?</button>
       <button data-view="addcard">➕ Add Cards</button>
       <button data-view="health">🩺 Data Health</button>
       <button data-view="profile">👤 Profile / Sync</button>
@@ -152,6 +155,51 @@
 
       <div class="section-h">🪜 The roadmap to real-time (honest)</div>
       <div id="roadmap"></div>
+    </section>
+
+    <!-- AIRPORTS (card-aware lounge finder, beats LoungeBuddy/Priority Pass) -->
+    <section id="view-airports" class="view">
+      <div class="hero">
+        <h2>Lounges by airport &amp; station</h2>
+        <p>Pick a place. See every lounge there and which of your cards walks you in. Unlike other finders, this one knows your wallet.</p>
+      </div>
+      <div class="filters">
+        <input id="airport-search" placeholder="Search airport / station / city…" />
+        <select id="airport-type">
+          <option value="">All</option>
+          <option value="airport">🛫 Airports</option>
+          <option value="railway">🚆 Stations</option>
+        </select>
+      </div>
+      <div id="airport-list"></div>
+    </section>
+
+    <!-- COMPARE (head-to-head, beats aggregator tables) -->
+    <section id="view-compare" class="view">
+      <div class="hero">
+        <h2>Compare two cards</h2>
+        <p>Pick two. See who wins on lounge coverage, visits, ease, spend gates and railway — head to head.</p>
+      </div>
+      <div class="compare-pick">
+        <select id="compare-a" class="cmp-select"></select>
+        <span class="vs">vs</span>
+        <select id="compare-b" class="cmp-select"></select>
+      </div>
+      <div id="compare-result"></div>
+    </section>
+
+    <!-- VALUE CALCULATOR (novel — no competitor has this) -->
+    <section id="view-value" class="view">
+      <div class="hero">
+        <h2>Is the fee worth it?</h2>
+        <p>Tell me how often you fly and what a lounge is worth to you. I'll tell you if a card's fee pays for itself — for every card.</p>
+      </div>
+      <div class="value-inputs">
+        <label>Trips per year <input id="val-trips" type="number" min="0" value="12" /></label>
+        <label>A lounge visit is worth (₹) <input id="val-worth" type="number" min="0" value="1200" /></label>
+      </div>
+      <p class="card-sub" style="margin:6px 0 12px;">A lounge visit is usually worth ₹800-₹2000 to most people (food + a quiet seat + wifi). Adjust to your taste.</p>
+      <div id="value-list"></div>
     </section>
 
     <!-- PROFILE / SYNC (free serverless "login") -->

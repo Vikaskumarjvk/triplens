@@ -492,6 +492,115 @@
     e.target.value = "";
   };
 
+  // ============================ AIRPORTS VIEW =============================
+  function renderAirports() {
+    if (!$("#airport-list")) return;
+    const q = ($("#airport-search").value || "").toLowerCase();
+    const type = $("#airport-type").value;
+    let groups = E.airports(LOUNGES, state.wallet, CARDS, state.visitLog, state.spend, NOW);
+    if (type) groups = groups.filter((g) => g.type === type);
+    groups = groups.filter((g) => `${g.code} ${g.city}`.toLowerCase().includes(q));
+    if (!groups.length) { $("#airport-list").innerHTML = `<div class="empty">No airports/stations match.</div>`; return; }
+
+    $("#airport-list").innerHTML = groups.map((g) => {
+      const icon = g.type === "railway" ? "🚆" : "🛫";
+      const lounges = g.lounges.map((row) => {
+        const l = row.lounge;
+        const order = E.bestCardOrder(row.matches);
+        const verdict = row.open
+          ? `<span class="chip good">enter with ${order[0].card.name}${order[0].quota.unlimited ? "" : ` · ${order[0].quota.left} left`}</span>`
+          : row.matches.length
+            ? `<span class="chip warn">blocked</span>`
+            : `<span class="chip">no card</span>`;
+        return `<div class="ap-lounge">
+          <div><b>${l.name}</b> ${confBadge(l.confidence)} <span class="card-sub">${l.terminal || ""}</span></div>
+          ${verdict}
+        </div>`;
+      }).join("");
+      return `<div class="ap-group ${g.openCount ? "has-open" : ""}">
+        <div class="ap-head">
+          <div><span class="ap-code">${icon} ${g.code}</span> <span class="card-sub">${g.city}</span></div>
+          <span class="chip ${g.openCount ? "good" : ""}">${g.openCount}/${g.lounges.length} open to you</span>
+        </div>
+        ${lounges}
+      </div>`;
+    }).join("");
+  }
+  ["#airport-search", "#airport-type"].forEach((s) => { const el = $(s); if (el) { el.oninput = renderAirports; el.onchange = renderAirports; } });
+
+  // ============================ COMPARE VIEW ==============================
+  function fillCompareSelects() {
+    const opts = CARDS.filter((c) => (c.programs || []).length)
+      .map((c) => `<option value="${c.id}">${c.name} (${c.issuer})</option>`).join("");
+    const a = $("#compare-a"), b = $("#compare-b");
+    if (a && !a.innerHTML) { a.innerHTML = opts; a.value = "hdfc-infinia"; }
+    if (b && !b.innerHTML) { b.innerHTML = opts; b.value = "axis-myzone"; }
+  }
+  function renderCompare() {
+    if (!$("#compare-result")) return;
+    fillCompareSelects();
+    const cmp = E.compareCards($("#compare-a").value, $("#compare-b").value, CARDS, LOUNGES);
+    if (!cmp) { $("#compare-result").innerHTML = `<div class="empty">Pick two cards.</div>`; return; }
+    const label = { coverage: "Lounges reachable", visits: "Free visits", ease: "Easy to get", spendgate: "No spend gate", railway: "Railway lounges" };
+    const cell = (won, mine) => `<td class="${won ? "win" : ""}">${won ? "✓ " : ""}${mine}</td>`;
+    const valOf = (c, key) => {
+      const cov = c === cmp.a ? cmp.covA : cmp.covB;
+      switch (key) {
+        case "coverage": return cov.total + " lounges";
+        case "visits": return c.domesticVisits === "unlimited" ? "Unlimited" : ((Number(c.domesticVisits) || 0) === 0 ? "None" : (c.domesticVisits + "/" + c.period));
+        case "ease": return easeWord(c.ease);
+        case "spendgate": return c.spendGate ? "Has gate" : "No gate";
+        case "railway": return c.railway ? "Yes" : "No";
+      }
+    };
+    const rows = cmp.rows.map((r) => `<tr>
+      <td class="cmp-label">${label[r.key]}</td>
+      ${cell(r.winner === "A", valOf(cmp.a, r.key))}
+      ${cell(r.winner === "B", valOf(cmp.b, r.key))}
+    </tr>`).join("");
+    const banner = cmp.overall === "tie"
+      ? `<div class="big-verdict warn">It's a tie (${cmp.aWins}-${cmp.bWins}) — pick on fee or rewards</div>`
+      : `<div class="big-verdict good">🏆 ${(cmp.overall === "A" ? cmp.a : cmp.b).name} wins ${Math.max(cmp.aWins, cmp.bWins)}-${Math.min(cmp.aWins, cmp.bWins)}</div>`;
+    $("#compare-result").innerHTML = `${banner}
+      <table class="cmp-table">
+        <thead><tr><th></th><th>${cmp.a.name}</th><th>${cmp.b.name}</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="card-sub" style="margin-top:8px;">${cmp.a.feeNote} · vs · ${cmp.b.feeNote}</div>
+      ${sourceLinksHtml([...SLINKS.forCard(cmp.a).slice(0,1), ...SLINKS.forCard(cmp.b).slice(0,1)], "compare")}`;
+  }
+  ["#compare-a", "#compare-b"].forEach((s) => { const el = $(s); if (el) el.onchange = renderCompare; });
+
+  // ============================ VALUE VIEW ================================
+  function renderValue() {
+    if (!$("#value-list")) return;
+    const trips = Number($("#val-trips").value) || 0;
+    const worth = Number($("#val-worth").value) || 0;
+    const scored = CARDS.filter((c) => (c.programs || []).length)
+      .map((c) => {
+        const feeMatch = (c.feeNote || "").match(/₹\s?([\d,]+)/);
+        const fee = feeMatch ? Number(feeMatch[1].replace(/,/g, "")) : 0;
+        return { c, v: E.valueCalc(c, trips, worth, fee), fee };
+      })
+      .sort((a, b) => (b.v.net === Infinity ? 1 : b.v.net) - (a.v.net === Infinity ? 1 : a.v.net));
+    $("#value-list").innerHTML = scored.map(({ c, v, fee }) => {
+      const cls = v.worthIt ? "good" : "bad";
+      const netStr = v.net >= 0 ? "+" + fmtRs(v.net) : "-" + fmtRs(Math.abs(v.net));
+      return `<div class="val-row ${cls}">
+        <div class="val-main">
+          <div><b>${c.name}</b> ${typeBadge(c)} ${confBadge(c.confidence)}</div>
+          <div class="card-sub">${c.issuer} · fee ${fee ? fmtRs(fee) : "free/varies"} · ${v.allowance === "unlimited" ? "unlimited visits" : v.visitsUsed + " visits/yr you'd use"}</div>
+          ${v.spendGateWarning ? `<div class="notes adv-only">⚠️ ${v.spendGateWarning}</div>` : ""}
+        </div>
+        <div class="val-verdict ${cls}">
+          <div class="val-net">${netStr}/yr</div>
+          <div class="val-tag">${v.worthIt ? "worth it" : "not worth it"}</div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  ["#val-trips", "#val-worth"].forEach((s) => { const el = $(s); if (el) el.oninput = renderValue; });
+
   // ============================ LOGIN / LOGOUT ============================
   // CLOUD adapter: only active if window.LL_FIREBASE config is present AND the
   // firebase SDK loaded. Until then we run DEVICE mode and say so honestly.
@@ -674,6 +783,7 @@
   function render() {
     if (!state.experiences) state.experiences = []; // migrate older saved state
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
+    renderAirports(); renderCompare(); renderValue();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
   }
 

@@ -215,6 +215,42 @@ button.act.big { width: 100%; padding: 13px; font-size: 16px; margin-top: 8px; b
 .src-link .rel { font-size: 8px; color: var(--accent); letter-spacing: -1px; }
 body.simple-mode .src-link .rel { display: none; }
 
+/* airports view */
+.ap-group { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.ap-group.has-open { border-left: 3px solid var(--good); }
+.ap-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ap-code { font-size: 17px; font-weight: 800; letter-spacing: .5px; }
+.ap-lounge { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  padding: 7px 0; border-top: 1px solid var(--line); }
+.ap-lounge:first-of-type { border-top: none; }
+
+/* compare view */
+.compare-pick { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.cmp-select { flex: 1; min-width: 150px; background: var(--panel); border: 1px solid var(--line);
+  color: var(--txt); padding: 10px; border-radius: 9px; font-size: 14px; }
+.vs { font-weight: 800; color: var(--dim); }
+.cmp-table { width: 100%; border-collapse: collapse; margin-top: 12px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.cmp-table th, .cmp-table td { padding: 11px 12px; text-align: left; border-bottom: 1px solid var(--line); font-size: 14px; }
+.cmp-table th { background: var(--panel2); font-size: 13px; }
+.cmp-table .cmp-label { color: var(--dim); font-size: 13px; }
+.cmp-table td.win { color: var(--good); font-weight: 700; background: #0f2e1a; }
+
+/* value view */
+.value-inputs { display: flex; gap: 14px; flex-wrap: wrap; }
+.value-inputs label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--dim); }
+.value-inputs input { background: var(--panel2); border: 1px solid var(--line); color: var(--txt);
+  padding: 9px 11px; border-radius: 8px; font-size: 15px; width: 150px; }
+.val-row { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; margin-bottom: 8px; }
+.val-row.good { border-left: 3px solid var(--good); }
+.val-row.bad { border-left: 3px solid var(--bad); opacity: .82; }
+.val-verdict { text-align: right; min-width: 90px; }
+.val-net { font-size: 17px; font-weight: 800; }
+.val-verdict.good .val-net { color: var(--good); }
+.val-verdict.bad .val-net { color: var(--bad); }
+.val-tag { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--dim); }
+
 /* auth bar + login */
 .auth-bar { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
 #auth-name { font-size: 13px; font-weight: 600; color: var(--accent); }
@@ -282,8 +318,11 @@ body.simple-mode .src-link .rel { display: none; }
     <nav>
       <button data-view="trip" class="active">✈️ Plan a Trip</button>
       <button data-view="wallet">💳 My Cards</button>
+      <button data-view="airports">🛫 Airports</button>
       <button data-view="lounges">🛋️ All Lounges</button>
       <button data-view="recommend">⭐ Get a Card</button>
+      <button data-view="compare">⚖️ Compare</button>
+      <button data-view="value">🧮 Worth It?</button>
       <button data-view="addcard">➕ Add Cards</button>
       <button data-view="health">🩺 Data Health</button>
       <button data-view="profile">👤 Profile / Sync</button>
@@ -395,6 +434,51 @@ body.simple-mode .src-link .rel { display: none; }
 
       <div class="section-h">🪜 The roadmap to real-time (honest)</div>
       <div id="roadmap"></div>
+    </section>
+
+    <!-- AIRPORTS (card-aware lounge finder, beats LoungeBuddy/Priority Pass) -->
+    <section id="view-airports" class="view">
+      <div class="hero">
+        <h2>Lounges by airport &amp; station</h2>
+        <p>Pick a place. See every lounge there and which of your cards walks you in. Unlike other finders, this one knows your wallet.</p>
+      </div>
+      <div class="filters">
+        <input id="airport-search" placeholder="Search airport / station / city…" />
+        <select id="airport-type">
+          <option value="">All</option>
+          <option value="airport">🛫 Airports</option>
+          <option value="railway">🚆 Stations</option>
+        </select>
+      </div>
+      <div id="airport-list"></div>
+    </section>
+
+    <!-- COMPARE (head-to-head, beats aggregator tables) -->
+    <section id="view-compare" class="view">
+      <div class="hero">
+        <h2>Compare two cards</h2>
+        <p>Pick two. See who wins on lounge coverage, visits, ease, spend gates and railway — head to head.</p>
+      </div>
+      <div class="compare-pick">
+        <select id="compare-a" class="cmp-select"></select>
+        <span class="vs">vs</span>
+        <select id="compare-b" class="cmp-select"></select>
+      </div>
+      <div id="compare-result"></div>
+    </section>
+
+    <!-- VALUE CALCULATOR (novel — no competitor has this) -->
+    <section id="view-value" class="view">
+      <div class="hero">
+        <h2>Is the fee worth it?</h2>
+        <p>Tell me how often you fly and what a lounge is worth to you. I'll tell you if a card's fee pays for itself — for every card.</p>
+      </div>
+      <div class="value-inputs">
+        <label>Trips per year <input id="val-trips" type="number" min="0" value="12" /></label>
+        <label>A lounge visit is worth (₹) <input id="val-worth" type="number" min="0" value="1200" /></label>
+      </div>
+      <p class="card-sub" style="margin:6px 0 12px;">A lounge visit is usually worth ₹800-₹2000 to most people (food + a quiet seat + wifi). Adjust to your taste.</p>
+      <div id="value-list"></div>
     </section>
 
     <!-- PROFILE / SYNC (free serverless "login") -->
@@ -1496,6 +1580,100 @@ window.LL_SOURCE_LINKS = {
     return base;
   }
 
+  // ---- airports/stations: grouped lounge view (beats LoungeBuddy finder) -
+  // Returns [{ code, city, type, lounges:[{lounge, matches, open}] }] so the UI
+  // can show "pick an airport, see every lounge + which of YOUR cards opens it".
+  function airports(allLounges, wallet, allCards, visitLog, spendThisPeriod, now) {
+    const groups = new Map();
+    allLounges.forEach((l) => {
+      const code = l.type === "railway" ? l.station : l.airport;
+      const key = (code || "?") + "|" + l.type;
+      if (!groups.has(key)) groups.set(key, { code: code || "?", city: l.city, type: l.type, lounges: [] });
+      const matches = cardsForLounge(l, wallet, allCards, visitLog, spendThisPeriod, now);
+      groups.get(key).lounges.push({ lounge: l, matches, open: matches.some((m) => m.usable) });
+    });
+    return Array.from(groups.values())
+      .map((g) => ({ ...g, openCount: g.lounges.filter((x) => x.open).length }))
+      .sort((a, b) => a.city.localeCompare(b.city) || a.code.localeCompare(b.code));
+  }
+
+  // ---- compareCards: head-to-head (beats aggregator comparison tables) ----
+  // Two card ids -> a structured diff across the dimensions that matter.
+  function compareCards(idA, idB, allCards, allLounges) {
+    const a = allCards.find((c) => c.id === idA), b = allCards.find((c) => c.id === idB);
+    if (!a || !b) return null;
+    const coverageOf = (card) => {
+      const rails = new Set(card.programs || []);
+      const list = allLounges.filter((l) => (l.programs || []).some((p) => rails.has(p)));
+      return { total: list.length, airport: list.filter((l) => l.type !== "railway").length, railway: list.filter((l) => l.type === "railway").length };
+    };
+    const visitsNum = (c) => (c.domesticVisits === "unlimited" ? Infinity : Number(c.domesticVisits) || 0);
+    const covA = coverageOf(a), covB = coverageOf(b);
+    const winner = (key) => {
+      switch (key) {
+        case "coverage": return covA.total === covB.total ? "tie" : covA.total > covB.total ? "A" : "B";
+        case "visits": { const va = visitsNum(a), vb = visitsNum(b); return va === vb ? "tie" : va > vb ? "A" : "B"; }
+        case "ease": return a.ease === b.ease ? "tie" : a.ease > b.ease ? "A" : "B";
+        case "spendgate": { const ga = a.spendGate ? 1 : 0, gb = b.spendGate ? 1 : 0; return ga === gb ? "tie" : ga < gb ? "A" : "B"; } // no-gate wins
+        case "railway": return (a.railway ? 1 : 0) === (b.railway ? 1 : 0) ? "tie" : a.railway ? "A" : "B";
+        default: return "tie";
+      }
+    };
+    const rows = ["coverage", "visits", "ease", "spendgate", "railway"].map((k) => ({ key: k, winner: winner(k) }));
+    const score = (who) => rows.filter((r) => r.winner === who).length;
+    const aWins = score("A"), bWins = score("B");
+    return {
+      a, b, covA, covB, rows,
+      overall: aWins === bWins ? "tie" : aWins > bWins ? "A" : "B",
+      aWins, bWins,
+    };
+  }
+
+  // ---- valueCalc: does the fee pay for itself? (no competitor does this) --
+  // feeRupees + tripsPerYear + perVisitWorth (rupees a lounge visit is worth to you).
+  // Uses the card's actual visit allowance, capped by how many you'd actually use.
+  function valueCalc(card, tripsPerYear, perVisitWorth, feeRupees) {
+    const fee = Number(feeRupees) || 0;
+    const worth = Number(perVisitWorth) || 0;
+    const trips = Math.max(0, Number(tripsPerYear) || 0);
+    // annualized allowance
+    let allowance;
+    if (card.domesticVisits === "unlimited") allowance = Infinity;
+    else {
+      const n = Number(card.domesticVisits) || 0;
+      allowance = card.period === "quarter" ? n * 4 : card.period === "month" ? n * 12 : n;
+    }
+    const visitsUsed = Math.min(trips, allowance); // you can't use more visits than trips
+    const benefit = (allowance === Infinity ? trips : visitsUsed) * worth;
+    const net = benefit - fee;
+    const breakeven = worth > 0 ? Math.ceil(fee / worth) : Infinity; // trips needed to break even
+    return {
+      fee, worth, trips,
+      allowance: allowance === Infinity ? "unlimited" : allowance,
+      visitsUsed: allowance === Infinity ? trips : visitsUsed,
+      benefit, net,
+      worthIt: net >= 0,
+      breakevenTrips: breakeven,
+      spendGateWarning: card.spendGate ? card.spendGate.note : null,
+    };
+  }
+
+  // ---- bestCardOrder: at a lounge with multiple usable cards, which FIRST? ---
+  // Strategy to preserve scarce visits: unlimited cards first (free to use),
+  // then cards with MORE visits left, then non-spend-gated over gated. Returns
+  // the usable matches re-sorted with a `useFirst` flag on the top pick.
+  function bestCardOrder(matches) {
+    const usable = (matches || []).filter((m) => m.usable);
+    const rank = (m) => {
+      if (m.quota.unlimited) return 1000;                 // use unlimited first (costs nothing)
+      let r = m.quota.left * 10;                          // more left = prefer
+      if (m.spend && m.spend.gated) r -= 5;               // mild penalty for gated
+      return r;
+    };
+    const sorted = usable.slice().sort((a, b) => rank(b) - rank(a));
+    return sorted.map((m, i) => ({ ...m, useFirst: i === 0 }));
+  }
+
   const Engine = {
     periodKey,
     remainingVisits,
@@ -1507,6 +1685,10 @@ window.LL_SOURCE_LINKS = {
     cities,
     planTrip,
     recommendForTrip,
+    airports,
+    compareCards,
+    valueCalc,
+    bestCardOrder,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = Engine;
@@ -2338,6 +2520,115 @@ window.LL_SOURCE_LINKS = {
     e.target.value = "";
   };
 
+  // ============================ AIRPORTS VIEW =============================
+  function renderAirports() {
+    if (!$("#airport-list")) return;
+    const q = ($("#airport-search").value || "").toLowerCase();
+    const type = $("#airport-type").value;
+    let groups = E.airports(LOUNGES, state.wallet, CARDS, state.visitLog, state.spend, NOW);
+    if (type) groups = groups.filter((g) => g.type === type);
+    groups = groups.filter((g) => `${g.code} ${g.city}`.toLowerCase().includes(q));
+    if (!groups.length) { $("#airport-list").innerHTML = `<div class="empty">No airports/stations match.</div>`; return; }
+
+    $("#airport-list").innerHTML = groups.map((g) => {
+      const icon = g.type === "railway" ? "🚆" : "🛫";
+      const lounges = g.lounges.map((row) => {
+        const l = row.lounge;
+        const order = E.bestCardOrder(row.matches);
+        const verdict = row.open
+          ? `<span class="chip good">enter with ${order[0].card.name}${order[0].quota.unlimited ? "" : ` · ${order[0].quota.left} left`}</span>`
+          : row.matches.length
+            ? `<span class="chip warn">blocked</span>`
+            : `<span class="chip">no card</span>`;
+        return `<div class="ap-lounge">
+          <div><b>${l.name}</b> ${confBadge(l.confidence)} <span class="card-sub">${l.terminal || ""}</span></div>
+          ${verdict}
+        </div>`;
+      }).join("");
+      return `<div class="ap-group ${g.openCount ? "has-open" : ""}">
+        <div class="ap-head">
+          <div><span class="ap-code">${icon} ${g.code}</span> <span class="card-sub">${g.city}</span></div>
+          <span class="chip ${g.openCount ? "good" : ""}">${g.openCount}/${g.lounges.length} open to you</span>
+        </div>
+        ${lounges}
+      </div>`;
+    }).join("");
+  }
+  ["#airport-search", "#airport-type"].forEach((s) => { const el = $(s); if (el) { el.oninput = renderAirports; el.onchange = renderAirports; } });
+
+  // ============================ COMPARE VIEW ==============================
+  function fillCompareSelects() {
+    const opts = CARDS.filter((c) => (c.programs || []).length)
+      .map((c) => `<option value="${c.id}">${c.name} (${c.issuer})</option>`).join("");
+    const a = $("#compare-a"), b = $("#compare-b");
+    if (a && !a.innerHTML) { a.innerHTML = opts; a.value = "hdfc-infinia"; }
+    if (b && !b.innerHTML) { b.innerHTML = opts; b.value = "axis-myzone"; }
+  }
+  function renderCompare() {
+    if (!$("#compare-result")) return;
+    fillCompareSelects();
+    const cmp = E.compareCards($("#compare-a").value, $("#compare-b").value, CARDS, LOUNGES);
+    if (!cmp) { $("#compare-result").innerHTML = `<div class="empty">Pick two cards.</div>`; return; }
+    const label = { coverage: "Lounges reachable", visits: "Free visits", ease: "Easy to get", spendgate: "No spend gate", railway: "Railway lounges" };
+    const cell = (won, mine) => `<td class="${won ? "win" : ""}">${won ? "✓ " : ""}${mine}</td>`;
+    const valOf = (c, key) => {
+      const cov = c === cmp.a ? cmp.covA : cmp.covB;
+      switch (key) {
+        case "coverage": return cov.total + " lounges";
+        case "visits": return c.domesticVisits === "unlimited" ? "Unlimited" : ((Number(c.domesticVisits) || 0) === 0 ? "None" : (c.domesticVisits + "/" + c.period));
+        case "ease": return easeWord(c.ease);
+        case "spendgate": return c.spendGate ? "Has gate" : "No gate";
+        case "railway": return c.railway ? "Yes" : "No";
+      }
+    };
+    const rows = cmp.rows.map((r) => `<tr>
+      <td class="cmp-label">${label[r.key]}</td>
+      ${cell(r.winner === "A", valOf(cmp.a, r.key))}
+      ${cell(r.winner === "B", valOf(cmp.b, r.key))}
+    </tr>`).join("");
+    const banner = cmp.overall === "tie"
+      ? `<div class="big-verdict warn">It's a tie (${cmp.aWins}-${cmp.bWins}) — pick on fee or rewards</div>`
+      : `<div class="big-verdict good">🏆 ${(cmp.overall === "A" ? cmp.a : cmp.b).name} wins ${Math.max(cmp.aWins, cmp.bWins)}-${Math.min(cmp.aWins, cmp.bWins)}</div>`;
+    $("#compare-result").innerHTML = `${banner}
+      <table class="cmp-table">
+        <thead><tr><th></th><th>${cmp.a.name}</th><th>${cmp.b.name}</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="card-sub" style="margin-top:8px;">${cmp.a.feeNote} · vs · ${cmp.b.feeNote}</div>
+      ${sourceLinksHtml([...SLINKS.forCard(cmp.a).slice(0,1), ...SLINKS.forCard(cmp.b).slice(0,1)], "compare")}`;
+  }
+  ["#compare-a", "#compare-b"].forEach((s) => { const el = $(s); if (el) el.onchange = renderCompare; });
+
+  // ============================ VALUE VIEW ================================
+  function renderValue() {
+    if (!$("#value-list")) return;
+    const trips = Number($("#val-trips").value) || 0;
+    const worth = Number($("#val-worth").value) || 0;
+    const scored = CARDS.filter((c) => (c.programs || []).length)
+      .map((c) => {
+        const feeMatch = (c.feeNote || "").match(/₹\s?([\d,]+)/);
+        const fee = feeMatch ? Number(feeMatch[1].replace(/,/g, "")) : 0;
+        return { c, v: E.valueCalc(c, trips, worth, fee), fee };
+      })
+      .sort((a, b) => (b.v.net === Infinity ? 1 : b.v.net) - (a.v.net === Infinity ? 1 : a.v.net));
+    $("#value-list").innerHTML = scored.map(({ c, v, fee }) => {
+      const cls = v.worthIt ? "good" : "bad";
+      const netStr = v.net >= 0 ? "+" + fmtRs(v.net) : "-" + fmtRs(Math.abs(v.net));
+      return `<div class="val-row ${cls}">
+        <div class="val-main">
+          <div><b>${c.name}</b> ${typeBadge(c)} ${confBadge(c.confidence)}</div>
+          <div class="card-sub">${c.issuer} · fee ${fee ? fmtRs(fee) : "free/varies"} · ${v.allowance === "unlimited" ? "unlimited visits" : v.visitsUsed + " visits/yr you'd use"}</div>
+          ${v.spendGateWarning ? `<div class="notes adv-only">⚠️ ${v.spendGateWarning}</div>` : ""}
+        </div>
+        <div class="val-verdict ${cls}">
+          <div class="val-net">${netStr}/yr</div>
+          <div class="val-tag">${v.worthIt ? "worth it" : "not worth it"}</div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  ["#val-trips", "#val-worth"].forEach((s) => { const el = $(s); if (el) el.oninput = renderValue; });
+
   // ============================ LOGIN / LOGOUT ============================
   // CLOUD adapter: only active if window.LL_FIREBASE config is present AND the
   // firebase SDK loaded. Until then we run DEVICE mode and say so honestly.
@@ -2520,6 +2811,7 @@ window.LL_SOURCE_LINKS = {
   function render() {
     if (!state.experiences) state.experiences = []; // migrate older saved state
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
+    renderAirports(); renderCompare(); renderValue();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
   }
 

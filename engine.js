@@ -219,6 +219,100 @@
     return base;
   }
 
+  // ---- airports/stations: grouped lounge view (beats LoungeBuddy finder) -
+  // Returns [{ code, city, type, lounges:[{lounge, matches, open}] }] so the UI
+  // can show "pick an airport, see every lounge + which of YOUR cards opens it".
+  function airports(allLounges, wallet, allCards, visitLog, spendThisPeriod, now) {
+    const groups = new Map();
+    allLounges.forEach((l) => {
+      const code = l.type === "railway" ? l.station : l.airport;
+      const key = (code || "?") + "|" + l.type;
+      if (!groups.has(key)) groups.set(key, { code: code || "?", city: l.city, type: l.type, lounges: [] });
+      const matches = cardsForLounge(l, wallet, allCards, visitLog, spendThisPeriod, now);
+      groups.get(key).lounges.push({ lounge: l, matches, open: matches.some((m) => m.usable) });
+    });
+    return Array.from(groups.values())
+      .map((g) => ({ ...g, openCount: g.lounges.filter((x) => x.open).length }))
+      .sort((a, b) => a.city.localeCompare(b.city) || a.code.localeCompare(b.code));
+  }
+
+  // ---- compareCards: head-to-head (beats aggregator comparison tables) ----
+  // Two card ids -> a structured diff across the dimensions that matter.
+  function compareCards(idA, idB, allCards, allLounges) {
+    const a = allCards.find((c) => c.id === idA), b = allCards.find((c) => c.id === idB);
+    if (!a || !b) return null;
+    const coverageOf = (card) => {
+      const rails = new Set(card.programs || []);
+      const list = allLounges.filter((l) => (l.programs || []).some((p) => rails.has(p)));
+      return { total: list.length, airport: list.filter((l) => l.type !== "railway").length, railway: list.filter((l) => l.type === "railway").length };
+    };
+    const visitsNum = (c) => (c.domesticVisits === "unlimited" ? Infinity : Number(c.domesticVisits) || 0);
+    const covA = coverageOf(a), covB = coverageOf(b);
+    const winner = (key) => {
+      switch (key) {
+        case "coverage": return covA.total === covB.total ? "tie" : covA.total > covB.total ? "A" : "B";
+        case "visits": { const va = visitsNum(a), vb = visitsNum(b); return va === vb ? "tie" : va > vb ? "A" : "B"; }
+        case "ease": return a.ease === b.ease ? "tie" : a.ease > b.ease ? "A" : "B";
+        case "spendgate": { const ga = a.spendGate ? 1 : 0, gb = b.spendGate ? 1 : 0; return ga === gb ? "tie" : ga < gb ? "A" : "B"; } // no-gate wins
+        case "railway": return (a.railway ? 1 : 0) === (b.railway ? 1 : 0) ? "tie" : a.railway ? "A" : "B";
+        default: return "tie";
+      }
+    };
+    const rows = ["coverage", "visits", "ease", "spendgate", "railway"].map((k) => ({ key: k, winner: winner(k) }));
+    const score = (who) => rows.filter((r) => r.winner === who).length;
+    const aWins = score("A"), bWins = score("B");
+    return {
+      a, b, covA, covB, rows,
+      overall: aWins === bWins ? "tie" : aWins > bWins ? "A" : "B",
+      aWins, bWins,
+    };
+  }
+
+  // ---- valueCalc: does the fee pay for itself? (no competitor does this) --
+  // feeRupees + tripsPerYear + perVisitWorth (rupees a lounge visit is worth to you).
+  // Uses the card's actual visit allowance, capped by how many you'd actually use.
+  function valueCalc(card, tripsPerYear, perVisitWorth, feeRupees) {
+    const fee = Number(feeRupees) || 0;
+    const worth = Number(perVisitWorth) || 0;
+    const trips = Math.max(0, Number(tripsPerYear) || 0);
+    // annualized allowance
+    let allowance;
+    if (card.domesticVisits === "unlimited") allowance = Infinity;
+    else {
+      const n = Number(card.domesticVisits) || 0;
+      allowance = card.period === "quarter" ? n * 4 : card.period === "month" ? n * 12 : n;
+    }
+    const visitsUsed = Math.min(trips, allowance); // you can't use more visits than trips
+    const benefit = (allowance === Infinity ? trips : visitsUsed) * worth;
+    const net = benefit - fee;
+    const breakeven = worth > 0 ? Math.ceil(fee / worth) : Infinity; // trips needed to break even
+    return {
+      fee, worth, trips,
+      allowance: allowance === Infinity ? "unlimited" : allowance,
+      visitsUsed: allowance === Infinity ? trips : visitsUsed,
+      benefit, net,
+      worthIt: net >= 0,
+      breakevenTrips: breakeven,
+      spendGateWarning: card.spendGate ? card.spendGate.note : null,
+    };
+  }
+
+  // ---- bestCardOrder: at a lounge with multiple usable cards, which FIRST? ---
+  // Strategy to preserve scarce visits: unlimited cards first (free to use),
+  // then cards with MORE visits left, then non-spend-gated over gated. Returns
+  // the usable matches re-sorted with a `useFirst` flag on the top pick.
+  function bestCardOrder(matches) {
+    const usable = (matches || []).filter((m) => m.usable);
+    const rank = (m) => {
+      if (m.quota.unlimited) return 1000;                 // use unlimited first (costs nothing)
+      let r = m.quota.left * 10;                          // more left = prefer
+      if (m.spend && m.spend.gated) r -= 5;               // mild penalty for gated
+      return r;
+    };
+    const sorted = usable.slice().sort((a, b) => rank(b) - rank(a));
+    return sorted.map((m, i) => ({ ...m, useFirst: i === 0 }));
+  }
+
   const Engine = {
     periodKey,
     remainingVisits,
@@ -230,6 +324,10 @@
     cities,
     planTrip,
     recommendForTrip,
+    airports,
+    compareCards,
+    valueCalc,
+    bestCardOrder,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = Engine;

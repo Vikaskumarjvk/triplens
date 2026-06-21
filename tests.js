@@ -154,5 +154,61 @@ console.log("\n[14] recommendForTrip suggests a card that fixes the trip gap");
   ok("top trip rec opens trip lounges", recs[0].marginalCoverage > 0);
 }
 
+console.log("\n[15] airports() groups lounges and counts open per airport");
+{
+  const wallet = ["rupay-select"]; // dreamfolks+rupay opens lots
+  const ap = E.airports(LOUNGES, wallet, CARDS, [], {}, NOW);
+  ok("returns groups", ap.length > 0);
+  const hyd = ap.find((g) => g.code === "HYD" && g.type === "airport");
+  ok("HYD group exists", !!hyd);
+  ok("HYD has multiple lounges", hyd && hyd.lounges.length >= 2);
+  ok("openCount computed", hyd && typeof hyd.openCount === "number");
+  ok("railway grouped separately", ap.some((g) => g.type === "railway"));
+}
+
+console.log("\n[16] compareCards head-to-head");
+{
+  const cmp = E.compareCards("hdfc-infinia", "axis-myzone", CARDS, LOUNGES);
+  ok("returns comparison", !!cmp);
+  ok("has 5 rows", cmp.rows.length === 5);
+  ok("infinia (unlimited, more coverage) wins overall", cmp.overall === "A");
+  ok("visits row won by infinia", cmp.rows.find((r) => r.key === "visits").winner === "A");
+  // no-spend-gate beats spend-gate
+  const cmp2 = E.compareCards("axis-myzone", "hdfc-millennia", CARDS, LOUNGES); // myzone no gate, millennia gated
+  ok("no-gate card wins spendgate row", cmp2.rows.find((r) => r.key === "spendgate").winner === "A");
+  ok("bad ids return null", E.compareCards("nope", "axis-myzone", CARDS, LOUNGES) === null);
+}
+
+console.log("\n[17] valueCalc — does the fee pay off?");
+{
+  // card with 8/year, fee 5000, you take 10 trips, each lounge worth 1500
+  const card = CARDS.find((c) => c.id === "amex-plat-travel"); // 8/year
+  const v = E.valueCalc(card, 10, 1500, 5000);
+  ok("visits capped at allowance (8 not 10)", v.visitsUsed === 8);
+  ok("benefit = 8*1500 = 12000", v.benefit === 12000);
+  ok("net = 12000-5000 = 7000", v.net === 7000);
+  ok("worth it", v.worthIt === true);
+  ok("breakeven trips computed", v.breakevenTrips === Math.ceil(5000 / 1500));
+  // few trips -> not worth it
+  const v2 = E.valueCalc(card, 1, 1000, 5000);
+  ok("1 trip vs 5000 fee => not worth it", v2.worthIt === false && v2.net < 0);
+  // unlimited card uses trips directly
+  const inf = CARDS.find((c) => c.id === "hdfc-infinia");
+  const v3 = E.valueCalc(inf, 20, 1000, 12500);
+  ok("unlimited uses all trips", v3.visitsUsed === 20 && v3.benefit === 20000);
+}
+
+console.log("\n[18] bestCardOrder — which card to use first");
+{
+  const lounge = LOUNGES.find((l) => l.id === "del-t3-encalm");
+  // wallet: unlimited infinia + finite myzone. infinia should be used first.
+  const wallet = ["hdfc-infinia", "axis-myzone"];
+  const matches = E.cardsForLounge(lounge, wallet, CARDS, [], {}, NOW);
+  const order = E.bestCardOrder(matches);
+  ok("returns usable cards", order.length === 2);
+  ok("unlimited card flagged useFirst", order[0].quota.unlimited === true && order[0].useFirst === true);
+  ok("only one useFirst", order.filter((o) => o.useFirst).length === 1);
+}
+
 console.log(`\n==== ${pass} passed, ${fail} failed ====\n`);
 process.exit(fail === 0 ? 0 : 1);

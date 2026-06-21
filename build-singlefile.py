@@ -62,7 +62,10 @@ for rel in js_files:
     pattern = re.compile(r'<script src="' + re.escape(rel) + r'"></script>')
     if not pattern.search(html):
         raise SystemExit(f"ERROR: could not find script tag for {rel} in index.html")
-    html = pattern.sub("<script>\n" + code + "\n</script>", html)
+    # use a replacement FUNCTION so backslashes in JS (e.g. regex \s) are inserted
+    # literally and never interpreted as re replacement-template escapes.
+    replacement = "<script>\n" + code + "\n</script>"
+    html = pattern.sub(lambda _m: replacement, html)
 
 # 5. sanity: no remaining external src= local script/style refs
 leftovers = re.findall(r'(?:src|href)="(?!data:|https?:|#)([^"]+)"', html)
