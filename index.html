@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LoungeLens — your real lounge access, one view</title>
+  <meta name="description" content="Every airport & railway lounge your credit cards actually open in India. Plan a trip, track visits, find the easiest card to get." />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛋️</text></svg>" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LoungeLens" />
+  <!-- Open Graph: a real link preview when shared in WhatsApp/chat -->
+  <meta property="og:title" content="LoungeLens" />
+  <meta property="og:description" content="See every airport & railway lounge your credit cards actually open in India." />
+  <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">🛋️</span>
+      <div>
+        <h1>LoungeLens</h1>
+        <span class="tag">every lounge your cards actually open — airport + railway</span>
+      </div>
+      <div class="mode-toggle" id="mode-toggle" title="Switch detail level">
+        <button data-mode="simple" class="active">😌 Simple</button>
+        <button data-mode="advanced">🔧 Advanced</button>
+      </div>
+    </div>
+    <nav>
+      <button data-view="trip" class="active">✈️ Plan a Trip</button>
+      <button data-view="wallet">💳 My Cards</button>
+      <button data-view="lounges">🛋️ All Lounges</button>
+      <button data-view="recommend">⭐ Get a Card</button>
+      <button data-view="addcard">➕ Add Cards</button>
+      <button data-view="health">🩺 Data Health</button>
+      <button data-view="about">ℹ️ About</button>
+      <button id="install-btn" class="install-btn" hidden>⬇️ Install app</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- TRIP PLANNER (default, the heart) -->
+    <section id="view-trip" class="view active">
+      <div class="hero" id="trip-hero">
+        <h2>Where are you flying?</h2>
+        <p>Tell me your cities. I'll show exactly which lounges you can walk into, and which card to flash at each one.</p>
+      </div>
+      <div class="trip-builder">
+        <div class="leg-row"><span class="leg-pin">🏠</span><input class="leg-input" id="leg-from" placeholder="From (e.g. Hyderabad)" list="city-list" /></div>
+        <div id="leg-extra"></div>
+        <button class="act ghost mini" id="add-leg">➕ add a stop / destination</button>
+        <datalist id="city-list"></datalist>
+        <button class="act big" id="plan-btn">See my lounges →</button>
+      </div>
+      <div id="trip-result"></div>
+    </section>
+
+    <!-- WALLET -->
+    <section id="view-wallet" class="view">
+      <div class="stat-row" id="wallet-stats"></div>
+      <div id="gate-warnings"></div>
+      <div class="section-h">Your cards</div>
+      <div id="wallet-cards"></div>
+    </section>
+
+    <!-- LOUNGES -->
+    <section id="view-lounges" class="view">
+      <div class="disclaimer adv-only">
+        <b>Reality check:</b> India reworked lounge rules across 2024-25 and they shift every quarter.
+        Each entry shows a confidence badge. Green = a card of yours opens it now.
+        Amber = you have a card but a spend gate or empty quota blocks it.
+      </div>
+      <div class="filters">
+        <input id="lounge-search" placeholder="Search city, airport, station…" />
+        <select id="lounge-type">
+          <option value="">All</option>
+          <option value="airport">✈️ Airport</option>
+          <option value="railway">🚆 Railway</option>
+        </select>
+        <select id="lounge-filter">
+          <option value="all">All lounges</option>
+          <option value="open">Only ones I can enter</option>
+        </select>
+      </div>
+      <div class="stat-row" id="coverage-stats"></div>
+      <div id="lounge-list"></div>
+    </section>
+
+    <!-- RECOMMEND -->
+    <section id="view-recommend" class="view">
+      <div class="hero">
+        <h2>Which card should you get?</h2>
+        <p>Ranked by new lounges it unlocks for you, how easy it is to get, and how fast it arrives — important if you're applying before a trip.</p>
+      </div>
+      <div class="filters">
+        <label class="chip toggle"><input type="checkbox" id="rec-easy" checked />⚡ Only cards I can likely get fast</label>
+        <select id="rec-type">
+          <option value="">Airport + railway</option>
+          <option value="airport">✈️ Airport</option>
+          <option value="railway">🚆 Railway</option>
+        </select>
+      </div>
+      <div id="rec-list"></div>
+    </section>
+
+    <!-- ADD CARDS -->
+    <section id="view-addcard" class="view">
+      <div class="section-h">Tap the cards you hold</div>
+      <p class="card-sub" style="margin-bottom:12px;">Saved only in this browser. Nothing leaves your device, ever.</p>
+      <input id="addcard-search" class="leg-input" style="margin-bottom:12px;" placeholder="Search cards…" />
+      <div id="addcard-list"></div>
+    </section>
+
+    <!-- DATA HEALTH (self-awareness) -->
+    <section id="view-health" class="view">
+      <div class="hero">
+        <h2>How much should you trust this?</h2>
+        <p>This app knows its own data goes stale. Here it checks itself, ages its confidence, learns from what actually happened to you, and tells you what to re-verify before you fly.</p>
+      </div>
+
+      <div class="how-real adv-only">
+        <b>Honest scope:</b> LoungeLens is a free, private app with no server, so it can't browse the live internet by itself (your browser blocks that, and there's nothing running when the tab is closed). What it CAN do, and does below: track data age, audit itself, learn from your logged visits, and queue what needs a human check. Real-time auto-research needs a paid backend — see the roadmap at the bottom.
+      </div>
+
+      <div class="stat-row" id="health-stats"></div>
+
+      <div class="section-h">🔁 Verify before you fly</div>
+      <p class="card-sub" style="margin-bottom:8px;">Ranked by urgency: things your own experience contradicted, then items on your trip, then the stalest / least certain.</p>
+      <div id="verify-queue"></div>
+
+      <div class="section-h">🧪 Self-audit (the app checking its own data)</div>
+      <div id="lint-report"></div>
+
+      <div class="section-h">📥 Community data (share corrections)</div>
+      <p class="card-sub" style="margin-bottom:8px;">Export your logged experiences to share with friends, or import theirs. This is how the data improves without a server.</p>
+      <div class="row">
+        <button class="act mini" id="export-data">⬇️ Export my data</button>
+        <button class="act ghost mini" id="import-data">⬆️ Import a file</button>
+        <input type="file" id="import-file" accept="application/json" style="display:none;" />
+      </div>
+
+      <div class="section-h">🪜 The roadmap to real-time (honest)</div>
+      <div id="roadmap"></div>
+    </section>
+
+    <!-- ABOUT / TRUST -->
+    <section id="view-about" class="view">
+      <div class="hero">
+        <h2>About LoungeLens</h2>
+        <p>A free, private tool to see which lounges your credit cards actually open in India.</p>
+      </div>
+
+      <div class="about-card">
+        <h3>⚠️ Not financial advice</h3>
+        <p>LoungeLens helps you understand lounge access. It does not recommend taking on debt and is not affiliated with any bank, card issuer, DreamFolks, Priority Pass, or any lounge operator. Card and lounge rules in India change often. Always confirm the current terms with your bank and at the lounge desk before you rely on access. Apply for credit cards responsibly.</p>
+      </div>
+
+      <div class="about-card">
+        <h3>🔒 Your privacy</h3>
+        <p>Everything you enter — your cards, your visits, your trips — is stored only in your own browser (localStorage). It is never sent to any server. There is no account, no login, no tracking, no analytics, no cookies. If you clear your browser data, it's gone. If you open the app on another device, it starts fresh. You can export your data to a file any time from the Data Health tab.</p>
+      </div>
+
+      <div class="about-card">
+        <h3>📊 Where the data comes from</h3>
+        <p>The card and lounge information is compiled and confidence-tagged by the maintainer, last reviewed on the date shown in the footer. It is directionally accurate but not guaranteed current. Each entry carries a confidence badge and a "verify" pointer. The app ages its own confidence over time and flags what to re-check. Treat it as a smart starting point, not the final word.</p>
+      </div>
+
+      <div class="about-card">
+        <h3>💬 Found something wrong?</h3>
+        <p>Lounge access changed? A card's benefit is different now? Log your real experience in the Lounges tab (got in / refused) — that feeds the verify queue and, if you export and share the file, helps everyone using the app. That's how the data stays honest without a server.</p>
+      </div>
+
+      <div class="about-card muted-card">
+        <h3>Version</h3>
+        <p id="about-version">—</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- first-run onboarding -->
+  <div id="onboard" class="modal" hidden>
+    <div class="modal-box">
+      <div class="modal-logo">🛋️</div>
+      <h2>Welcome to LoungeLens</h2>
+      <p>Three quick things:</p>
+      <ol class="onboard-list">
+        <li><b>Add the cards you hold</b> — tap them once, saved on this device.</li>
+        <li><b>Plan a trip</b> — type your cities, see exactly which lounge each card opens.</li>
+        <li><b>Before you fly</b> — glance at Data Health to see what to double-check.</li>
+      </ol>
+      <p class="onboard-fine">Free. Private. Nothing leaves your device. Not financial advice.</p>
+      <button class="act big" id="onboard-start">Get started →</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <footer class="foot">
+    <span id="data-freshness"></span> · Saved on this device only · <span class="link" id="reset-all">reset</span>
+  </footer>
+
+  <script src="data/cards.js"></script>
+  <script src="data/lounges.js"></script>
+  <script src="data/meta.js"></script>
+  <script src="engine.js"></script>
+  <script src="selfcheck.js"></script>
+  <script src="app.js"></script>
+  <script>
+    // PWA: register service worker for offline + installability.
+    // Guarded so it never breaks when opened via file:// (SW needs http/https).
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+    // Install button: capture the browser's install prompt, show our own button.
+    let deferredPrompt = null;
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const b = document.getElementById("install-btn");
+      if (b) b.hidden = false;
+    });
+    document.getElementById("install-btn").addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      document.getElementById("install-btn").hidden = true;
+    });
+    window.addEventListener("appinstalled", () => {
+      document.getElementById("install-btn").hidden = true;
+    });
+  </script>
+</body>
+</html>
