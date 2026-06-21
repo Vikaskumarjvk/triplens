@@ -584,4 +584,233 @@ window.LL_CARDS = [
     domesticVisits: 1, period: "quarter", spendGate: { amount: 50000, per: "quarter", note: "Spend-gated on lower-tier debit." },
     programs: ["dreamfolks", "visa"], railway: false, ease: 5, ltf: false, fyf: false, approvalSpeed: "instant",
     eligibility: "Kotak 811 digital account.", feeNote: "Spend-gated debit lounge.", confidence: "low", verify: "kotak.com" },
+
+  // ==================================================================
+  // ======  DISCONTINUED / LEGACY CREDIT CARDS (history)  ============
+  // ==================================================================
+  // You asked for cards from "day 1", including ones no longer issued. These are
+  // flagged discontinued:true and named "(discontinued)" so they show clearly.
+  // Terms here are HISTORICAL, confidence "low" — you cannot apply for most of
+  // these today. Kept so older holders can still check, and for completeness.
+  // Big events baked in: Citi retail sold to Axis (2023); Vistara merged into
+  // Air India (Nov 2024); Jet Airways defunct (2019); ABN Amro / Barclays /
+  // Deutsche exited India retail cards.
+
+  // ---- Citibank (portfolio migrated to Axis Bank, 2023) ----
+  { id: "citi-prestige", name: "Citi Prestige (discontinued)", issuer: "Citi (now Axis)", network: "mastercard", discontinued: true,
+    domesticVisits: "unlimited", period: "year", spendGate: null, programs: ["priority", "mastercard"], railway: false,
+    ease: 1, ltf: false, fyf: false, approvalSpeed: "slow", eligibility: "Was invite/HNW. Migrated to Axis; new applications closed.",
+    feeNote: "Was ~₹20,000. Unlimited Priority Pass incl guest. Historical.", confidence: "low", verify: "axisbank.com (Citi migration)" },
+  { id: "citi-premiermiles", name: "Citi PremierMiles (discontinued)", issuer: "Citi (now Axis)", network: "visa", discontinued: true,
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "slow", eligibility: "Popular travel card; folded into Axis lineup.",
+    feeNote: "Was ₹3000. Domestic + Priority Pass. Historical terms.", confidence: "low", verify: "axisbank.com (Citi migration)" },
+  { id: "citi-rewards", name: "Citi Rewards (discontinued)", issuer: "Citi (now Axis)", network: "visa", discontinued: true,
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 3, ltf: false, fyf: false, approvalSpeed: "slow",
+    eligibility: "Rewards card, no lounge. Migrated to Axis.", feeNote: "No lounge — baseline. Historical.", confidence: "low", verify: "axisbank.com" },
+  { id: "citi-cashback", name: "Citi Cashback (discontinued)", issuer: "Citi (now Axis)", network: "visa", discontinued: true,
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 3, ltf: false, fyf: false, approvalSpeed: "slow",
+    eligibility: "Cashback card, no lounge.", feeNote: "No lounge — baseline. Historical.", confidence: "low", verify: "axisbank.com" },
+  { id: "citi-ultima", name: "Citi Ultima (discontinued)", issuer: "Citi (now Axis)", network: "visa", discontinued: true,
+    domesticVisits: "unlimited", period: "year", spendGate: null, programs: ["priority", "visa"], railway: false,
+    ease: 1, ltf: false, fyf: false, approvalSpeed: "slow", eligibility: "Was top invite-only Citi card.",
+    feeNote: "Unlimited Priority Pass. Historical.", confidence: "low", verify: "axisbank.com" },
+  { id: "citi-indianoil", name: "Citi IndianOil (discontinued)", issuer: "Citi (now Axis)", network: "visa", discontinued: true,
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 3, ltf: false, fyf: false, approvalSpeed: "slow",
+    eligibility: "Fuel co-brand, no lounge.", feeNote: "No lounge — baseline. Historical.", confidence: "low", verify: "axisbank.com" },
+
+  // ---- Jet Airways co-brands (airline defunct 2019) ----
+  { id: "jet-citi", name: "Jet Airways Citi (discontinued)", issuer: "Citi", network: "visa", discontinued: true,
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["priority", "visa"], railway: false,
+    ease: 2, ltf: false, fyf: false, approvalSpeed: "slow", eligibility: "Jet defunct 2019; card discontinued.",
+    feeNote: "Was domestic + Priority Pass. Dead airline. Historical only.", confidence: "low", verify: "n/a — airline defunct" },
+  { id: "jet-hdfc-intermiles", name: "InterMiles / JetPrivilege HDFC (discontinued)", issuer: "HDFC", network: "diners", discontinued: true,
+    domesticVisits: 8, period: "year", spendGate: null, programs: ["dreamfolks", "priority", "diners"], railway: false,
+    ease: 2, ltf: false, fyf: false, approvalSpeed: "slow", eligibility: "Rebranded InterMiles after Jet collapse; programme wound down.",
+    feeNote: "Was domestic + Priority Pass. Historical.", confidence: "low", verify: "hdfcbank.com" },
+
+  // ---- Vistara co-brands (Vistara merged into Air India Nov 2024) ----
+  { id: "axis-vistara-infinite-legacy", name: "Axis Vistara Infinite (legacy, merger)", issuer: "Axis", network: "visa", discontinued: true,
+    domesticVisits: "unlimited", period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: false,
+    ease: 2, ltf: false, fyf: false, approvalSpeed: "slow", eligibility: "Vistara merged into Air India; benefits transitioning.",
+    feeNote: "Was unlimited domestic + Priority Pass. Verify post-merger status.", confidence: "low", verify: "axisbank.com (Air India-Vistara merger)" },
+  { id: "sbi-club-vistara-legacy", name: "Club Vistara SBI (legacy, merger)", issuer: "SBI", network: "visa", discontinued: true,
+    domesticVisits: 8, period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Vistara merged; programme transitioning to Air India.",
+    feeNote: "Was domestic + Priority Pass. Verify post-merger.", confidence: "low", verify: "sbicard.com" },
+  { id: "idfc-club-vistara-legacy", name: "Club Vistara IDFC FIRST (legacy, merger)", issuer: "IDFC FIRST", network: "visa", discontinued: true,
+    domesticVisits: 8, period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Vistara merged into Air India.",
+    feeNote: "Was domestic + Priority Pass. Verify post-merger.", confidence: "low", verify: "idfcfirstbank.com" },
+
+  // ---- HDFC legacy lines (replaced by newer variants) ----
+  { id: "hdfc-regalia-classic", name: "HDFC Regalia (original, legacy)", issuer: "HDFC", network: "visa", discontinued: true,
+    domesticVisits: 12, period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Replaced by Regalia Gold.",
+    feeNote: "Was domestic + Priority Pass. Use Regalia Gold now.", confidence: "low", verify: "hdfcbank.com" },
+  { id: "hdfc-diners-rewardz", name: "HDFC Diners Club Rewardz (legacy)", issuer: "HDFC", network: "diners", discontinued: true,
+    domesticVisits: 6, period: "year", spendGate: null, programs: ["dreamfolks", "diners"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Lower Diners line, largely retired.",
+    feeNote: "Was some domestic lounge. Historical.", confidence: "low", verify: "hdfcbank.com" },
+  { id: "hdfc-world-mastercard-legacy", name: "HDFC World MasterCard (legacy)", issuer: "HDFC", network: "mastercard", discontinued: true,
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["dreamfolks", "mastercard"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Older premium line.",
+    feeNote: "Was domestic lounge. Historical.", confidence: "low", verify: "hdfcbank.com" },
+  { id: "hdfc-solitaire-legacy", name: "HDFC Solitaire (legacy women's)", issuer: "HDFC", network: "visa", discontinued: true,
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 3, ltf: false, fyf: false, approvalSpeed: "normal",
+    eligibility: "Discontinued women's card.", feeNote: "No standard lounge — baseline. Historical.", confidence: "low", verify: "hdfcbank.com" },
+
+  // ---- Foreign banks that exited India retail cards ----
+  { id: "sc-manhattan-legacy", name: "Standard Chartered Manhattan (legacy)", issuer: "Standard Chartered", network: "mastercard", discontinued: true,
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 3, ltf: false, fyf: false, approvalSpeed: "normal",
+    eligibility: "Popular cashback card, discontinued.", feeNote: "No lounge — baseline. Historical.", confidence: "low", verify: "sc.com/in" },
+  { id: "abn-amro-legacy", name: "ABN AMRO / RBS cards (exited India)", issuer: "ABN AMRO (exited)", network: "visa", discontinued: true,
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 2, ltf: false, fyf: false, approvalSpeed: "slow",
+    eligibility: "Bank exited Indian retail; cards long gone.", feeNote: "Historical only. No current access.", confidence: "low", verify: "n/a — bank exited" },
+  { id: "barclays-legacy", name: "Barclays India cards (exited)", issuer: "Barclays (exited)", network: "visa", discontinued: true,
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 2, ltf: false, fyf: false, approvalSpeed: "slow",
+    eligibility: "Barclays exited Indian retail cards.", feeNote: "Historical only.", confidence: "low", verify: "n/a — bank exited" },
+  { id: "deutsche-legacy", name: "Deutsche Bank India cards (legacy)", issuer: "Deutsche Bank (exited retail)", network: "visa", discontinued: true,
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 2, ltf: false, fyf: false, approvalSpeed: "slow",
+    eligibility: "Deutsche retail cards in India discontinued.", feeNote: "Historical only.", confidence: "low", verify: "n/a — exited retail" },
+
+  // ---- ICICI / SBI / Kotak / Yes legacy ----
+  { id: "icici-jet-airways-legacy", name: "ICICI Jet Airways (discontinued)", issuer: "ICICI", network: "visa", discontinued: true,
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Jet defunct 2019.",
+    feeNote: "Was domestic lounge. Dead airline. Historical.", confidence: "low", verify: "n/a — airline defunct" },
+  { id: "icici-instant-platinum-legacy", name: "ICICI Instant Platinum (legacy)", issuer: "ICICI", network: "visa", discontinued: true,
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 4, ltf: true, fyf: true, approvalSpeed: "fast",
+    eligibility: "FD-backed entry card, largely retired.", feeNote: "No lounge — baseline. Historical.", confidence: "low", verify: "icici.com" },
+  { id: "sbi-yatra-legacy", name: "SBI Yatra (legacy)", issuer: "SBI", network: "visa", discontinued: true,
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Older travel co-brand.",
+    feeNote: "Was domestic lounge. Historical.", confidence: "low", verify: "sbicard.com" },
+  { id: "kotak-royale-legacy", name: "Kotak Royale Signature (legacy)", issuer: "Kotak", network: "visa", discontinued: true,
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Older Kotak premium line.",
+    feeNote: "Was domestic lounge. Historical.", confidence: "low", verify: "kotak.com" },
+  { id: "yes-first-exclusive-legacy", name: "YES First Exclusive (legacy, rebranded)", issuer: "YES Bank", network: "mastercard", discontinued: true,
+    domesticVisits: "unlimited", period: "year", spendGate: null, programs: ["dreamfolks", "priority", "mastercard"], railway: false,
+    ease: 2, ltf: false, fyf: false, approvalSpeed: "slow", eligibility: "Rebranded into Marquee/Reserv line.",
+    feeNote: "Was unlimited domestic + Priority Pass. Use current YES premium.", confidence: "low", verify: "yesbank.in" },
+
+  // ==================================================================
+  // ==========  MORE CURRENT CREDIT VARIANTS (round-out)  ============
+  // ==================================================================
+  // Filling out current lineups across issuers so the list is closer to complete.
+  // All confidence "low" unless otherwise noted (not live-verified this session).
+
+  // ---- HDFC more ----
+  { id: "swiggy-hdfc", name: "Swiggy HDFC", issuer: "HDFC", network: "mastercard",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 4, ltf: false, fyf: true, approvalSpeed: "fast",
+    eligibility: "Food cashback co-brand.", feeNote: "₹500. No lounge — baseline.", confidence: "low", verify: "hdfcbank.com" },
+  { id: "hdfc-shoppers-stop", name: "Shoppers Stop HDFC", issuer: "HDFC", network: "visa",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 4, ltf: false, fyf: true, approvalSpeed: "fast",
+    eligibility: "Retail co-brand.", feeNote: "No lounge — baseline.", confidence: "low", verify: "hdfcbank.com" },
+  { id: "hdfc-freedom", name: "HDFC Freedom", issuer: "HDFC", network: "visa",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 4, ltf: false, fyf: true, approvalSpeed: "fast",
+    eligibility: "Entry rewards card.", feeNote: "No lounge — baseline.", confidence: "low", verify: "hdfcbank.com" },
+
+  // ---- Axis more ----
+  { id: "axis-olympus", name: "Axis Olympus", issuer: "Axis", network: "visa",
+    domesticVisits: "unlimited", period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: true,
+    ease: 1, ltf: false, fyf: false, approvalSpeed: "slow", eligibility: "New super-premium (2024), invite-led.",
+    feeNote: "Premium. Unlimited domestic + Priority Pass + railway.", confidence: "low", verify: "axisbank.com" },
+  { id: "axis-privilege", name: "Axis Privilege", issuer: "Axis", network: "visa",
+    domesticVisits: 8, period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Mid-tier rewards.",
+    feeNote: "Domestic + Priority Pass.", confidence: "low", verify: "axisbank.com" },
+  { id: "axis-neo", name: "Axis Neo", issuer: "Axis", network: "visa",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 5, ltf: false, fyf: true, approvalSpeed: "fast",
+    eligibility: "Entry youth card.", feeNote: "₹250. No lounge — baseline.", confidence: "low", verify: "axisbank.com" },
+  { id: "axis-lic", name: "LIC Axis (Signature)", issuer: "Axis", network: "rupay",
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["dreamfolks", "rupay"], railway: false,
+    ease: 4, ltf: false, fyf: true, approvalSpeed: "normal", eligibility: "LIC co-brand, RuPay (UPI).",
+    feeNote: "Signature tier: some domestic lounge.", confidence: "low", verify: "axisbank.com" },
+
+  // ---- ICICI more ----
+  { id: "icici-adani-one", name: "Adani One ICICI (Signature)", issuer: "ICICI", network: "visa",
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: true, approvalSpeed: "normal", eligibility: "Adani One travel co-brand; useful at Adani-run airports.",
+    feeNote: "Signature: domestic lounge + Adani airport perks.", confidence: "low", verify: "icici.com" },
+  { id: "icici-emirates", name: "Emirates Skywards ICICI", issuer: "ICICI", network: "visa",
+    domesticVisits: 8, period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: false,
+    ease: 2, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Premium airline co-brand.",
+    feeNote: "Domestic + Priority Pass + Skywards miles.", confidence: "low", verify: "icici.com" },
+  { id: "icici-platinum-chip", name: "ICICI Platinum Chip", issuer: "ICICI", network: "visa",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 5, ltf: true, fyf: true, approvalSpeed: "fast",
+    eligibility: "Entry lifetime-free card.", feeNote: "Lifetime free. No lounge — baseline.", confidence: "low", verify: "icici.com" },
+
+  // ---- SBI more ----
+  { id: "sbi-simplysave", name: "SBI SimplySAVE", issuer: "SBI", network: "visa",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 5, ltf: false, fyf: true, approvalSpeed: "normal",
+    eligibility: "Entry everyday card.", feeNote: "₹499. No lounge — baseline.", confidence: "low", verify: "sbicard.com" },
+  { id: "sbi-etihad", name: "Etihad Guest SBI (Premier)", issuer: "SBI", network: "visa",
+    domesticVisits: 8, period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: false,
+    ease: 2, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Airline co-brand.",
+    feeNote: "Premier: domestic + Priority Pass + Etihad miles.", confidence: "low", verify: "sbicard.com" },
+  { id: "sbi-apollo", name: "Apollo SBI", issuer: "SBI", network: "visa",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 4, ltf: false, fyf: true, approvalSpeed: "normal",
+    eligibility: "Health co-brand.", feeNote: "No standard lounge — baseline.", confidence: "low", verify: "sbicard.com" },
+  { id: "sbi-reliance", name: "Reliance SBI (Prime)", issuer: "SBI", network: "visa",
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: true, approvalSpeed: "normal", eligibility: "Retail co-brand; Prime tier has lounge.",
+    feeNote: "Prime tier: some domestic lounge.", confidence: "low", verify: "sbicard.com" },
+
+  // ---- IDFC / Federal / AU / IndusInd / RBL more ----
+  { id: "idfc-power", name: "IDFC FIRST Power (HPCL)", issuer: "IDFC FIRST", network: "visa",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 4, ltf: false, fyf: true, approvalSpeed: "fast",
+    eligibility: "Fuel co-brand.", feeNote: "No standard lounge — baseline.", confidence: "low", verify: "idfcfirstbank.com" },
+  { id: "idfc-millennia", name: "IDFC FIRST Millennia", issuer: "IDFC FIRST", network: "visa",
+    domesticVisits: 4, period: "quarter", spendGate: { amount: 20000, per: "month", note: "Lounge tied to ~₹20k monthly spend on FIRST cards." },
+    programs: ["dreamfolks", "visa"], railway: true, ease: 4, ltf: true, fyf: true, approvalSpeed: "fast",
+    eligibility: "Entry FIRST card, lifetime-free variants.", feeNote: "Lifetime free. Spend-linked domestic + railway.", confidence: "low", verify: "idfcfirstbank.com" },
+  { id: "federal-imperio", name: "Federal Bank Imperio (credit)", issuer: "Federal Bank", network: "visa",
+    domesticVisits: 4, period: "year", spendGate: null, programs: ["dreamfolks", "visa"], railway: true,
+    ease: 3, ltf: false, fyf: true, approvalSpeed: "normal", eligibility: "Mid income.",
+    feeNote: "Domestic + railway.", confidence: "low", verify: "federalbank.co.in" },
+  { id: "au-vetta", name: "AU Vetta", issuer: "AU Small Finance", network: "visa",
+    domesticVisits: 8, period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: true,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "normal", eligibility: "Premium AU line.",
+    feeNote: "Domestic + Priority Pass + railway.", confidence: "low", verify: "aubank.in" },
+  { id: "au-nomo", name: "AU NoMo", issuer: "AU Small Finance", network: "visa",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 4, ltf: true, fyf: true, approvalSpeed: "fast",
+    eligibility: "No-fee everyday card.", feeNote: "No lounge — baseline.", confidence: "low", verify: "aubank.in" },
+  { id: "indusind-samman", name: "IndusInd Samman (RuPay)", issuer: "IndusInd", network: "rupay",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["rupay", "dreamfolks"], railway: true,
+    ease: 4, ltf: false, fyf: true, approvalSpeed: "normal", eligibility: "Govt-employee focused, RuPay (UPI).",
+    feeNote: "RuPay: domestic + railway.", confidence: "low", verify: "indusind.com" },
+  { id: "rbl-world-prime", name: "RBL World Prime / Insignia", issuer: "RBL", network: "mastercard",
+    domesticVisits: "unlimited", period: "year", spendGate: null, programs: ["dreamfolks", "priority", "mastercard"], railway: false,
+    ease: 2, ltf: false, fyf: false, approvalSpeed: "slow", eligibility: "RBL premium / invite.",
+    feeNote: "Unlimited domestic + Priority Pass.", confidence: "low", verify: "rblbank.com" },
+
+  // ---- Newer fintech / RuPay co-brands ----
+  { id: "tiger-fi", name: "Fi / Federal co-brand", issuer: "Federal Bank", network: "visa",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 4, ltf: true, fyf: true, approvalSpeed: "fast",
+    eligibility: "Neobank card.", feeNote: "No lounge — baseline.", confidence: "low", verify: "fi.money" },
+  { id: "kiwi-rupay", name: "Kiwi (RuPay credit on UPI)", issuer: "Various", network: "rupay",
+    domesticVisits: 0, period: "year", spendGate: null, programs: [], railway: false, ease: 4, ltf: true, fyf: true, approvalSpeed: "fast",
+    eligibility: "App-based RuPay credit line for UPI.", feeNote: "No lounge — baseline. UPI spending focus.", confidence: "low", verify: "kiwi.com" },
+
+  // ==================================================================
+  // ==========  MORE DEBIT CARDS (remaining PSU + small fin)  ========
+  // ==================================================================
+  { id: "uco-rupay-debit", name: "UCO Bank RuPay Select Debit", issuer: "UCO Bank", network: "rupay", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["rupay", "dreamfolks"], railway: true,
+    ease: 5, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "UCO savings account.",
+    feeNote: "RuPay Select debit: domestic + railway.", confidence: "low", verify: "ucobank.com" },
+  { id: "iob-rupay-debit", name: "Indian Overseas Bank RuPay Select Debit", issuer: "Indian Overseas Bank", network: "rupay", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["rupay", "dreamfolks"], railway: true,
+    ease: 5, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "IOB savings account.",
+    feeNote: "RuPay Select debit: domestic + railway.", confidence: "low", verify: "iob.in" },
+  { id: "federal-rupay-select-debit", name: "Federal Bank RuPay Select Debit", issuer: "Federal Bank", network: "rupay", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["rupay", "dreamfolks"], railway: true,
+    ease: 5, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "Federal savings account.",
+    feeNote: "RuPay Select debit: domestic + railway.", confidence: "low", verify: "federalbank.co.in" },
+  { id: "dcb-rupay-debit", name: "DCB Bank RuPay Select Debit", issuer: "DCB Bank", network: "rupay", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["rupay", "dreamfolks"], railway: true,
+    ease: 5, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "DCB savings account.",
+    feeNote: "RuPay Select debit: domestic + railway.", confidence: "low", verify: "dcbbank.com" },
 ];

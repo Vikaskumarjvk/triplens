@@ -103,6 +103,8 @@ console.log("\n[9] recommender ranks easy + high-marginal-coverage cards");
   const easy = E.recommend(wallet, CARDS, LOUNGES, { easyOnly: true });
   ok("easyOnly excludes Infinia (ease 1)", !easy.some((r) => r.card.id === "hdfc-infinia"));
   ok("easyOnly keeps an ease>=4 card", easy.length > 0 && easy[0].card.ease >= 4);
+  // never recommend a card you can't apply for anymore
+  ok("recommender excludes discontinued cards", !recs.some((r) => r.card.discontinued));
 }
 
 console.log("\n[10] railway path works end to end");

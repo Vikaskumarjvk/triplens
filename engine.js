@@ -131,7 +131,10 @@
         .map((l) => l.id)
     );
 
-    const candidates = allCards.filter((c) => !ownedSet.has(c.id) && (c.programs || []).length > 0);
+    // never recommend a card you can't actually apply for (discontinued/legacy).
+    const candidates = allCards.filter(
+      (c) => !ownedSet.has(c.id) && !c.discontinued && (c.programs || []).length > 0
+    );
 
     const scored = candidates.map((card) => {
       const newRails = new Set(card.programs);
