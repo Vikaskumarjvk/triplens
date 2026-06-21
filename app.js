@@ -36,6 +36,10 @@
   const speedWord = (s) => ({ instant: "⚡ instant", fast: "🟢 arrives fast", normal: "🟡 normal wait", slow: "🔴 slow approval" }[s] || s || "");
   const railWord = (r) => (META.railWords && META.railWords[r]) || r;
   const isSimple = () => state.mode === "simple";
+  const cardType = (c) => (c.type === "debit" ? "debit" : "credit"); // default credit
+  const typeBadge = (c) => cardType(c) === "debit"
+    ? `<span class="chip type-debit">DEBIT</span>`
+    : `<span class="chip type-credit">CREDIT</span>`;
 
   // ---- mode toggle -------------------------------------------------------
   function applyMode() {
@@ -328,10 +332,23 @@
   $("#rec-type").onchange = renderRecommend;
 
   // ============================ ADD CARDS =================================
+  let addCardFilter = "all"; // all | credit | debit
   function renderAddCard() {
     const q = ($("#addcard-search") && $("#addcard-search").value || "").toLowerCase();
-    const list = CARDS.filter((c) => `${c.name} ${c.issuer}`.toLowerCase().includes(q));
-    $("#addcard-list").innerHTML = list.map((c) => {
+    const list = CARDS
+      .filter((c) => addCardFilter === "all" || cardType(c) === addCardFilter)
+      .filter((c) => `${c.name} ${c.issuer}`.toLowerCase().includes(q));
+
+    // filter chips + counts
+    const nCredit = CARDS.filter((c) => cardType(c) === "credit").length;
+    const nDebit = CARDS.filter((c) => cardType(c) === "debit").length;
+    const filterBar = `<div class="row" style="margin-bottom:10px;">
+      <button class="act ${addCardFilter === "all" ? "" : "ghost"} mini" data-addfilter="all">All (${CARDS.length})</button>
+      <button class="act ${addCardFilter === "credit" ? "" : "ghost"} mini" data-addfilter="credit">💳 Credit (${nCredit})</button>
+      <button class="act ${addCardFilter === "debit" ? "" : "ghost"} mini" data-addfilter="debit">🏧 Debit (${nDebit})</button>
+    </div>`;
+
+    const cards = list.map((c) => {
       const picked = state.wallet.includes(c.id);
       const tags = [
         `<span class="chip">${visitsLabel(c)}</span>`,
@@ -344,13 +361,16 @@
       return `
       <div class="card selectable ${picked ? "picked" : ""}" data-toggle="${c.id}">
         <div class="card-head">
-          <div><div class="card-title">${c.name} ${confBadge(c.confidence)}</div>
+          <div><div class="card-title">${typeBadge(c)} ${c.name} ${confBadge(c.confidence)}</div>
           <div class="card-sub">${c.issuer} · ${c.feeNote}</div></div>
           <span class="chip ${picked ? "good" : ""}">${picked ? "✓ added" : "tap to add"}</span>
         </div>
         <div class="row">${tags}</div>
       </div>`;
-    }).join("");
+    }).join("") || `<div class="empty">No cards match.</div>`;
+
+    $("#addcard-list").innerHTML = filterBar + cards;
+    $$("[data-addfilter]").forEach((b) => b.onclick = () => { addCardFilter = b.dataset.addfilter; renderAddCard(); });
     $$("[data-toggle]").forEach((el) => el.onclick = () => {
       const id = el.dataset.toggle;
       if (state.wallet.includes(id)) state.wallet = state.wallet.filter((x) => x !== id);
@@ -460,8 +480,13 @@
 
   // ---- footer ------------------------------------------------------------
   $("#data-freshness").textContent = "Data reviewed " + (META.lastReviewed || "—");
-  if ($("#about-version")) $("#about-version").textContent =
-    "LoungeLens · data reviewed " + (META.lastReviewed || "—") + " · " + CARDS.length + " cards · " + LOUNGES.length + " lounges · all data stored locally";
+  if ($("#about-version")) {
+    const nCredit = CARDS.filter((c) => cardType(c) === "credit").length;
+    const nDebit = CARDS.filter((c) => cardType(c) === "debit").length;
+    $("#about-version").textContent =
+      "LoungeLens · data reviewed " + (META.lastReviewed || "—") + " · " + CARDS.length +
+      " cards (" + nCredit + " credit, " + nDebit + " debit) · " + LOUNGES.length + " lounges · all data stored locally";
+  }
   $("#reset-all").onclick = () => {
     if (confirm("Clear your cards, visits and trip from this browser?")) { state = blank(); save(); applyMode(); render(); renderTripInputs(); }
   };

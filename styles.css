@@ -181,6 +181,10 @@ button.act.big { width: 100%; padding: 13px; font-size: 16px; margin-top: 8px; b
 .rung b { color: var(--txt); }
 .exp-row { border-top: 1px dashed var(--line); margin-top: 8px; padding-top: 8px; }
 
+/* credit / debit type badges */
+.chip.type-credit { background: #102a43; color: #6cb6ff; border-color: #1c4a7a; font-size: 9px; }
+.chip.type-debit { background: #2a1a3a; color: #c98bff; border-color: #4a2d6a; font-size: 9px; }
+
 /* install button */
 .install-btn { background: var(--good) !important; color: #fff !important; border-color: var(--good) !important; }
 

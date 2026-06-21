@@ -283,4 +283,90 @@ window.LL_CARDS = [
     domesticVisits: 2, period: "quarter", spendGate: null, programs: ["rupay", "dreamfolks"], railway: true,
     ease: 4, ltf: false, fyf: true, approvalSpeed: "normal", eligibility: "PSU bank customers.",
     feeNote: "RuPay tiered lounge + railway.", confidence: "low", verify: "issuing PSU bank T&C" },
+
+  // ==================================================================
+  // ========================  DEBIT CARDS  ===========================
+  // ==================================================================
+  // HONESTY: banks CUT debit-card lounge access hard across 2024-25. Most now
+  // need a prior-period spend (e.g. ₹25k-₹75k/quarter) or charge per visit, and
+  // some removed it entirely. So most debit entries are confidence "low" with a
+  // loud verify note. Debit cards are EASIEST to get (you just need the bank
+  // account) so ease=5 / approvalSpeed instant-fast. type:"debit".
+
+  { id: "rupay-select-debit", name: "RuPay Select Debit (any bank)", issuer: "Various", network: "rupay", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["rupay", "dreamfolks"], railway: true,
+    ease: 5, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "Just need the bank account; issued with savings account.",
+    feeNote: "RuPay Select DEBIT tier: ~2 domestic/quarter + railway. The easiest lounge access that exists.",
+    confidence: "med", verify: "rupay.co.in debit lounge program + your bank" },
+  { id: "rupay-platinum-debit", name: "RuPay Platinum Debit (any bank)", issuer: "Various", network: "rupay", type: "debit",
+    domesticVisits: 2, period: "year", spendGate: null, programs: ["rupay", "dreamfolks"], railway: true,
+    ease: 5, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "Common on basic savings accounts.",
+    feeNote: "Lower allowance than Select. Often 1/quarter or 2/year.", confidence: "low", verify: "issuing bank debit T&C" },
+
+  { id: "sbi-platinum-debit", name: "SBI Platinum Debit", issuer: "SBI", network: "visa", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: { amount: 75000, per: "quarter", note: "SBI added a prior-quarter spend requirement for debit lounge access." },
+    programs: ["dreamfolks", "visa", "mastercard"], railway: false, ease: 5, ltf: false, fyf: false, approvalSpeed: "instant",
+    eligibility: "Issued with eligible SBI savings account.", feeNote: "Annual debit fee applies. Lounge now spend-gated.",
+    confidence: "low", verify: "sbi.co.in debit card lounge T&C (changed 2024-25)" },
+  { id: "sbi-vishesh-debit", name: "SBI Vishesh / Yuva Debit", issuer: "SBI", network: "mastercard", type: "debit",
+    domesticVisits: 1, period: "quarter", spendGate: { amount: 50000, per: "quarter", note: "Spend-gated debit lounge." },
+    programs: ["dreamfolks", "mastercard"], railway: false, ease: 5, ltf: false, fyf: false, approvalSpeed: "instant",
+    eligibility: "SBI account holders.", feeNote: "Spend-gated debit lounge.", confidence: "low", verify: "sbi.co.in" },
+
+  { id: "hdfc-millennia-debit", name: "HDFC Millennia Debit", issuer: "HDFC", network: "mastercard", type: "debit",
+    domesticVisits: 1, period: "quarter", spendGate: { amount: 75000, per: "quarter", note: "HDFC debit lounge requires prior-quarter spend." },
+    programs: ["dreamfolks", "mastercard"], railway: false, ease: 5, ltf: false, fyf: false, approvalSpeed: "instant",
+    eligibility: "HDFC savings account.", feeNote: "Spend-gated debit lounge.", confidence: "low", verify: "hdfcbank.com debit T&C" },
+  { id: "hdfc-imperia-debit", name: "HDFC Imperia / Times Debit", issuer: "HDFC", network: "visa", type: "debit",
+    domesticVisits: 1, period: "quarter", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 4, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "Imperia banking relationship.",
+    feeNote: "Premium debit; lounge tied to relationship tier.", confidence: "low", verify: "hdfcbank.com" },
+
+  { id: "icici-coral-debit", name: "ICICI Coral Debit", issuer: "ICICI", network: "visa", type: "debit",
+    domesticVisits: 1, period: "quarter", spendGate: { amount: 50000, per: "quarter", note: "Debit lounge spend-gated on newer terms." },
+    programs: ["dreamfolks", "visa"], railway: true, ease: 5, ltf: false, fyf: false, approvalSpeed: "instant",
+    eligibility: "ICICI savings account.", feeNote: "Spend-gated debit lounge + railway.", confidence: "low", verify: "icici.com debit T&C" },
+  { id: "icici-sapphiro-debit", name: "ICICI Sapphiro / Expressions Debit", issuer: "ICICI", network: "visa", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: { amount: 50000, per: "quarter", note: "Spend-gated." },
+    programs: ["dreamfolks", "visa", "mastercard"], railway: true, ease: 4, ltf: false, fyf: false, approvalSpeed: "instant",
+    eligibility: "Higher-tier ICICI account.", feeNote: "Spend-gated debit lounge + railway.", confidence: "low", verify: "icici.com" },
+
+  { id: "axis-burgundy-debit", name: "Axis Burgundy Debit", issuer: "Axis", network: "visa", type: "debit",
+    domesticVisits: "unlimited", period: "year", spendGate: null, programs: ["dreamfolks", "priority", "visa"], railway: true,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "fast", eligibility: "Axis Burgundy banking (high balance/relationship).",
+    feeNote: "Premium debit: domestic + Priority Pass + railway via Burgundy.", confidence: "low", verify: "axisbank.com Burgundy T&C" },
+  { id: "axis-priority-debit", name: "Axis Priority / Delight Debit", issuer: "Axis", network: "visa", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 4, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "Priority banking / eligible account.",
+    feeNote: "Domestic debit lounge.", confidence: "low", verify: "axisbank.com" },
+
+  { id: "kotak-privy-debit", name: "Kotak Privy League Debit", issuer: "Kotak", network: "visa", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 4, ltf: false, fyf: false, approvalSpeed: "fast", eligibility: "Privy League banking relationship.",
+    feeNote: "Premium debit lounge.", confidence: "low", verify: "kotak.com" },
+
+  { id: "yes-debit", name: "YES Bank Premia / Prosperity Debit", issuer: "YES Bank", network: "mastercard", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["dreamfolks", "mastercard"], railway: false,
+    ease: 4, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "Eligible YES account.",
+    feeNote: "Debit lounge on premium variants.", confidence: "low", verify: "yesbank.in" },
+
+  { id: "federal-debit", name: "Federal Bank Imperio / Celesta Debit", issuer: "Federal Bank", network: "visa", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["dreamfolks", "visa"], railway: true,
+    ease: 4, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "Eligible Federal account.",
+    feeNote: "Debit lounge + railway on premium variants.", confidence: "low", verify: "federalbank.co.in" },
+
+  { id: "idbi-rupay-debit", name: "PSU RuPay Select Debit (SBI/BoB/PNB/Canara/Union)", issuer: "PSU banks", network: "rupay", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["rupay", "dreamfolks"], railway: true,
+    ease: 5, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "Any of these PSU savings accounts.",
+    feeNote: "RuPay Select debit: domestic + railway. Easiest broad access.", confidence: "low", verify: "issuing PSU bank + rupay.co.in" },
+
+  { id: "indusind-debit", name: "IndusInd Pioneer / Exclusive Debit", issuer: "IndusInd", network: "visa", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 4, ltf: false, fyf: false, approvalSpeed: "instant", eligibility: "Eligible IndusInd account.",
+    feeNote: "Premium debit lounge.", confidence: "low", verify: "indusind.com" },
+
+  { id: "dbs-debit", name: "DBS Treasures Debit", issuer: "DBS", network: "visa", type: "debit",
+    domesticVisits: 2, period: "quarter", spendGate: null, programs: ["dreamfolks", "visa"], railway: false,
+    ease: 3, ltf: false, fyf: false, approvalSpeed: "fast", eligibility: "DBS Treasures banking relationship.",
+    feeNote: "Premium debit lounge.", confidence: "low", verify: "dbs.com/in" },
 ];
