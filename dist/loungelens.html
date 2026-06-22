@@ -801,6 +801,33 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .honesty-note { margin-top: 20px; padding: 13px 15px; background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: var(--r-md); font-size: 13px; line-height: 1.5; color: var(--dim); }
 .honesty-note b { color: var(--txt); }
 
+/* live fares (real prices fetched in-browser) */
+#fl-live { background: linear-gradient(135deg, #36d399, #2bb3d4); color: #04261c; border-color: transparent; font-weight: 800; }
+.fl-loading { padding: 16px; text-align: center; color: var(--accent2); font-weight: 700; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+.fl-err { padding: 14px 16px; background: var(--bad-dim); border: 1px solid rgba(251,113,133,.4); border-radius: var(--r-md); font-size: 14px; }
+.fl-livehead { font-size: 15px; font-weight: 800; margin: 4px 0 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.lf-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 13px 15px; display: flex; flex-direction: column; gap: 8px; }
+.lf-card.is-cheapest { border-color: rgba(54,211,153,.5); box-shadow: 0 0 0 1px rgba(54,211,153,.25); }
+.lf-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.lf-air { font-weight: 700; font-size: 14px; }
+.lf-price { font-weight: 800; font-size: 18px; white-space: nowrap; }
+.lf-mid { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 14px; }
+.lf-time { font-weight: 700; }
+.lf-dash { color: var(--dim); }
+.lf-pay { font-size: 12.5px; color: var(--good); background: var(--good-dim); border-radius: var(--r-sm); padding: 6px 9px; }
+.lf-foot { margin-top: 12px; }
+
+/* free key setup */
+.key-setup { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 4px 16px; margin: 16px 0; }
+.key-setup summary { cursor: pointer; font-weight: 700; padding: 12px 0; font-size: 14px; }
+.key-setup[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.key-body { padding-bottom: 14px; font-size: 13.5px; line-height: 1.55; }
+.key-steps { margin: 10px 0; padding-left: 20px; }
+.key-steps li { margin-bottom: 6px; }
+.key-steps a { color: var(--accent2); }
+
 /* coupons view */
 .check { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--dim); cursor: pointer; }
 .coupon-row { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 9px; }
@@ -865,25 +892,57 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
         <div class="lh-glow"></div>
         <div class="lh-badge">✈️ India flight deals + best way to pay</div>
         <h2 class="lh-title">Find the fare,<br><span class="lh-grad">pay the smart way.</span></h2>
-        <p class="lh-sub">Tell me your route. I open the live search on every airline and booking site at once, and tell you which of your cards, which app offer, and which coupon saves the most. Real prices stay on the real sites. I never make a price up.</p>
+        <p class="lh-sub">Real fares, pulled live, for free. Connect a free flight-data key once and I fetch actual prices across airlines right here. I also line up every airline and booking site with the best card/app/coupon discount for your wallet. I never make a price up.</p>
         <div class="lh-stats" id="fl-stats"></div>
       </div>
       <div class="hero">
         <h2>Where to?</h2>
-        <p>Pick your route and date. I'll line up every airline + OTA with the best discount for your wallet on each.</p>
+        <p>Pick your route and date. Get live fares, then every booking site with the best discount for your wallet.</p>
       </div>
       <div class="flight-builder">
         <div class="fb-row">
-          <input class="fb-input" id="fl-from" placeholder="From (city or code)" list="airport-list" autocomplete="off" />
+          <input class="fb-input" id="fl-from" placeholder="From (city or code)" list="fl-airport-list" autocomplete="off" />
           <button class="act ghost mini" id="fl-swap" title="Swap" aria-label="Swap origin and destination">⇄</button>
-          <input class="fb-input" id="fl-to" placeholder="To (city or code)" list="airport-list" autocomplete="off" />
+          <input class="fb-input" id="fl-to" placeholder="To (city or code)" list="fl-airport-list" autocomplete="off" />
         </div>
         <div class="fb-row">
           <input class="fb-input" id="fl-date" type="date" aria-label="Travel date" />
-          <button class="act big" id="fl-go">Compare fares →</button>
+          <button class="act big" id="fl-live">⚡ Get live fares</button>
+          <button class="act ghost" id="fl-go">Compare sites →</button>
         </div>
-        <datalist id="airport-list"></datalist>
+        <datalist id="fl-airport-list"></datalist>
       </div>
+
+      <!-- LIVE fares (real prices fetched in-browser from a free flight-data API) -->
+      <div id="fl-live-status"></div>
+      <div id="fl-live-result"></div>
+
+      <!-- free key setup (collapsible) -->
+      <details id="fl-key-setup" class="key-setup">
+        <summary>⚡ Connect free live fares (one-time, 2 min)</summary>
+        <div class="key-body">
+          <p>Live airline fares come from <b>Amadeus</b>, a real flight-data provider with a free tier. A free static site like this can't scrape MakeMyTrip or IndiGo directly (they block bots), but Amadeus lets your browser fetch real fares with no server. Your key is stored only on this device and only ever sent to Amadeus.</p>
+          <ol class="key-steps">
+            <li>Open <a href="https://developers.amadeus.com/register" target="_blank" rel="noopener">developers.amadeus.com/register</a> and sign up (free, no card).</li>
+            <li>Create an app in <b>Self-Service</b> &rarr; copy your <b>API Key</b> and <b>API Secret</b>.</li>
+            <li>Paste them below. Keep environment on <b>Test</b> to start (free, sample inventory). Switch to <b>Production</b> once you add a card on Amadeus for real fares.</li>
+          </ol>
+          <div class="fb-row">
+            <input class="fb-input" id="fl-key-id" placeholder="API Key (client id)" autocomplete="off" />
+            <input class="fb-input" id="fl-key-secret" type="password" placeholder="API Secret" autocomplete="off" />
+          </div>
+          <div class="fb-row">
+            <select class="fb-input" id="fl-key-env" aria-label="Amadeus environment">
+              <option value="test">Test (free, sample data)</option>
+              <option value="production">Production (real fares, free tier)</option>
+            </select>
+            <button class="act" id="fl-key-save">Save key</button>
+            <button class="act ghost mini" id="fl-key-clear">Clear</button>
+          </div>
+          <div class="card-sub" id="fl-key-state"></div>
+        </div>
+      </details>
+
       <div id="fl-bestpay"></div>
       <div id="fl-result"></div>
       <div class="honesty-note" id="fl-honesty"></div>
@@ -3840,6 +3899,157 @@ window.LL_FLIGHTS = {
 </script>
   <script>
 /*
+ * FlightLens LIVE — real-time fares from the Amadeus Self-Service API, fetched
+ * DIRECTLY from the browser (no backend). This works on a free static site
+ * because Amadeus returns Access-Control-Allow-Origin:* on both its OAuth token
+ * endpoint and its flight-offers endpoint (verified 2026-06-22 via preflight).
+ *
+ * Why Amadeus and not "scrape MakeMyTrip": OTAs/airlines run DataDome/Akamai
+ * anti-bot and hard-drop browser requests (MMT returns HTTP 000). No request
+ * bypasses that from a static page. Amadeus is the real free real-time path.
+ *
+ * The user pastes their OWN free Amadeus key (test or production). It is stored
+ * only in their browser (localStorage), never sent anywhere except Amadeus.
+ *
+ * Split for testability: parseOffers()/cheapestByAirline() are PURE (Node-tested
+ * against a real-shape fixture); the fetch functions are thin browser wrappers.
+ */
+(function (root) {
+  "use strict";
+
+  var HOSTS = {
+    test: "https://test.api.amadeus.com",
+    production: "https://api.amadeus.com",
+  };
+
+  // ---- PURE parsers (Node-testable) --------------------------------------
+
+  // minutes from an ISO-8601 duration like "PT2H10M"
+  function durationToMin(iso) {
+    if (!iso) return null;
+    var m = /PT(?:(\d+)H)?(?:(\d+)M)?/.exec(iso);
+    if (!m) return null;
+    return (Number(m[1] || 0) * 60) + Number(m[2] || 0);
+  }
+  function minLabel(min) {
+    if (min == null) return "";
+    var h = Math.floor(min / 60), mm = min % 60;
+    return (h ? h + "h " : "") + (mm ? mm + "m" : (h ? "" : "0m"));
+  }
+  function timeLabel(iso) {
+    // "2026-07-12T06:15:00" -> "06:15"
+    if (!iso) return "";
+    var m = /T(\d{2}:\d{2})/.exec(iso);
+    return m ? m[1] : "";
+  }
+
+  // turn the raw Amadeus flight-offers JSON into clean rows the UI can render.
+  // resp = { data:[offer...], dictionaries:{ carriers:{...} } }
+  function parseOffers(resp) {
+    if (!resp || !Array.isArray(resp.data)) return [];
+    var carriers = (resp.dictionaries && resp.dictionaries.carriers) || {};
+    return resp.data.map(function (o) {
+      var it = (o.itineraries && o.itineraries[0]) || {};
+      var segs = it.segments || [];
+      var first = segs[0] || {};
+      var last = segs[segs.length - 1] || {};
+      var carrierCode = (o.validatingAirlineCodes && o.validatingAirlineCodes[0]) || first.carrierCode || "";
+      var stops = Math.max(0, segs.length - 1);
+      var price = o.price || {};
+      return {
+        id: o.id,
+        airlineCode: carrierCode,
+        airline: carriers[carrierCode] || carrierCode || "Airline",
+        priceTotal: Number(price.grandTotal || price.total || 0),
+        currency: price.currency || "INR",
+        depTime: timeLabel(first.departure && first.departure.at),
+        arrTime: timeLabel(last.arrival && last.arrival.at),
+        from: (first.departure && first.departure.iataCode) || "",
+        to: (last.arrival && last.arrival.iataCode) || "",
+        durationMin: durationToMin(it.duration),
+        durationLabel: minLabel(durationToMin(it.duration)),
+        stops: stops,
+        stopsLabel: stops === 0 ? "non-stop" : stops + " stop" + (stops > 1 ? "s" : ""),
+        seatsLeft: o.numberOfBookableSeats || null,
+      };
+    }).sort(function (a, b) { return a.priceTotal - b.priceTotal; });
+  }
+
+  // cheapest fare per airline (the comparison table the user actually wants)
+  function cheapestByAirline(rows) {
+    var byAir = {};
+    rows.forEach(function (r) {
+      if (!byAir[r.airlineCode] || r.priceTotal < byAir[r.airlineCode].priceTotal) byAir[r.airlineCode] = r;
+    });
+    return Object.keys(byAir).map(function (k) { return byAir[k]; })
+      .sort(function (a, b) { return a.priceTotal - b.priceTotal; });
+  }
+
+  // ---- BROWSER fetch wrappers (not Node-tested) --------------------------
+
+  var TOKEN_KEY = "loungelens.amadeus.token"; // {access_token, exp}
+  function loadToken() { try { return JSON.parse(localStorage.getItem(TOKEN_KEY)); } catch (e) { return null; } }
+  function saveToken(t) { try { localStorage.setItem(TOKEN_KEY, JSON.stringify(t)); } catch (e) {} }
+
+  // get (cached) OAuth token. creds = {clientId, clientSecret, env}
+  function getToken(creds) {
+    var cached = loadToken();
+    var nowSec = Math.floor(Date.now() / 1000);
+    if (cached && cached.access_token && cached.exp > nowSec + 30) return Promise.resolve(cached.access_token);
+    var host = HOSTS[creds.env] || HOSTS.test;
+    return fetch(host + "/v1/security/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "grant_type=client_credentials&client_id=" + encodeURIComponent(creds.clientId) +
+            "&client_secret=" + encodeURIComponent(creds.clientSecret),
+    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.j.access_token) {
+          var msg = (res.j && (res.j.error_description || res.j.title)) || "auth failed";
+          throw new Error("Amadeus auth: " + msg);
+        }
+        saveToken({ access_token: res.j.access_token, exp: nowSec + (res.j.expires_in || 1700) });
+        return res.j.access_token;
+      });
+  }
+
+  // search live fares. q = {from, to, date, adults, env}
+  function searchLive(creds, q) {
+    var host = HOSTS[creds.env] || HOSTS.test;
+    return getToken(creds).then(function (token) {
+      var url = host + "/v2/shopping/flight-offers" +
+        "?originLocationCode=" + encodeURIComponent(q.from) +
+        "&destinationLocationCode=" + encodeURIComponent(q.to) +
+        "&departureDate=" + encodeURIComponent(q.date) +
+        "&adults=" + (q.adults || 1) +
+        "&currencyCode=INR&max=" + (q.max || 20) + "&nonStop=false";
+      return fetch(url, { headers: { Authorization: "Bearer " + token } })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
+        .then(function (res) {
+          if (!res.ok) {
+            var e = (res.j && res.j.errors && res.j.errors[0]) || {};
+            throw new Error("Amadeus: " + (e.detail || e.title || ("HTTP " + res.status)));
+          }
+          return { rows: parseOffers(res.j), raw: res.j };
+        });
+    });
+  }
+
+  function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+
+  var LiveAPI = {
+    HOSTS: HOSTS,
+    durationToMin: durationToMin, minLabel: minLabel, timeLabel: timeLabel,
+    parseOffers: parseOffers, cheapestByAirline: cheapestByAirline,
+    getToken: getToken, searchLive: searchLive, clearToken: clearToken,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = LiveAPI;
+  root.LL_FLIGHT_LIVE = LiveAPI;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+  <script>
+/*
  * LoungeLens — self-improvement module (rung 1: free, client-side, honest).
  *
  * WHAT THIS IS (and is NOT):
@@ -5472,7 +5682,7 @@ window.LL_FLIGHTS = {
   }
 
   function fillAirportList() {
-    const dl = $("#airport-list");
+    const dl = $("#fl-airport-list");
     if (!dl) return;
     dl.innerHTML = FE.airports(FLIGHTS)
       .map((a) => `<option value="${a.city}">${a.code} — ${a.city}</option>`).join("");
@@ -5569,6 +5779,112 @@ window.LL_FLIGHTS = {
     $("#fl-result").innerHTML = head + body;
   }
 
+  // ---- LIVE fares (real prices, fetched in-browser from Amadeus) ----------
+  const LIVE = window.LL_FLIGHT_LIVE;
+  const AKEY = "loungelens.amadeus.creds"; // { clientId, clientSecret, env }
+  function loadCreds() { try { return JSON.parse(localStorage.getItem(AKEY)); } catch (e) { return null; } }
+  function saveCreds(c) { try { localStorage.setItem(AKEY, JSON.stringify(c)); } catch (e) {} }
+  function clearCreds() { try { localStorage.removeItem(AKEY); } catch (e) {} if (LIVE) LIVE.clearToken(); }
+
+  function renderKeyState() {
+    const el = $("#fl-key-state"); if (!el) return;
+    const c = loadCreds();
+    if (c && c.clientId) {
+      el.innerHTML = `<span class="chip good">connected</span> key ending …${c.clientId.slice(-4)} · ${c.env === "production" ? "Production (real fares)" : "Test (sample data)"}`;
+      if ($("#fl-key-env")) $("#fl-key-env").value = c.env || "test";
+    } else {
+      el.innerHTML = `Not connected yet. Paste a free Amadeus key above to pull live fares.`;
+    }
+  }
+
+  function wireKeySetup() {
+    if ($("#fl-key-save")) $("#fl-key-save").onclick = () => {
+      const clientId = ($("#fl-key-id").value || "").trim();
+      const clientSecret = ($("#fl-key-secret").value || "").trim();
+      const env = ($("#fl-key-env").value) || "test";
+      if (!clientId || !clientSecret) { toast("Paste both the API key and secret."); return; }
+      saveCreds({ clientId, clientSecret, env });
+      if (LIVE) LIVE.clearToken();
+      $("#fl-key-secret").value = "";
+      renderKeyState();
+      toast("Key saved on this device. Tap Get live fares.");
+    };
+    if ($("#fl-key-clear")) $("#fl-key-clear").onclick = () => { clearCreds(); renderKeyState(); toast("Key cleared from this device."); };
+    if ($("#fl-key-env")) $("#fl-key-env").onchange = () => {
+      const c = loadCreds(); if (c) { c.env = $("#fl-key-env").value; saveCreds(c); if (LIVE) LIVE.clearToken(); renderKeyState(); }
+    };
+    renderKeyState();
+  }
+
+  // map an airline code from Amadeus to one of OUR provider deep links (so a
+  // live fare row can also offer "book on the airline / on an OTA").
+  const AIRLINE_PROVIDER = { "6E": "indigo", AI: "airindia", QP: "akasa", SG: "spicejet", IX: "airindiaexpress", "9I": "alliance" };
+
+  function getLiveFares() {
+    const out = $("#fl-live-result"), status = $("#fl-live-status");
+    if (!out || !status) return;
+    const f = state.flight || {};
+    const from = flAirportLabel(f.from), to = flAirportLabel(f.to);
+    if (!from || !to) { status.innerHTML = `<div class="empty">Enter both cities first, then tap Get live fares.</div>`; return; }
+    if (from.code === to.code) { status.innerHTML = `<div class="empty">Origin and destination are the same.</div>`; return; }
+    if (!f.date) { status.innerHTML = `<div class="empty">Pick a travel date for live fares.</div>`; return; }
+    const creds = loadCreds();
+    if (!creds || !creds.clientId) {
+      status.innerHTML = `<div class="nudge">⚡ To pull <b>real live fares</b>, connect a free Amadeus key once. <b class="link" id="fl-open-key">Set it up (2 min) →</b></div>`;
+      const open = $("#fl-open-key"); if (open) open.onclick = () => { const d = $("#fl-key-setup"); if (d) { d.open = true; d.scrollIntoView({ behavior: "smooth" }); } };
+      return;
+    }
+    if (!LIVE) { status.innerHTML = `<div class="empty">Live module not loaded.</div>`; return; }
+
+    status.innerHTML = `<div class="fl-loading">⚡ Fetching live fares ${from.code} → ${to.code}…</div>`;
+    out.innerHTML = "";
+    LIVE.searchLive(creds, { from: from.code, to: to.code, date: f.date, adults: 1, max: 25 })
+      .then((res) => {
+        const rows = res.rows || [];
+        if (!rows.length) { status.innerHTML = `<div class="empty">No live fares returned for ${from.code} → ${to.code} on that date. Try another date, or this route may not be in the provider's inventory.</div>`; return; }
+        renderLiveFares(rows, from, to, creds);
+        status.innerHTML = `<div class="fl-livehead">⚡ ${rows.length} live fares · ${from.code} → ${to.code} · ${FE.dateParts(f.date) ? FE.dateParts(f.date).text : f.date}${creds.env === "test" ? ` <span class="chip warn">test/sample data</span>` : ` <span class="chip good">live</span>`}</div>`;
+      })
+      .catch((err) => {
+        status.innerHTML = `<div class="fl-err">Couldn't fetch live fares: ${(err && err.message) || "request failed"}.<br><span class="card-sub">If this is an auth error, re-check your key/secret and environment in the setup below. Test keys only return sample inventory.</span></div>`;
+      });
+  }
+
+  function renderLiveFares(rows, from, to, creds) {
+    const out = $("#fl-live-result"); if (!out) return;
+    const wallet = state.wallet.map((id) => card(id)).filter(Boolean);
+    const cheapest = LIVE.cheapestByAirline(rows);
+    const min = rows[0] ? rows[0].priceTotal : 0;
+
+    const cards = cheapest.map((r) => {
+      const provId = AIRLINE_PROVIDER[r.airlineCode];
+      const prov = provId ? (FLIGHTS.providers || []).find((p) => p.id === provId) : null;
+      const link = prov ? FE.buildLink(prov, from.code, to.code, (state.flight || {}).date) : null;
+      // does the user hold a card with an offer on this airline's provider?
+      let payHint = "";
+      if (prov && wallet.length) {
+        const offers = FE.offersForProvider(prov, wallet).filter((o) => o.inWallet);
+        if (offers.length) payHint = `<div class="lf-pay">💳 ${offers[0].matchedCards[0].name}${offers[0].offer.code ? ` · code ${offers[0].offer.code}` : ""} may apply${prov.type === "airline" ? " on " + prov.name : ""}</div>`;
+      }
+      const cheapestTag = r.priceTotal === min ? `<span class="chip good">cheapest</span>` : "";
+      return `<div class="lf-card ${r.priceTotal === min ? "is-cheapest" : ""}">
+        <div class="lf-top">
+          <div class="lf-air">${r.airline} <span class="card-sub">${r.airlineCode}</span></div>
+          <div class="lf-price">₹${Number(r.priceTotal).toLocaleString("en-IN")} ${cheapestTag}</div>
+        </div>
+        <div class="lf-mid">
+          <span class="lf-time">${r.depTime}</span><span class="lf-dash">—</span><span class="lf-time">${r.arrTime}</span>
+          <span class="card-sub">${r.durationLabel} · ${r.stopsLabel}${r.seatsLeft ? ` · ${r.seatsLeft} seats left` : ""}</span>
+        </div>
+        ${payHint}
+        ${link ? `<a class="act mini" href="${link}" target="_blank" rel="noopener">book on ${prov.name} ↗</a>` : `<span class="card-sub">Search this airline on the sites below.</span>`}
+      </div>`;
+    }).join("");
+
+    out.innerHTML = `<div class="lf-grid">${cards}</div>
+      <div class="card-sub lf-foot">Cheapest per airline shown (${rows.length} total fares seen). Prices are live from the flight-data provider; the final price on the airline/OTA can differ slightly after taxes/fees. Tap through to book.</div>`;
+  }
+
   // flight input wiring
   function wireFlights() {
     const persist = () => {
@@ -5584,10 +5900,12 @@ window.LL_FLIGHTS = {
       if (el) el.oninput = () => { persist(); };
     });
     if ($("#fl-go")) $("#fl-go").onclick = () => { persist(); renderFlights(); $("#fl-result").scrollIntoView({ behavior: "smooth", block: "start" }); };
+    if ($("#fl-live")) $("#fl-live").onclick = () => { persist(); renderFlights(); getLiveFares(); const s = $("#fl-live-status"); if (s) s.scrollIntoView({ behavior: "smooth", block: "start" }); };
     if ($("#fl-swap")) $("#fl-swap").onclick = () => {
       const a = $("#fl-from"), b = $("#fl-to");
       if (a && b) { const t = a.value; a.value = b.value; b.value = t; persist(); renderFlights(); }
     };
+    wireKeySetup();
   }
 
   // ---- coupons & offers view ---------------------------------------------

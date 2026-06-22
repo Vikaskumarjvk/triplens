@@ -34,6 +34,7 @@ js_files = [
     "brand.js",
     "engine.js",
     "flight-engine.js",
+    "flight-live.js",
     "selfcheck.js",
     "profile.js",
     "auth.js",

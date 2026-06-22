@@ -9,7 +9,7 @@
  * This fixes the earlier cache-first bug where users were stuck on a stale version.
  * Bump CACHE_VERSION on each release so old caches are purged on activate.
  */
-const CACHE_VERSION = "loungelens-v13-2026-06-22-flights";
+const CACHE_VERSION = "loungelens-v14-2026-06-22-livefares";
 const SHELL = [
   "./",
   "./index.html",
@@ -17,6 +17,7 @@ const SHELL = [
   "./brand.js",
   "./engine.js",
   "./flight-engine.js",
+  "./flight-live.js",
   "./data/flights.js",
   "./selfcheck.js",
   "./profile.js",

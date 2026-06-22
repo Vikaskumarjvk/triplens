@@ -63,25 +63,57 @@
         <div class="lh-glow"></div>
         <div class="lh-badge">✈️ India flight deals + best way to pay</div>
         <h2 class="lh-title">Find the fare,<br><span class="lh-grad">pay the smart way.</span></h2>
-        <p class="lh-sub">Tell me your route. I open the live search on every airline and booking site at once, and tell you which of your cards, which app offer, and which coupon saves the most. Real prices stay on the real sites. I never make a price up.</p>
+        <p class="lh-sub">Real fares, pulled live, for free. Connect a free flight-data key once and I fetch actual prices across airlines right here. I also line up every airline and booking site with the best card/app/coupon discount for your wallet. I never make a price up.</p>
         <div class="lh-stats" id="fl-stats"></div>
       </div>
       <div class="hero">
         <h2>Where to?</h2>
-        <p>Pick your route and date. I'll line up every airline + OTA with the best discount for your wallet on each.</p>
+        <p>Pick your route and date. Get live fares, then every booking site with the best discount for your wallet.</p>
       </div>
       <div class="flight-builder">
         <div class="fb-row">
-          <input class="fb-input" id="fl-from" placeholder="From (city or code)" list="airport-list" autocomplete="off" />
+          <input class="fb-input" id="fl-from" placeholder="From (city or code)" list="fl-airport-list" autocomplete="off" />
           <button class="act ghost mini" id="fl-swap" title="Swap" aria-label="Swap origin and destination">⇄</button>
-          <input class="fb-input" id="fl-to" placeholder="To (city or code)" list="airport-list" autocomplete="off" />
+          <input class="fb-input" id="fl-to" placeholder="To (city or code)" list="fl-airport-list" autocomplete="off" />
         </div>
         <div class="fb-row">
           <input class="fb-input" id="fl-date" type="date" aria-label="Travel date" />
-          <button class="act big" id="fl-go">Compare fares →</button>
+          <button class="act big" id="fl-live">⚡ Get live fares</button>
+          <button class="act ghost" id="fl-go">Compare sites →</button>
         </div>
-        <datalist id="airport-list"></datalist>
+        <datalist id="fl-airport-list"></datalist>
       </div>
+
+      <!-- LIVE fares (real prices fetched in-browser from a free flight-data API) -->
+      <div id="fl-live-status"></div>
+      <div id="fl-live-result"></div>
+
+      <!-- free key setup (collapsible) -->
+      <details id="fl-key-setup" class="key-setup">
+        <summary>⚡ Connect free live fares (one-time, 2 min)</summary>
+        <div class="key-body">
+          <p>Live airline fares come from <b>Amadeus</b>, a real flight-data provider with a free tier. A free static site like this can't scrape MakeMyTrip or IndiGo directly (they block bots), but Amadeus lets your browser fetch real fares with no server. Your key is stored only on this device and only ever sent to Amadeus.</p>
+          <ol class="key-steps">
+            <li>Open <a href="https://developers.amadeus.com/register" target="_blank" rel="noopener">developers.amadeus.com/register</a> and sign up (free, no card).</li>
+            <li>Create an app in <b>Self-Service</b> &rarr; copy your <b>API Key</b> and <b>API Secret</b>.</li>
+            <li>Paste them below. Keep environment on <b>Test</b> to start (free, sample inventory). Switch to <b>Production</b> once you add a card on Amadeus for real fares.</li>
+          </ol>
+          <div class="fb-row">
+            <input class="fb-input" id="fl-key-id" placeholder="API Key (client id)" autocomplete="off" />
+            <input class="fb-input" id="fl-key-secret" type="password" placeholder="API Secret" autocomplete="off" />
+          </div>
+          <div class="fb-row">
+            <select class="fb-input" id="fl-key-env" aria-label="Amadeus environment">
+              <option value="test">Test (free, sample data)</option>
+              <option value="production">Production (real fares, free tier)</option>
+            </select>
+            <button class="act" id="fl-key-save">Save key</button>
+            <button class="act ghost mini" id="fl-key-clear">Clear</button>
+          </div>
+          <div class="card-sub" id="fl-key-state"></div>
+        </div>
+      </details>
+
       <div id="fl-bestpay"></div>
       <div id="fl-result"></div>
       <div class="honesty-note" id="fl-honesty"></div>
@@ -421,6 +453,7 @@
   <script src="brand.js"></script>
   <script src="engine.js"></script>
   <script src="flight-engine.js"></script>
+  <script src="flight-live.js"></script>
   <script src="selfcheck.js"></script>
   <script src="profile.js"></script>
   <script src="auth.js"></script>

@@ -777,6 +777,33 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .honesty-note { margin-top: 20px; padding: 13px 15px; background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: var(--r-md); font-size: 13px; line-height: 1.5; color: var(--dim); }
 .honesty-note b { color: var(--txt); }
 
+/* live fares (real prices fetched in-browser) */
+#fl-live { background: linear-gradient(135deg, #36d399, #2bb3d4); color: #04261c; border-color: transparent; font-weight: 800; }
+.fl-loading { padding: 16px; text-align: center; color: var(--accent2); font-weight: 700; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+.fl-err { padding: 14px 16px; background: var(--bad-dim); border: 1px solid rgba(251,113,133,.4); border-radius: var(--r-md); font-size: 14px; }
+.fl-livehead { font-size: 15px; font-weight: 800; margin: 4px 0 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.lf-card { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 13px 15px; display: flex; flex-direction: column; gap: 8px; }
+.lf-card.is-cheapest { border-color: rgba(54,211,153,.5); box-shadow: 0 0 0 1px rgba(54,211,153,.25); }
+.lf-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.lf-air { font-weight: 700; font-size: 14px; }
+.lf-price { font-weight: 800; font-size: 18px; white-space: nowrap; }
+.lf-mid { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-size: 14px; }
+.lf-time { font-weight: 700; }
+.lf-dash { color: var(--dim); }
+.lf-pay { font-size: 12.5px; color: var(--good); background: var(--good-dim); border-radius: var(--r-sm); padding: 6px 9px; }
+.lf-foot { margin-top: 12px; }
+
+/* free key setup */
+.key-setup { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 4px 16px; margin: 16px 0; }
+.key-setup summary { cursor: pointer; font-weight: 700; padding: 12px 0; font-size: 14px; }
+.key-setup[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.key-body { padding-bottom: 14px; font-size: 13.5px; line-height: 1.55; }
+.key-steps { margin: 10px 0; padding-left: 20px; }
+.key-steps li { margin-bottom: 6px; }
+.key-steps a { color: var(--accent2); }
+
 /* coupons view */
 .check { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--dim); cursor: pointer; }
 .coupon-row { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; margin-bottom: 9px; }
