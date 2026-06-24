@@ -848,6 +848,17 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .watch-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
 .watch-foot { margin-top: 8px; }
 
+/* recent + saved searches */
+.rs-list { display: grid; gap: 6px; }
+.rs-row { display: flex; align-items: center; gap: 8px; background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 4px 6px 4px 10px; }
+.rs-row.pinned { border-color: rgba(54,211,153,.4); background: rgba(54,211,153,.06); }
+.rs-open { flex: 1; text-align: left; background: none; border: none; color: var(--txt); font-size: 14px; padding: 7px 4px; cursor: pointer; }
+.rs-open:hover { color: var(--accent2); }
+.rs-actions { display: flex; gap: 2px; flex-shrink: 0; }
+.rs-pin, .rs-del { background: none; border: none; color: var(--dim); font-size: 15px; cursor: pointer; padding: 6px 8px; border-radius: var(--r-sm); }
+.rs-pin:hover, .rs-del:hover { color: var(--txt); background: var(--bg-2); }
+.rs-row.pinned .rs-pin { color: var(--accent2); }
+
 /* free key setup */
 .key-setup { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 4px 16px; margin: 16px 0; }
 .key-setup summary { cursor: pointer; font-weight: 700; padding: 12px 0; font-size: 14px; }

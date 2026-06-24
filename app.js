@@ -11,6 +11,7 @@
   const WATCH = window.LL_WATCH;
   const MC = window.LL_MULTICITY;
   const ROUTE = window.LL_ROUTE;
+  const HIST = window.LL_HISTORY;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -25,7 +26,7 @@
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, multicity: ["", "", ""], watches: [], trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, multicity: ["", "", ""], watches: [], searches: [], trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -1617,6 +1618,9 @@
     const fL = flAirportLabel(fromIn), tL = flAirportLabel(toIn);
     const fromName = slugCityName(fromIn, fL), toName = slugCityName(toIn, tL);
 
+    // remember this trains+buses search (only when both ends resolve to airports)
+    if (fL && tL && fL.code !== tL.code) recordSearch({ kind: "ground", from: fL.code, to: tL.code, fromCity: fL.city, toCity: tL.city, date: g.date || "" });
+
     // honest fly-vs-train-vs-bus compare (needs real coords for both ends)
     const cmp = (fL && tL) ? TRE.compareModes(fL.code, tL.code) : null;
     const cEl = $("#gr-compare");
@@ -1814,6 +1818,72 @@
       </div>`;
     }).join("");
     $("#mc-legs").innerHTML = legsHtml;
+    // remember this multi-city search
+    recordSearch({ kind: "multicity", stops: valid.map((s) => s.code), fromCity: valid[0].city, toCity: valid[valid.length - 1].city });
+  }
+
+  // ================== RECENT + SAVED SEARCHES ============================
+  // remembers the routes you look up (flights / trains+buses / multi-city) so you
+  // can jump back in one tap. Stores ONLY what you searched, never prices.
+  function searches() { if (!Array.isArray(state.searches)) state.searches = []; return state.searches; }
+  function recordSearch(entry) {
+    if (!HIST) return;
+    state.searches = HIST.record(searches(), entry, Date.now(), 12);
+    save();
+    renderRecentSearches();
+  }
+  // record a flight search only when both ends resolve to real airports
+  function recordFlightSearch() {
+    const f = state.flight || {};
+    const from = flAirportLabel(f.from), to = flAirportLabel(f.to);
+    if (from && to && from.code !== to.code) recordSearch({ kind: "flight", from: from.code, to: to.code, fromCity: from.city, toCity: to.city, date: f.date || "" });
+  }
+  function renderRecentSearches() {
+    const el = $("#recent-searches");
+    if (!el || !HIST) return;
+    const list = HIST.ordered(searches());
+    if (!list.length) { el.innerHTML = ""; return; }
+    const kindMeta = { flight: { icon: "✈️", tab: "flights" }, ground: { icon: "🚆", tab: "ground" }, multicity: { icon: "🗺️", tab: "multicity" } };
+    const rows = list.map((s) => {
+      const m = kindMeta[s.kind] || { icon: "🔎", tab: "plan" };
+      const dateBit = s.date ? ` <span class="card-sub">${esc(s.date)}</span>` : "";
+      return `<div class="rs-row ${s.pinned ? "pinned" : ""}" data-rsid="${esc(s.id)}">
+        <button class="rs-open" data-rsopen="${esc(s.id)}">${m.icon} <b>${esc(s.label)}</b>${dateBit}</button>
+        <div class="rs-actions">
+          <button class="rs-pin" data-rspin="${esc(s.id)}" title="${s.pinned ? "Unpin" : "Pin to top"}" aria-label="Pin">${s.pinned ? "★" : "☆"}</button>
+          <button class="rs-del" data-rsdel="${esc(s.id)}" title="Remove" aria-label="Remove">✕</button>
+        </div>
+      </div>`;
+    }).join("");
+    el.innerHTML = `<div class="section-h">🕘 Recent &amp; saved searches</div>
+      <div class="rs-list">${rows}</div>`;
+    $$("[data-rsopen]").forEach((b) => b.onclick = () => reopenSearch(b.dataset.rsopen));
+    $$("[data-rspin]").forEach((b) => b.onclick = () => { state.searches = HIST.togglePin(searches(), b.dataset.rspin); save(); renderRecentSearches(); });
+    $$("[data-rsdel]").forEach((b) => b.onclick = () => { state.searches = HIST.remove(searches(), b.dataset.rsdel); save(); renderRecentSearches(); });
+  }
+  // re-open a saved search: refill its inputs + jump to its tab + run it.
+  function reopenSearch(id) {
+    const s = searches().find((x) => x.id === id);
+    if (!s) return;
+    if (s.kind === "flight") {
+      state.flight = { from: s.from, to: s.to, date: s.date || "" };
+      save(); wireFlights();
+      if ($("#fl-from")) $("#fl-from").value = s.fromCity || s.from || "";
+      if ($("#fl-to")) $("#fl-to").value = s.toCity || s.to || "";
+      if ($("#fl-date")) $("#fl-date").value = s.date || "";
+      showView("flights", true);
+      renderFlights();
+    } else if (s.kind === "ground") {
+      state.ground = Object.assign(groundState(), { from: s.fromCity || s.from || "", to: s.toCity || s.to || "", date: s.date || "" });
+      save(); wireGround();
+      showView("ground", true);
+      renderGround();
+    } else if (s.kind === "multicity") {
+      state.multicity = (s.stops || []).slice();
+      save(); renderMcInputs();
+      showView("multicity", true);
+      renderMulticity();
+    }
   }
 
   // ===================== MY TRIPS + ITINERARY ============================
@@ -2297,6 +2367,7 @@
         const rows = res.rows || [];
         if (!rows.length) { status.innerHTML = `<div class="empty">No live fares returned for ${esc(from.code)} → ${esc(to.code)} on that date. Try another date, or this route may not be in the provider's inventory.</div>`; return; }
         renderLiveFares(rows, from, to, creds);
+        recordSearch({ kind: "flight", from: from.code, to: to.code, fromCity: from.city, toCity: to.city, date: f.date || "" });
         const cheapestNow = rows[0] ? rows[0].priceTotal : null;
         status.innerHTML = `<div class="fl-livehead">⚡ ${Number(rows.length)} live fares · ${esc(from.code)} → ${esc(to.code)} · ${esc(FE.dateParts(f.date) ? FE.dateParts(f.date).text : f.date)}${creds.env === "test" ? ` <span class="chip warn">test/sample data</span>` : ` <span class="chip good">live</span>`} ${cheapestNow ? `<button class="act ghost mini" id="fl-watch-live">🔔 Watch at ₹${Number(cheapestNow).toLocaleString("en-IN")}</button>` : ""}</div>`;
         const wb = $("#fl-watch-live");
@@ -2525,7 +2596,7 @@
       const el = $(s);
       if (el) el.oninput = () => { persist(); };
     });
-    if ($("#fl-go")) $("#fl-go").onclick = () => { persist(); renderFlights(); $("#fl-result").scrollIntoView({ behavior: "smooth", block: "start" }); };
+    if ($("#fl-go")) $("#fl-go").onclick = () => { persist(); renderFlights(); recordFlightSearch(); $("#fl-result").scrollIntoView({ behavior: "smooth", block: "start" }); };
     if ($("#fl-live")) $("#fl-live").onclick = () => { persist(); renderFlights(); getLiveFares(); const s = $("#fl-live-status"); if (s) s.scrollIntoView({ behavior: "smooth", block: "start" }); };
     if ($("#fl-flex")) $("#fl-flex").onclick = () => { persist(); getFlexFares(); const r = $("#fl-flex-result"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); };
     if ($("#fl-swap")) $("#fl-swap").onclick = () => {
@@ -2647,7 +2718,7 @@
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
     renderAirports(); renderMap(); renderCompare(); renderValue(); renderSuggestions();
     renderFlights(); renderCoupons();
-    renderPlanStats(); renderHotels(); renderOntrip(); renderGround(); renderWatches(); renderTrips();
+    renderPlanStats(); renderHotels(); renderOntrip(); renderGround(); renderWatches(); renderRecentSearches(); renderTrips();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
     if ($("#plan-result") && $("#plan-result").innerHTML.trim()) renderPlanResult();
   }

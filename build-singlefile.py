@@ -47,6 +47,7 @@ js_files = [
     "watch-engine.js",
     "multicity-engine.js",
     "route-engine.js",
+    "history-engine.js",
     "selfcheck.js",
     "profile.js",
     "auth.js",
