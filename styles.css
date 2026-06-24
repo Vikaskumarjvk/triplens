@@ -937,3 +937,75 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .pack-cat-h { font-weight: 700; font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
 .pack-item { display: flex; align-items: center; gap: 9px; padding: 6px 0; font-size: 14px; cursor: pointer; }
 .pack-item.done { color: var(--dim-2); text-decoration: line-through; }
+
+/* --- Budget tracker (added 2026-06-24) --- */
+.bud-set { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 12px; }
+.bud-line { font-size: 14.5px; margin: 8px 0; }
+.bud-bar { height: 9px; border-radius: var(--r-pill); background: var(--chip); overflow: hidden; border: 1px solid var(--line); margin: 6px 0; }
+.bud-bar.sm { height: 6px; margin: 4px 0; }
+.bud-fill { height: 100%; background: var(--accent-grad); border-radius: var(--r-pill); transition: width .4s cubic-bezier(.2,.8,.2,1); }
+.bud-fill.over { background: linear-gradient(135deg, #fb7185, #f43f5e); }
+.bud-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 10px 0; }
+.bud-cat { background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; }
+.bc-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; }
+.bc-cap { font-size: 12.5px; color: var(--dim); font-weight: 400; text-align: right; }
+.bc-capinput { margin-top: 8px; font-size: 12.5px; padding: 6px 9px; }
+.bud-add { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.bud-a-label { flex: 1; min-width: 120px; }
+.bud-a-amt { max-width: 120px; }
+.bud-spends { display: grid; gap: 4px; margin-top: 6px; }
+.bud-spend { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 7px 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-sm); font-size: 13.5px; }
+.bs-amt { display: flex; align-items: center; gap: 8px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* ===================================================================== */
+/* Visual polish pass (2026-06-24) — depth, motion, life. Best of all.    */
+/* ===================================================================== */
+
+/* smooth view entrance: the active section fades + lifts in */
+.view.active { animation: viewIn .32s cubic-bezier(.2,.8,.2,1); }
+@keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* nav buttons: animated active underline + lift */
+nav button { position: relative; transition: color .15s, background .15s, transform .1s; }
+nav button:hover { transform: translateY(-1px); }
+nav button.active::after {
+  content: ""; position: absolute; left: 12px; right: 12px; bottom: 4px; height: 2px;
+  background: var(--accent-grad); border-radius: 2px; animation: navUnder .3s ease;
+}
+@keyframes navUnder { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* booking-provider + step + trip cards: lift on hover */
+.fl-prov, .plan-step, .trip-card, .ot-svc, .plan-link, .bud-cat {
+  transition: transform .14s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.fl-prov:hover, .plan-step:hover, .trip-card:hover, .ot-svc:hover {
+  transform: translateY(-2px); box-shadow: var(--shadow-2); border-color: var(--line-strong);
+}
+
+/* a wallet-matched offer pulses subtly once so it catches the eye */
+.has-wallet-offer { position: relative; }
+
+/* empty states: friendlier, centered, with a soft dashed frame */
+.empty {
+  text-align: center; padding: 28px 18px; border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md); color: var(--dim); background: var(--panel);
+}
+
+/* the "open ↗" link buttons get a gentle gradient on hover */
+.fl-open:hover, .plan-link:hover .pl-go { filter: brightness(1.15); }
+
+/* honesty note: a quiet trust band */
+.honesty-note {
+  border-left: 3px solid var(--accent); background: var(--panel);
+  padding: 11px 14px; border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-size: 13px; color: var(--dim); margin: 14px 0; line-height: 1.5;
+}
+
+/* landing hero stat pills: count-up shimmer + hover */
+.lh-stat { transition: transform .15s ease; }
+.lh-stat:hover { transform: translateY(-2px); }
+
+/* nicer focus ring everywhere (a11y + premium feel) */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent2); outline-offset: 2px; border-radius: var(--r-sm);
+}

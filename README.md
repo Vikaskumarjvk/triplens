@@ -1,184 +1,134 @@
-# LoungeLens 🛋️
+# TripLens 🧭
 
 **Live:** https://vikaskumarjvk.github.io/loungelens/ — installable, works offline, free.
 
-Every lounge your wallet *actually* opens — airport **and** railway, India domestic.
-One view across all your cards, with a live "visits left" tracker, trip planner,
-card comparison, a "worth it?" fee calculator, an India coverage map, login, and
-300 cards across 40 issuers, mapped against 77 lounges (50 airports + railway).
+**Plan the whole trip, pay the smart way.** One free app for everything a trip needs —
+flights, hotels, airport lounges, cabs and local deals — with the single best card to
+swipe on every booking, a day-by-day itinerary, a packing checklist, and an honest budget
+tracker. India-first. **No fake prices, ever.**
+
+It started as LoungeLens (which lounges your cards open) and grew into the whole trip.
+The lounge wallet is still here — it's now one part of the journey.
 
 **Offline single file:** [`dist/loungelens.html`](dist/loungelens.html) is the whole app in
 one file. Download it, double-click, runs with no server and no internet. AirDrop / WhatsApp it.
 
+## What it does
+
+| Part | What you get |
+|---|---|
+| 🧭 **Plan a Trip** | Route + dates → flights, hotel, lounges and on-trip deals in one plan, plus the single best card to pay across the whole trip, plus a transparent savings checklist. |
+| 🗂️ **My Trips** | Save a plan → a real **day-by-day itinerary** auto-fills (flight + lounge + check-in on day 1, checkout + return on the last day). Add/move/remove items on a timeline. **Packing checklist** tailored to nights + intl/cold/beach/business/monsoon. **Budget tracker** (your numbers). Export to share the whole trip. |
+| ✈️ **Flights** | Every booking site lined up compare-first; your card's offer flagged on each; live fares (free, in-browser via Amadeus); 14-day cheapest-day scan. |
+| 🏨 **Hotels** | 14 booking sites (Google Hotels, Booking, Agoda, MMT, Taj/ITC/Marriott direct, Airbnb…), grouped, with the best card to pay. |
+| 🧳 **On-Trip Deals** | Cabs, intercity travel, eSIM/forex, dining and activities — each with the live app/site and the card/coupon that cuts the bill. |
+| 💳 **Lounge wallet** | Every airport + railway lounge your cards actually open, live "visits left", spend-gate tracker, coverage map, card compare, "worth it?" fee calculator. 299 cards / 77 lounges. |
+
+## The honesty model (the core rule)
+
+A free static site **cannot** fetch live airfares, room rates or coupons by itself (the
+browser sandboxes it and there's no server). So TripLens **never invents a price or a total.**
+Instead:
+
+- Every booking link opens the **real live search** on the real site, where the true price is.
+- Every offer (card / app / coupon) is a recurring mechanism, **confidence-tagged**
+  (high / med / low) with a `verify` pointer — confirm today's exact terms before you pay.
+- The **budget tracker only ever does arithmetic on numbers you typed** (your budget, your
+  logged spends). It never guesses a "typical cost".
+- Lounge/card data is structure-correct, directionally-correct seed data that ages its own
+  confidence and tells you what to re-check.
+
+If a number could be wrong, the app says so rather than faking certainty.
+
 ## Run it
 
-No build step. Either:
+No build step.
 
 ```
 open index.html
+# or serve it (if your browser blocks file:// script loads):
+python3 -m http.server 8777   # then visit http://localhost:8777/index.html
 ```
 
-or serve it (needed only if your browser blocks `file://` script loads):
+Rebuild the single-file bundle after edits:
 
 ```
-cd loungelens
-python3 -m http.server 8777
-# visit http://localhost:8777/index.html
+python3 build-singlefile.py   # -> dist/loungelens.html
 ```
 
-Run the engine tests:
+Run the tests (pure engines, Node):
 
 ```
-node tests.js     # 76 assertions, all green
-# plus tests-self.js, tests-auth.js, tests-profile.js, tests-suggest.js — 145 total
+node tests.js          # lounge engine
+node tests-trip.js     # trip optimizer
+node tests-itinerary.js
+node tests-budget.js
+# full suite: 306 assertions across 11 files, all green
 ```
-
-## What it does (and why it beats the existing apps)
-
-| Pain point | Existing apps | LoungeLens |
-|---|---|---|
-| "can't check access properly" | card-by-card static lists | one merged wallet view |
-| "how many visits left" | nobody tracks it | live quota per card, per reset period; log a visit, it decrements |
-| "how many can I still avail" | — | wallet-wide rollup |
-| "which card opens this lounge" | — | per-lounge: names the exact card + access rail |
-| "easy to get / lifetime-free cards" | scattered forums | ease score + LTF flag + recommender |
-| "cards I might get immediately" | — | "easy approval only" filter |
-| railway lounges | almost nobody | first-class, same engine |
-| **spend-gate trap (2024-25)** | ignored | tracks ₹X/quarter unlock gates, warns when locked |
-
-## The honesty model (read this)
-
-India reworked lounge rules across 2024-25 and they keep shifting quarter to quarter.
-So this app does **not** pretend to be a legal source of truth:
-
-- every card and lounge carries a **confidence badge** (high / med / low)
-- every record has a **verify** hint pointing at where to confirm
-- the dataset is structure-correct and directionally-correct **seed** data you can refresh
-
-The durable value is the **engine** (`engine.js`), the **freshness model**, railway coverage,
-and the spend-gate tracker — not the exact numbers, which you keep current.
-
-## Views
-
-- **✈️ Plan a Trip** (default) — enter Hyderabad → your destination cities; get a per-city
-  verdict ("you're in 👍" / blocked / no card), the exact card to use at each lounge, and
-  gap cities with a one-click "fix with a card".
-- **💳 My Cards** — wallet rollup, live "visits left", spend-gate unlock tracker, log a visit.
-- **🛫 Airports** — pick an airport or station, see every lounge there and which of your cards opens it.
-- **🗺️ Coverage Map** — India as a state tile-grid, each state colored by how much of its lounge
-  access your wallet unlocks. Tap a state to drill into its lounges.
-- **🛋️ All Lounges** — full list, filter by airport/railway/city, sort, "only ones I can enter".
-- **⭐ Get a Card** — recommender, trip-aware, biased toward easy + fast-to-issue cards.
-- **⚖️ Compare** — two cards head-to-head across coverage, visits, ease, spend gate, railway.
-- **🧮 Worth It?** — tell it how often you fly and what a lounge is worth; it says if a fee pays off.
-- **➕ Add Cards** — tap the cards you hold, filter by issuer / network / lifetime-free.
-- **🩺 Data Health** — the self-awareness layer (see below).
-- **👤 Profile / Sync** — free, serverless: data lives on your device, a sync code carries it across devices.
-
-Every view that shows a card renders a small issuer-colored card chip, so the same card reads
-the same everywhere. A wallet-strength score (0-100 circular gauge) sits on My Cards.
-
-## Self-improvement (what's real vs what needs a backend)
-
-You asked for self-learning / self-researching / cross-verifying in real time. Here's the
-honest split, because a **free static site cannot browse the live internet by itself** (the
-browser's same-origin/CORS policy blocks a web page from fetching bank sites, and there's no
-server running when the tab is closed). Pretending otherwise would be a lie.
-
-**Rung 1 — self-aware (LIVE NOW, free, in `selfcheck.js`):**
-- **Confidence decay by age** — every fact's badge auto-drops a level after ~3 months stale,
-  two levels after ~6. The app visibly distrusts its own old data (`⏱` on the badge).
-- **Self-audit / lint** — the app checks its OWN dataset for contradictions, duplicate ids,
-  cards that claim visits but have no access rail, lounges no card can open, bad confidence
-  values. Shown on Data Health. Currently: 0 errors, 0 warnings.
-- **Learn from your real experience** — log "got in ✅ / refused ❌" at any lounge. If reality
-  contradicts the data, that lounge is flagged and jumps to the top of the verify queue.
-- **Verify queue** — ranks what to re-check before you fly: your contradictions first, then
-  on-trip cities, then stalest/lowest-confidence.
-- **Community data import/export** — share your logged experiences as a JSON file; imports
-  merge into the verify signals (they don't blindly overwrite base data).
-
-**Rung 2 — self-researching loop (free, manual cadence):** a repeatable research+cross-verify
-pass (like the workflow I ran) regenerates `data/cards.js` / `data/lounges.js` each quarter,
-gated by the rung-1 self-audit so bad/contradictory data can't slip in. Run by you or me.
-
-**Rung 3 — fully autonomous (needs a paid backend):** scheduled scrapers, a shared crowd
-database, moderation, true real-time cross-verify. Requires a server — not free, not built.
-Scope it when the user base justifies the cost.
-
-> Why not real-time now: a research pass that hits live sources has to run *somewhere*. On a
-> free static host there is no "somewhere" — only the visitor's browser, which is sandboxed.
-> The data files are regenerated out-of-band and shipped; the app keeps itself honest about
-> how old they are. That's the truthful version of "self-aware".
 
 ## Architecture
 
 ```
-data/cards.js     card dataset (visits, spend gates, ease, LTF, approvalSpeed, eligibility, rails)
-data/lounges.js   lounge dataset (airport + railway, access rails, confidence, verify)
-data/meta.js      dataset metadata + plain-language rail names + honesty banner
-brand.js          issuer colors + network marks + card-art helpers (the visual layer)
-engine.js         pure logic: quota math, spend gates, per-lounge matching, wallet rollup,
-                  coverage, recommender, cities, planTrip, recommendForTrip, compareCards,
-                  valueCalc, walletScore, coverageMap. No DOM. Node-testable.
-tests.js          76 self-tests over the engine (node tests.js); 145 total across all suites
-index.html        11 views (trip, wallet, airports, map, lounges, recommend, compare, value,
-                  add, health, profile, about) + hash routing
-styles.css        dark fintech UI, card-art system, India tile map
-app.js            DOM glue + localStorage persistence (nothing leaves your device)
-HOSTING.md        free deploy + sharing guide
+data/cards.js        299 cards (visits, spend gates, ease, LTF, rails)
+data/lounges.js      77 lounges (airport + railway, access rails, confidence)
+data/flights.js      flight booking providers + card/app/coupon offer layer
+data/hotels.js       hotel providers (meta/OTA/chain) + offer layer + cities
+data/deals.js        on-trip services (cab/intercity/eSIM-forex/dining/activities) + tips
+data/meta.js         dataset metadata + honesty banner
+
+engine.js            lounge brain: quota math, spend gates, per-lounge matching, coverage,
+                     recommender, planTrip, compareCards, valueCalc, walletScore, coverageMap
+flight-engine.js     deep-link builder + wallet-aware offer matching + best-pay
+flight-live.js       live fares in-browser (Amadeus, free tier, user key)
+trip-engine.js       Trip Cost Optimizer: assembles flights+stay+lounges+deals+best card,
+                     transparent savings checklist. Never invents a price.
+itinerary-engine.js  saved trips, day-by-day items, seed-from-plan, packing generator,
+                     export/import. Pure + deterministic (no Date.now/Math.random).
+budget-engine.js     per-trip budget + logged spends, per-category + per-day rollups,
+                     currency, over/under flags. Every number is user input.
+selfcheck.js         confidence decay, self-audit/lint, learn-from-experience, verify queue
+
+index.html           19 views + hash routing
+styles.css           dark fintech UI, card-art system, India tile map, motion polish
+app.js               DOM glue + localStorage persistence (nothing leaves your device)
 ```
 
-State (wallet, visit log, spend, trip, mode) is in `localStorage` only. No backend, no tracking.
+Every engine is pure and Node-tested; the UI is glue on top. State (wallet, trips, budget,
+visit log, plan inputs) lives in `localStorage` only. No backend, no account, no tracking.
 
 ## It's a real installable app (PWA)
 
-Not just a web page — a production Progressive Web App:
-- **Installable** — "Add to Home Screen" on iPhone, "Install app" on Android/desktop. Opens
-  full-screen like a native app. Real icons in `icons/`, `manifest.webmanifest`.
-- **Works offline** — `sw.js` caches the whole app shell, so it runs with no internet (handy
-  at an airport on bad wifi). Network-first, so a fresh version always loads when online, with
-  cache fallback when offline. Caches 17 files in the shell.
-- **First-run onboarding** + **About/Trust page** (not-financial-advice, privacy, data provenance).
-- **Shareable link preview** (Open Graph) for WhatsApp/chat.
+- **Installable** — "Add to Home Screen" / "Install app". Opens full-screen.
+- **Works offline** — `sw.js` caches the whole app shell, network-first so a fresh version
+  always loads online with cache fallback offline.
+- **First-run onboarding** + **About/Trust** (not-financial-advice, privacy, data provenance).
+- **Shareable link preview** (Open Graph).
 
-## Going live (free, one step)
+## Live flight fares (optional, free)
 
-See **DEPLOY.md** for exact steps. Short version: drag the folder onto
-https://app.netlify.com/drop for an instant public HTTPS link, or use GitHub Pages for a
-permanent one. Because each visitor's data lives only in their own browser, a public link
-never exposes anyone's saved cards. (Also see **HOSTING.md** for the host comparison.)
+Flights → "Connect free live fares" → paste a free [Amadeus](https://developers.amadeus.com/register)
+key (stored only on your device, only ever sent to Amadeus). Then you get real fares fetched
+in-browser, plus a 14-day cheapest-day + price-dip scan. Everything else works without it.
 
 ## Keeping data fresh
 
-Edit `data/cards.js` / `data/lounges.js` and bump `lastReviewed` in `data/meta.js`.
-The schema is the contract — adding a card/lounge is one object literal.
+Edit the `data/*.js` files and bump `lastReviewed` in `data/meta.js`. Each record is one
+object literal; the schema is the contract. The app ages its own confidence and surfaces a
+verify queue, so stale data is flagged rather than trusted blindly.
 
-> **Data provenance note (be honest with members):** most card/lounge numbers started as
-> best-guess seed data from the 2024-25 Indian lounge overhaul and are tagged low-confidence.
-> A research+verify pass (parallel agents fetching each bank's official page, then an
-> independent fact-checker re-fetching the cited source before any number is allowed to change)
-> bumps individual records to verified as it confirms them. Some bank sites bot-block, so many
-> cards stay best-guess on purpose rather than guess. Every record is confidence-tagged and
-> carries a `verify` hint, so **desk-check the specific spend gates and visit counts against
-> issuer T&Cs before a trip.** The engine and UX are fully verified (145 tests + browser runs).
+> **Provenance:** card/lounge numbers began as best-guess seed data from the 2024-25 Indian
+> lounge overhaul, tagged low-confidence; a research+verify pass bumps records to verified as
+> it confirms them against issuer pages. Booking-site offers describe recurring mechanisms, not
+> guaranteed live codes. **Desk-check spend gates, visit counts and today's offer terms before
+> a trip.** The engines and UX are fully verified (306 tests + browser runs).
 
 ## Known limitations (tracked, not hidden)
 
-1. **Coverage % counts rail-reachable lounges, not visits-in-hand.** A 1-visit/quarter card
-   shows many "enterable" lounges — any *one* is reachable, but you hold limited actual visits.
-   The per-lounge "N left" and the wallet "visits left now" rollup ARE visit-accurate; the
-   Lounges-tab coverage % is the optimistic rail view. (Trip planner uses real quota per lounge.)
-2. Dataset needs a quarterly desk-check against issuer T&Cs (see provenance note).
-3. No multi-traveller / guest-visit modelling yet.
-4. Network (Visa/Mastercard tier) and Priority Pass eligibility is rail-level, not tier-exact —
-   a low-tier Visa card won't truly get Visa-lounge-program access.
-5. Railway lounge access rules are genuinely murky; those entries are mostly confidence=low.
-
-## Phase 2 (the "BankNot-style" marketplace idea)
-
-The original ask also mentioned a community board like the rent/transfer marketplaces
-where people post listings. That is a **different product** (a social marketplace, with
-listings, trust/reputation, and likely a backend + moderation), so it's deliberately
-out of this MVP. The data layer here is built so a `listings` collection can sit
-alongside `cards`/`lounges` without reworking the engine. Scope it separately before building.
+1. Booking links open the right live search, but sites change their URL schemes over time —
+   every offer is confidence-tagged with a verify pointer for exactly this reason.
+2. Lounge coverage % counts rail-reachable lounges, not visits-in-hand (the per-lounge "N left"
+   and wallet rollup ARE visit-accurate; the trip planner uses real quota per lounge).
+3. Hotel/deal data is a curated starter set — broad on majors, lighter on long-tail cities.
+4. Dataset needs a quarterly desk-check against issuer T&Cs (see provenance).
+5. No multi-traveller guest-visit modelling on lounges yet; budget supports per-person split.
+6. Railway lounge rules are genuinely murky; those entries are mostly confidence=low.

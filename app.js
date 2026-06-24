@@ -5,7 +5,7 @@
   const BRAND = window.LL_BRAND;
   const FE = window.LL_FLIGHT_ENGINE, FLIGHTS = window.LL_FLIGHTS;
   const TE = window.LL_TRIP_ENGINE, HOTELS = window.LL_HOTELS, DEALS = window.LL_DEALS;
-  const IT = window.LL_ITINERARY;
+  const IT = window.LL_ITINERARY, BUD = window.LL_BUDGET;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1544,6 +1544,7 @@
       <div class="itin-title"><b>${esc(t.title)}</b><span class="card-sub">${esc(s.dateRange)} · ${s.adults} traveller${s.adults > 1 ? "s" : ""}</span></div>
       <div class="itin-tools">
         <button class="act ghost mini" id="itin-export">⬇️ Share</button>
+        <button class="act ghost mini" id="itin-jump-budget">💰 Budget</button>
         <button class="act ghost mini" id="itin-jump-pack">🎒 Packing</button>
       </div>
     </div>`;
@@ -1594,13 +1595,68 @@
       }</div>`).join("")}
       <p class="card-sub" style="margin-top:8px;">Tick the trip flags above to tailor the list. Checks save to this trip.</p>`;
 
-    return head + `<div class="itin-days">${days}</div>` + packing +
-      `<div class="honesty-note" style="margin-top:14px;">Your itinerary + links are saved on this device only. The links open the real booking sites. Export to share the whole plan with someone travelling with you.</div>`;
+    return head + `<div class="itin-days">${days}</div>` + budgetBlock(t) + packing +
+      `<div class="honesty-note" style="margin-top:14px;">Your itinerary, budget + links are saved on this device only. The links open the real booking sites. Every rupee in the budget is a number you typed — TripLens never guesses a price. Export to share the whole plan.</div>`;
+  }
+
+  // budget tracker block for a trip (your numbers only, never fabricated)
+  function budgetBlock(t) {
+    if (!BUD) return "";
+    const b = BUD.ensure(t);
+    const s = BUD.summary(t);
+    const sym = s.symbol;
+    const curOpts = Object.keys(BUD.CURRENCIES).map((c) => `<option value="${c}" ${b.currency === c ? "selected" : ""}>${c} ${BUD.CURRENCIES[c]}</option>`).join("");
+    const overallBar = s.total != null
+      ? `<div class="bud-bar"><div class="bud-fill ${s.over ? "over" : ""}" style="width:${s.pct || 0}%"></div></div>
+         <div class="bud-line"><b>${BUD.fmt(s.spent, b.currency)}</b> spent of ${BUD.fmt(s.total, b.currency)} ${s.over ? `<span class="chip bad">over by ${BUD.fmt(Math.abs(s.remaining), b.currency)}</span>` : `<span class="chip good">${BUD.fmt(s.remaining, b.currency)} left</span>`}</div>`
+      : `<div class="bud-line"><b>${BUD.fmt(s.spent, b.currency)}</b> logged so far${s.spent > 0 ? ` · ${BUD.fmt(s.perPerson, b.currency)} per person` : ""}. <span class="card-sub">Set a total below to track against it.</span></div>`;
+
+    const catRows = s.cats.map((c) => {
+      const used = BUD.fmt(c.used, b.currency);
+      const capBit = c.cap != null
+        ? `<span class="bc-cap">${used} / ${BUD.fmt(c.cap, b.currency)} ${c.over ? `<span class="chip bad">over</span>` : ""}</span>`
+        : `<span class="bc-cap">${used}<span class="card-sub"> · no cap</span></span>`;
+      const bar = c.cap != null ? `<div class="bud-bar sm"><div class="bud-fill ${c.over ? "over" : ""}" style="width:${c.pct || 0}%"></div></div>` : "";
+      return `<div class="bud-cat">
+        <div class="bc-head"><span>${c.icon} ${c.label}</span>${capBit}</div>
+        ${bar}
+        <input class="leg-input bc-capinput" data-capcat="${c.id}" type="number" min="0" placeholder="set ${c.label.toLowerCase()} cap (optional)" value="${c.cap != null ? c.cap : ""}" aria-label="${c.label} cap" />
+      </div>`;
+    }).join("");
+
+    // recent spends
+    const spendsList = (b.spends || []).slice().reverse().map((sp) => {
+      const cat = BUD.CATEGORIES.find((x) => x.id === sp.cat) || { icon: "•", label: sp.cat };
+      const dayTxt = sp.day == null ? "unscheduled" : ("day " + (sp.day + 1));
+      return `<div class="bud-spend"><span>${cat.icon} ${esc(sp.label || cat.label)} <span class="card-sub">· ${dayTxt}</span></span>
+        <span class="bs-amt">${BUD.fmt(sp.amount, b.currency)} <button class="ii-btn del" data-delspend="${esc(sp.id)}" title="Remove">✕</button></span></div>`;
+    }).join("") || `<div class="card-sub" style="padding:6px 0;">No spends logged yet. Add what you actually pay as you go — those are your real numbers.</div>`;
+
+    const dayOpts = `<option value="">unscheduled</option>` + t.days.map((d, i) => `<option value="${i}">Day ${i + 1}${d.date ? " · " + IT.dayLabel(d.date) : ""}</option>`).join("");
+    const catSelOpts = BUD.CATEGORIES.map((c) => `<option value="${c.id}">${c.icon} ${c.label}</option>`).join("");
+
+    return `<div class="section-h" id="itin-budget">💰 Budget</div>
+      <div class="bud-set">
+        <label class="tp-lbl">Currency <select class="cmp-select" id="bud-cur" aria-label="Currency">${curOpts}</select></label>
+        <label class="tp-lbl">Total budget <input class="fb-input" id="bud-total" type="number" min="0" placeholder="optional cap (${sym})" value="${b.total != null ? b.total : ""}" aria-label="Total budget" /></label>
+      </div>
+      ${overallBar}
+      <div class="bud-cats">${catRows}</div>
+      <div class="section-h" style="font-size:14px;margin-top:14px;">Log a spend</div>
+      <div class="bud-add">
+        <select class="cmp-select bud-a-cat" aria-label="Spend category">${catSelOpts}</select>
+        <input class="leg-input bud-a-label" placeholder="what (e.g. dinner)" aria-label="Spend label" />
+        <input class="leg-input bud-a-amt" type="number" min="0" placeholder="amount" aria-label="Amount" />
+        <select class="cmp-select bud-a-day" aria-label="Spend day">${dayOpts}</select>
+        <button class="act mini" id="bud-add-btn">Log</button>
+      </div>
+      <div class="bud-spends">${spendsList}</div>`;
   }
 
   function wireItinerary(t) {
     if ($("#itin-back")) $("#itin-back").onclick = () => { state.openTripId = null; save(); renderTrips(); };
     if ($("#itin-jump-pack")) $("#itin-jump-pack").onclick = () => { const p = $("#itin-pack"); if (p) p.scrollIntoView({ behavior: "smooth" }); };
+    if ($("#itin-jump-budget")) $("#itin-jump-budget").onclick = () => { const p = $("#itin-budget"); if (p) p.scrollIntoView({ behavior: "smooth" }); };
     if ($("#itin-export")) $("#itin-export").onclick = () => {
       const blob = new Blob([IT.exportTrip(t)], { type: "application/json" });
       const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
@@ -1634,6 +1690,25 @@
       save();
       const lbl = c.closest(".pack-item"); if (lbl) lbl.classList.toggle("done", c.checked);
     });
+
+    // ---- budget handlers ----
+    if (BUD) {
+      const cur = $("#bud-cur"); if (cur) cur.onchange = () => { BUD.setCurrency(t, cur.value); save(); renderTrips(); };
+      const tot = $("#bud-total"); if (tot) tot.onchange = () => { BUD.setTotal(t, tot.value); save(); renderTrips(); };
+      $$("[data-capcat]").forEach((inp) => inp.onchange = () => { BUD.setCatCap(t, inp.dataset.capcat, inp.value); save(); renderTrips(); });
+      const addBtn = $("#bud-add-btn");
+      if (addBtn) addBtn.onclick = () => {
+        const cat = ($(".bud-a-cat") || {}).value || "other";
+        const label = (($(".bud-a-label") || {}).value || "").trim();
+        const amount = +(($(".bud-a-amt") || {}).value || 0);
+        const dayV = ($(".bud-a-day") || {}).value;
+        if (!(amount > 0)) { toast("Enter an amount you actually paid."); return; }
+        BUD.addSpend(t, { cat, label, amount, day: dayV === "" ? null : +dayV }, countAllItemsSeed());
+        save(); renderTrips();
+        const bud = $("#itin-budget"); if (bud) bud.scrollIntoView({ behavior: "smooth" });
+      };
+      $$("[data-delspend]").forEach((b2) => b2.onclick = () => { BUD.removeSpend(t, b2.dataset.delspend); save(); renderTrips(); });
+    }
   }
 
   function renderFlightStats() {
