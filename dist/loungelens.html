@@ -951,6 +951,25 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .gr-stops-row { padding: 6px 0; font-size: 13px; line-height: 1.5; }
 .gr-stops-row + .gr-stops-row { border-top: 1px solid var(--line); }
 
+/* multi-city */
+.mc-stop-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.mc-pin { flex-shrink: 0; font-size: 13px; }
+.mc-stop { flex: 1; }
+.mc-sum { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0 10px; box-shadow: var(--shadow-1); }
+.mc-sum-chain { font-size: 16px; line-height: 1.6; }
+.mc-sum-dist { font-size: 13px; color: var(--dim); margin: 6px 0 10px; }
+.mc-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.mc-mode { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 13px; }
+.mc-mode-h { font-size: 14px; font-weight: 600; }
+.mc-mode-time { font-size: 17px; font-weight: 700; color: var(--accent2); margin: 3px 0; }
+.mc-leg { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 15px; margin: 10px 0; box-shadow: var(--shadow-1); }
+.mc-leg-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mc-leg-route { font-size: 15px; }
+.mc-leg-dist { font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 8px; }
+.mc-leg-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+.mc-leg-link { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 9px 12px; border-radius: var(--r-sm); background: var(--panel2); border: 1px solid var(--line); color: var(--txt); text-decoration: none; font-size: 13px; transition: border-color .15s, transform .1s; }
+.mc-leg-link:hover { border-color: var(--accent2); transform: translateY(-1px); }
+
 /* the optimizer result */
 .plan-route { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0 10px; box-shadow: var(--shadow-1); }
 .pr-cities { font-size: 19px; }
@@ -1118,6 +1137,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     </div>
     <nav id="main-nav">
       <button data-view="plan" class="active">🧭 Plan a Trip</button>
+      <button data-view="multicity">🗺️ Multi-city</button>
       <button data-view="trips">🗂️ My Trips</button>
       <button data-view="flights">✈️ Flights</button>
       <button data-view="hotels">🏨 Hotels</button>
@@ -1268,6 +1288,26 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       <div class="section-h">🎟️ Train &amp; bus money-saving plays</div>
       <div id="gr-tips"></div>
       <div class="honesty-note" id="gr-honesty"></div>
+    </section>
+
+    <!-- MULTI-CITY (chain stops, per-leg fly/train/bus compare + links) -->
+    <section id="view-multicity" class="view">
+      <div class="hero">
+        <h2>Multi-city trip — chain your stops</h2>
+        <p>Add every city on your trip in order. For each leg I work out the real distance and the honest best way to get there (fly, train or bus), then open the live search for each one. No invented fares — the real prices live on the booking sites.</p>
+      </div>
+      <div class="flight-builder">
+        <div id="mc-stops"></div>
+        <div class="fb-row">
+          <button class="act ghost mini" id="mc-add">＋ Add another city</button>
+          <button class="act ghost mini" id="mc-clear">Clear all</button>
+        </div>
+        <button class="act big" id="mc-go">Build the multi-city plan →</button>
+      </div>
+
+      <div id="mc-summary"></div>
+      <div id="mc-legs"></div>
+      <div class="honesty-note" id="mc-honesty"></div>
     </section>
 
     <!-- ON-TRIP DEALS (cabs, eSIM/forex, dining, activities) -->
@@ -3488,7 +3528,7 @@ window.LL_FLIGHTS = {
   providers: [
     {
       id: "google-flights", name: "Google Flights", type: "meta", linkType: "prefilled",
-      url: "https://www.google.com/travel/flights?q=Flights%20from%20{FROM}%20to%20{TO}%20on%20{DATE}",
+      url: "https://www.google.com/travel/flights?q=Flights%20from%20{FROM}%20to%20{TO}{ON_DATE}",
       note: "Sees every airline's fare at once, then sends you to book. Best first stop.",
       confidence: "high", verify: "google.com/travel/flights", offers: [],
     },
@@ -4666,6 +4706,10 @@ window.LL_TRANSPORT = {
   function buildLink(provider, from, to, dateStr) {
     let url = provider.url;
     const dp = dateParts(dateStr);
+    // {ON_DATE} is an OPTIONAL date segment: route-only search is still valid, so
+    // it never triggers the no-date fallback (it just drops out when undated).
+    const onDate = /\{ON_DATE\}/.test(url);
+    // a HARD date requirement is a {DATE...} token that is NOT the optional one
     const needsDate = /\{DATE/.test(url);
     if (needsDate && !dp) return provider.fallbackUrl || stripToOrigin(url);
     const F = (from || "").toUpperCase(), T = (to || "").toUpperCase();
@@ -4674,11 +4718,14 @@ window.LL_TRANSPORT = {
       .replace(/\{FROM\}/g, F).replace(/\{TO\}/g, T);
     if (dp) {
       url = url
+        .replace(/\{ON_DATE\}/g, "%20on%20" + dp.ymd)
         .replace(/\{DATE_YYMMDD\}/g, dp.yymmdd)
         .replace(/\{DATE_DDMMYYYY_PLAIN\}/g, dp.ddmmyyyyplain)
         .replace(/\{DATE_DDMMYYYY\}/g, encodeURIComponent(dp.ddmmyyyy))
         .replace(/\{DATE_TEXT\}/g, encodeURIComponent(dp.text))
         .replace(/\{DATE\}/g, dp.ymd);
+    } else if (onDate) {
+      url = url.replace(/\{ON_DATE\}/g, ""); // undated: route-only search
     }
     return url;
   }
@@ -6170,6 +6217,90 @@ window.LL_TRANSPORT = {
 </script>
   <script>
 /*
+ * TripLens — multi-city / multi-stop trip engine. Pure, no DOM, no clock.
+ *
+ * You chain stops (Delhi -> Goa -> Bengaluru -> Delhi). For each LEG it works out
+ * the real distance and the honest best mode (fly / train / bus) by reusing the
+ * transport engine's banding, then totals the trip up. The UI fills the actual
+ * booking links per leg from the flight + transport data.
+ *
+ * HONESTY: distances are real (haversine via geo-engine). Per-leg time is the
+ * door-to-door estimate from the transport engine (clearly an estimate). We never
+ * invent a fare or a total cost — only the real per-leg search links carry prices.
+ *
+ * Dependencies are passed/looked-up so this stays unit-testable in Node.
+ */
+(function (root) {
+  "use strict";
+
+  function geo() { return root.LL_GEO || req("./geo-engine.js"); }
+  function transport() { return root.LL_TRANSPORT_ENGINE || req("./transport-engine.js"); }
+  function req(p) { try { return require(p); } catch (e) { return null; } }
+
+  // legs from an ordered list of stops. Each stop: { city, code }.
+  // A trip of N stops has N-1 legs. Returns null if fewer than 2 valid stops.
+  function buildLegs(stops) {
+    var clean = (stops || []).filter(function (s) { return s && s.code; });
+    if (clean.length < 2) return null;
+    var legs = [];
+    for (var i = 0; i < clean.length - 1; i++) {
+      legs.push({ index: i, from: clean[i], to: clean[i + 1] });
+    }
+    return legs;
+  }
+
+  // analyse one leg: distance + the honest mode recommendation + per-mode time.
+  function analyzeLeg(leg) {
+    var G = geo(), T = transport();
+    var km = G ? G.distanceKm(leg.from.code, leg.to.code) : null;
+    var cmp = (T && km != null) ? T.compareModes(leg.from.code, leg.to.code) : null;
+    // pick the single best mode name from the band, for a compact summary
+    var best = null;
+    if (cmp) {
+      if (cmp.recommend === "fly") best = "flight";
+      else if (cmp.recommend === "train_bus") best = "train";       // short hop: rail wins
+      else if (cmp.recommend === "fly_or_overnight_train") best = "flight";
+      else best = "compare";                                         // genuinely a toss-up
+    }
+    return Object.assign({}, leg, { km: km, compare: cmp, bestMode: best });
+  }
+
+  // whole-trip rollup: total distance, count of legs, and a per-mode "if you took
+  // X the whole way" door-to-door time sum (honest estimate, clearly labelled).
+  function analyzeTrip(stops) {
+    var legs = buildLegs(stops);
+    if (!legs) return null;
+    var analyzed = legs.map(analyzeLeg);
+    var totalKm = 0, known = 0;
+    var modeTime = { flight: 0, train: 0, bus: 0 };
+    var modeKnown = { flight: true, train: true, bus: true };
+    analyzed.forEach(function (l) {
+      if (l.km != null) { totalKm += l.km; known++; }
+      if (l.compare) {
+        l.compare.modes.forEach(function (m) {
+          if (m.d2dMin != null) modeTime[m.mode] += m.d2dMin;
+          else modeKnown[m.mode] = false;
+        });
+      } else { modeKnown.flight = modeKnown.train = modeKnown.bus = false; }
+    });
+    return {
+      legs: analyzed,
+      legCount: analyzed.length,
+      totalKm: known ? totalKm : null,
+      knownLegs: known,
+      modeTime: modeTime,
+      modeKnown: modeKnown,
+    };
+  }
+
+  var Engine = { buildLegs: buildLegs, analyzeLeg: analyzeLeg, analyzeTrip: analyzeTrip };
+  if (typeof module !== "undefined" && module.exports) module.exports = Engine;
+  root.LL_MULTICITY = Engine;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+  <script>
+/*
  * LoungeLens — self-improvement module (rung 1: free, client-side, honest).
  *
  * WHAT THIS IS (and is NOT):
@@ -6674,6 +6805,7 @@ window.LL_TRANSPORT = {
   const GEO = window.LL_GEO, LD = window.LL_LIVE;
   const TR = window.LL_TRANSPORT, TRE = window.LL_TRANSPORT_ENGINE;
   const WATCH = window.LL_WATCH;
+  const MC = window.LL_MULTICITY;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -6688,7 +6820,7 @@ window.LL_TRANSPORT = {
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, watches: [], trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, multicity: ["", "", ""], watches: [], trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -8355,6 +8487,95 @@ window.LL_TRANSPORT = {
     $("#gr-buses").innerHTML = busesHtml;
   }
 
+  // ========================= MULTI-CITY ===================================
+  function mcStops() {
+    if (!Array.isArray(state.multicity) || state.multicity.length < 2) state.multicity = ["", "", ""];
+    return state.multicity;
+  }
+  function renderMcInputs() {
+    const wrap = $("#mc-stops");
+    if (!wrap) return;
+    const stops = mcStops();
+    wrap.innerHTML = stops.map((v, i) => `
+      <div class="mc-stop-row">
+        <span class="mc-pin">${i === 0 ? "🟢" : i === stops.length - 1 ? "🔴" : "🟠"}</span>
+        <input class="fb-input mc-stop" data-mc="${i}" list="fl-airport-list" autocomplete="off"
+          placeholder="${i === 0 ? "Start city" : i === stops.length - 1 ? "Final city" : "Stop " + i}" value="${esc(v || "")}" aria-label="Stop ${i + 1}" />
+        ${stops.length > 2 ? `<button class="act ghost mini" data-mcdel="${i}" aria-label="Remove stop">✕</button>` : ""}
+      </div>`).join("");
+    $$("[data-mc]").forEach((inp) => inp.oninput = () => { mcStops()[Number(inp.dataset.mc)] = inp.value; save(); });
+    $$("[data-mcdel]").forEach((b) => b.onclick = () => { if (mcStops().length > 2) { mcStops().splice(Number(b.dataset.mcdel), 1); save(); renderMcInputs(); } });
+  }
+  function wireMulticity() {
+    renderMcInputs();
+    if ($("#mc-add")) $("#mc-add").onclick = () => { mcStops().push(""); save(); renderMcInputs(); };
+    if ($("#mc-clear")) $("#mc-clear").onclick = () => { state.multicity = ["", "", ""]; save(); renderMcInputs(); $("#mc-summary").innerHTML = ""; $("#mc-legs").innerHTML = ""; };
+    if ($("#mc-go")) $("#mc-go").onclick = () => { renderMulticity(); const r = $("#mc-summary"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); };
+  }
+  function renderMulticity() {
+    if (!$("#mc-legs") || !MC || !TRE) return;
+    const honesty = $("#mc-honesty");
+    if (honesty) honesty.innerHTML = `<b>How this works:</b> distances are real straight-line distances; the best-mode call and the times are honest estimates from those distances, not live timetables. Each leg's links open the real live search on the booking sites where the actual fares and times live. I never invent a fare or a trip total.`;
+
+    // resolve typed cities to {city, code} via the airport list (partial match ok)
+    const resolved = mcStops().map((v) => {
+      const lbl = flAirportLabel(v);
+      return lbl ? { city: lbl.city, code: lbl.code, raw: v } : (v && v.trim() ? { city: v.trim(), code: null, raw: v } : null);
+    });
+    const valid = resolved.filter((s) => s && s.code);
+    if (valid.length < 2) {
+      $("#mc-summary").innerHTML = "";
+      $("#mc-legs").innerHTML = `<div class="empty">Add at least two cities I can place on the map (use the airport suggestions). I'll work out each leg.</div>`;
+      // flag any city we couldn't place
+      const unknown = resolved.filter((s) => s && !s.code);
+      if (unknown.length) $("#mc-legs").innerHTML += `<div class="card-sub" style="margin-top:8px;">I couldn't find map coordinates for: ${unknown.map((u) => esc(u.city)).join(", ")}. Try the airport-list suggestion (e.g. a major city or 3-letter code).</div>`;
+      return;
+    }
+    const trip = MC.analyzeTrip(valid);
+
+    // summary: total distance + "whole way by X" time estimates
+    const sumEl = $("#mc-summary");
+    if (sumEl) {
+      const fmt = (mins) => TRE.fmtDur(mins);
+      const cityChain = valid.map((s) => esc(s.city)).join(" <span class='fl-arrow'>→</span> ");
+      const wholeWay = (label, icon, mode) => trip.modeKnown[mode]
+        ? `<div class="mc-mode"><div class="mc-mode-h">${icon} ${label} the whole way</div><div class="mc-mode-time">~${fmt(trip.modeTime[mode])}</div><div class="card-sub">door-to-door estimate, all ${trip.legCount} legs</div></div>`
+        : "";
+      sumEl.innerHTML = `<div class="mc-sum">
+        <div class="mc-sum-chain">${cityChain}</div>
+        <div class="mc-sum-dist">📏 ${trip.totalKm != null ? trip.totalKm.toLocaleString("en-IN") + " km total" : "distance unknown for some legs"} · ${trip.legCount} leg${trip.legCount > 1 ? "s" : ""}</div>
+        <div class="mc-modes">${wholeWay("Fly", "✈️", "flight")}${wholeWay("Train", "🚆", "train")}${wholeWay("Bus", "🚌", "bus")}</div>
+      </div>`;
+    }
+
+    // per-leg cards: best mode + the live search links for fly/train/bus
+    const date = (state.plan && state.plan.depart) || "";
+    const legsHtml = trip.legs.map((l, idx) => {
+      const fromL = l.from, toL = l.to;
+      const km = l.km;
+      const recLabel = { flight: "✈️ Fly this leg", train: "🚆 Train this leg", bus: "🚌 Bus this leg", compare: "🤔 Close call — compare", null: "" };
+      const flyProv = (FLIGHTS.providers || []).find((p) => p.id === "google-flights");
+      const flyLink = flyProv ? FE.buildLink(flyProv, fromL.code, toL.code, date) : null;
+      const trainP = (TR.trains || []).find((p) => p.id === "ixigo-trains");
+      const busP = (TR.buses || []).find((p) => p.id === "redbus");
+      const trainLink = trainP ? TRE.buildLink(trainP, fromL.city, toL.city, date) : null;
+      const busLink = busP ? TRE.buildLink(busP, fromL.city, toL.city, date) : null;
+      const timeFor = (mode) => { const m = l.compare && l.compare.modes.find((x) => x.mode === mode); return m ? m.timeLabel : ""; };
+      return `<div class="mc-leg">
+        <div class="mc-leg-head">
+          <div class="mc-leg-route"><span class="card-sub">Leg ${idx + 1}</span> <b>${esc(fromL.city)}</b> <span class="fl-arrow">→</span> <b>${esc(toL.city)}</b></div>
+          <div class="mc-leg-dist">${km != null ? km.toLocaleString("en-IN") + " km" : "—"} ${l.bestMode ? `<span class="chip ${l.bestMode === "flight" ? "" : "rail"}">${esc(recLabel[l.bestMode] || "")}</span>` : ""}</div>
+        </div>
+        <div class="mc-leg-links">
+          ${flyLink ? `<a class="mc-leg-link" href="${flyLink}" target="_blank" rel="noopener">✈️ Flights <span class="card-sub">${esc(timeFor("flight"))}</span></a>` : ""}
+          ${trainLink ? `<a class="mc-leg-link" href="${trainLink}" target="_blank" rel="noopener">🚆 Trains <span class="card-sub">${esc(timeFor("train"))}</span></a>` : ""}
+          ${busLink ? `<a class="mc-leg-link" href="${busLink}" target="_blank" rel="noopener">🚌 Buses <span class="card-sub">${esc(timeFor("bus"))}</span></a>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+    $("#mc-legs").innerHTML = legsHtml;
+  }
+
   // ===================== MY TRIPS + ITINERARY ============================
   function trips() { if (!state.trips) state.trips = []; return state.trips; }
   function nextSeq() { state.tripSeq = (state.tripSeq || 1) + 1; return state.tripSeq; }
@@ -9232,6 +9453,7 @@ window.LL_TRANSPORT = {
   wireHotels();
   wireOntrip();
   wireGround();
+  wireMulticity();
   wireTripsForm();
   wireDatePickers();
   render();

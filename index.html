@@ -42,6 +42,7 @@
     </div>
     <nav id="main-nav">
       <button data-view="plan" class="active">🧭 Plan a Trip</button>
+      <button data-view="multicity">🗺️ Multi-city</button>
       <button data-view="trips">🗂️ My Trips</button>
       <button data-view="flights">✈️ Flights</button>
       <button data-view="hotels">🏨 Hotels</button>
@@ -192,6 +193,26 @@
       <div class="section-h">🎟️ Train &amp; bus money-saving plays</div>
       <div id="gr-tips"></div>
       <div class="honesty-note" id="gr-honesty"></div>
+    </section>
+
+    <!-- MULTI-CITY (chain stops, per-leg fly/train/bus compare + links) -->
+    <section id="view-multicity" class="view">
+      <div class="hero">
+        <h2>Multi-city trip — chain your stops</h2>
+        <p>Add every city on your trip in order. For each leg I work out the real distance and the honest best way to get there (fly, train or bus), then open the live search for each one. No invented fares — the real prices live on the booking sites.</p>
+      </div>
+      <div class="flight-builder">
+        <div id="mc-stops"></div>
+        <div class="fb-row">
+          <button class="act ghost mini" id="mc-add">＋ Add another city</button>
+          <button class="act ghost mini" id="mc-clear">Clear all</button>
+        </div>
+        <button class="act big" id="mc-go">Build the multi-city plan →</button>
+      </div>
+
+      <div id="mc-summary"></div>
+      <div id="mc-legs"></div>
+      <div class="honesty-note" id="mc-honesty"></div>
     </section>
 
     <!-- ON-TRIP DEALS (cabs, eSIM/forex, dining, activities) -->
@@ -638,6 +659,7 @@
   <script src="live-data.js"></script>
   <script src="transport-engine.js"></script>
   <script src="watch-engine.js"></script>
+  <script src="multicity-engine.js"></script>
   <script src="selfcheck.js"></script>
   <script src="profile.js"></script>
   <script src="auth.js"></script>

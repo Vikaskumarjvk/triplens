@@ -53,7 +53,7 @@ window.LL_FLIGHTS = {
   providers: [
     {
       id: "google-flights", name: "Google Flights", type: "meta", linkType: "prefilled",
-      url: "https://www.google.com/travel/flights?q=Flights%20from%20{FROM}%20to%20{TO}%20on%20{DATE}",
+      url: "https://www.google.com/travel/flights?q=Flights%20from%20{FROM}%20to%20{TO}{ON_DATE}",
       note: "Sees every airline's fare at once, then sends you to book. Best first stop.",
       confidence: "high", verify: "google.com/travel/flights", offers: [],
     },

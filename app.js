@@ -9,6 +9,7 @@
   const GEO = window.LL_GEO, LD = window.LL_LIVE;
   const TR = window.LL_TRANSPORT, TRE = window.LL_TRANSPORT_ENGINE;
   const WATCH = window.LL_WATCH;
+  const MC = window.LL_MULTICITY;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -23,7 +24,7 @@
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, watches: [], trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, multicity: ["", "", ""], watches: [], trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -1690,6 +1691,95 @@
     $("#gr-buses").innerHTML = busesHtml;
   }
 
+  // ========================= MULTI-CITY ===================================
+  function mcStops() {
+    if (!Array.isArray(state.multicity) || state.multicity.length < 2) state.multicity = ["", "", ""];
+    return state.multicity;
+  }
+  function renderMcInputs() {
+    const wrap = $("#mc-stops");
+    if (!wrap) return;
+    const stops = mcStops();
+    wrap.innerHTML = stops.map((v, i) => `
+      <div class="mc-stop-row">
+        <span class="mc-pin">${i === 0 ? "🟢" : i === stops.length - 1 ? "🔴" : "🟠"}</span>
+        <input class="fb-input mc-stop" data-mc="${i}" list="fl-airport-list" autocomplete="off"
+          placeholder="${i === 0 ? "Start city" : i === stops.length - 1 ? "Final city" : "Stop " + i}" value="${esc(v || "")}" aria-label="Stop ${i + 1}" />
+        ${stops.length > 2 ? `<button class="act ghost mini" data-mcdel="${i}" aria-label="Remove stop">✕</button>` : ""}
+      </div>`).join("");
+    $$("[data-mc]").forEach((inp) => inp.oninput = () => { mcStops()[Number(inp.dataset.mc)] = inp.value; save(); });
+    $$("[data-mcdel]").forEach((b) => b.onclick = () => { if (mcStops().length > 2) { mcStops().splice(Number(b.dataset.mcdel), 1); save(); renderMcInputs(); } });
+  }
+  function wireMulticity() {
+    renderMcInputs();
+    if ($("#mc-add")) $("#mc-add").onclick = () => { mcStops().push(""); save(); renderMcInputs(); };
+    if ($("#mc-clear")) $("#mc-clear").onclick = () => { state.multicity = ["", "", ""]; save(); renderMcInputs(); $("#mc-summary").innerHTML = ""; $("#mc-legs").innerHTML = ""; };
+    if ($("#mc-go")) $("#mc-go").onclick = () => { renderMulticity(); const r = $("#mc-summary"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); };
+  }
+  function renderMulticity() {
+    if (!$("#mc-legs") || !MC || !TRE) return;
+    const honesty = $("#mc-honesty");
+    if (honesty) honesty.innerHTML = `<b>How this works:</b> distances are real straight-line distances; the best-mode call and the times are honest estimates from those distances, not live timetables. Each leg's links open the real live search on the booking sites where the actual fares and times live. I never invent a fare or a trip total.`;
+
+    // resolve typed cities to {city, code} via the airport list (partial match ok)
+    const resolved = mcStops().map((v) => {
+      const lbl = flAirportLabel(v);
+      return lbl ? { city: lbl.city, code: lbl.code, raw: v } : (v && v.trim() ? { city: v.trim(), code: null, raw: v } : null);
+    });
+    const valid = resolved.filter((s) => s && s.code);
+    if (valid.length < 2) {
+      $("#mc-summary").innerHTML = "";
+      $("#mc-legs").innerHTML = `<div class="empty">Add at least two cities I can place on the map (use the airport suggestions). I'll work out each leg.</div>`;
+      // flag any city we couldn't place
+      const unknown = resolved.filter((s) => s && !s.code);
+      if (unknown.length) $("#mc-legs").innerHTML += `<div class="card-sub" style="margin-top:8px;">I couldn't find map coordinates for: ${unknown.map((u) => esc(u.city)).join(", ")}. Try the airport-list suggestion (e.g. a major city or 3-letter code).</div>`;
+      return;
+    }
+    const trip = MC.analyzeTrip(valid);
+
+    // summary: total distance + "whole way by X" time estimates
+    const sumEl = $("#mc-summary");
+    if (sumEl) {
+      const fmt = (mins) => TRE.fmtDur(mins);
+      const cityChain = valid.map((s) => esc(s.city)).join(" <span class='fl-arrow'>→</span> ");
+      const wholeWay = (label, icon, mode) => trip.modeKnown[mode]
+        ? `<div class="mc-mode"><div class="mc-mode-h">${icon} ${label} the whole way</div><div class="mc-mode-time">~${fmt(trip.modeTime[mode])}</div><div class="card-sub">door-to-door estimate, all ${trip.legCount} legs</div></div>`
+        : "";
+      sumEl.innerHTML = `<div class="mc-sum">
+        <div class="mc-sum-chain">${cityChain}</div>
+        <div class="mc-sum-dist">📏 ${trip.totalKm != null ? trip.totalKm.toLocaleString("en-IN") + " km total" : "distance unknown for some legs"} · ${trip.legCount} leg${trip.legCount > 1 ? "s" : ""}</div>
+        <div class="mc-modes">${wholeWay("Fly", "✈️", "flight")}${wholeWay("Train", "🚆", "train")}${wholeWay("Bus", "🚌", "bus")}</div>
+      </div>`;
+    }
+
+    // per-leg cards: best mode + the live search links for fly/train/bus
+    const date = (state.plan && state.plan.depart) || "";
+    const legsHtml = trip.legs.map((l, idx) => {
+      const fromL = l.from, toL = l.to;
+      const km = l.km;
+      const recLabel = { flight: "✈️ Fly this leg", train: "🚆 Train this leg", bus: "🚌 Bus this leg", compare: "🤔 Close call — compare", null: "" };
+      const flyProv = (FLIGHTS.providers || []).find((p) => p.id === "google-flights");
+      const flyLink = flyProv ? FE.buildLink(flyProv, fromL.code, toL.code, date) : null;
+      const trainP = (TR.trains || []).find((p) => p.id === "ixigo-trains");
+      const busP = (TR.buses || []).find((p) => p.id === "redbus");
+      const trainLink = trainP ? TRE.buildLink(trainP, fromL.city, toL.city, date) : null;
+      const busLink = busP ? TRE.buildLink(busP, fromL.city, toL.city, date) : null;
+      const timeFor = (mode) => { const m = l.compare && l.compare.modes.find((x) => x.mode === mode); return m ? m.timeLabel : ""; };
+      return `<div class="mc-leg">
+        <div class="mc-leg-head">
+          <div class="mc-leg-route"><span class="card-sub">Leg ${idx + 1}</span> <b>${esc(fromL.city)}</b> <span class="fl-arrow">→</span> <b>${esc(toL.city)}</b></div>
+          <div class="mc-leg-dist">${km != null ? km.toLocaleString("en-IN") + " km" : "—"} ${l.bestMode ? `<span class="chip ${l.bestMode === "flight" ? "" : "rail"}">${esc(recLabel[l.bestMode] || "")}</span>` : ""}</div>
+        </div>
+        <div class="mc-leg-links">
+          ${flyLink ? `<a class="mc-leg-link" href="${flyLink}" target="_blank" rel="noopener">✈️ Flights <span class="card-sub">${esc(timeFor("flight"))}</span></a>` : ""}
+          ${trainLink ? `<a class="mc-leg-link" href="${trainLink}" target="_blank" rel="noopener">🚆 Trains <span class="card-sub">${esc(timeFor("train"))}</span></a>` : ""}
+          ${busLink ? `<a class="mc-leg-link" href="${busLink}" target="_blank" rel="noopener">🚌 Buses <span class="card-sub">${esc(timeFor("bus"))}</span></a>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+    $("#mc-legs").innerHTML = legsHtml;
+  }
+
   // ===================== MY TRIPS + ITINERARY ============================
   function trips() { if (!state.trips) state.trips = []; return state.trips; }
   function nextSeq() { state.tripSeq = (state.tripSeq || 1) + 1; return state.tripSeq; }
@@ -2567,6 +2657,7 @@
   wireHotels();
   wireOntrip();
   wireGround();
+  wireMulticity();
   wireTripsForm();
   wireDatePickers();
   render();

@@ -45,6 +45,7 @@ js_files = [
     "live-data.js",
     "transport-engine.js",
     "watch-engine.js",
+    "multicity-engine.js",
     "selfcheck.js",
     "profile.js",
     "auth.js",

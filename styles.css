@@ -927,6 +927,25 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .gr-stops-row { padding: 6px 0; font-size: 13px; line-height: 1.5; }
 .gr-stops-row + .gr-stops-row { border-top: 1px solid var(--line); }
 
+/* multi-city */
+.mc-stop-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.mc-pin { flex-shrink: 0; font-size: 13px; }
+.mc-stop { flex: 1; }
+.mc-sum { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0 10px; box-shadow: var(--shadow-1); }
+.mc-sum-chain { font-size: 16px; line-height: 1.6; }
+.mc-sum-dist { font-size: 13px; color: var(--dim); margin: 6px 0 10px; }
+.mc-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.mc-mode { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 13px; }
+.mc-mode-h { font-size: 14px; font-weight: 600; }
+.mc-mode-time { font-size: 17px; font-weight: 700; color: var(--accent2); margin: 3px 0; }
+.mc-leg { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 15px; margin: 10px 0; box-shadow: var(--shadow-1); }
+.mc-leg-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mc-leg-route { font-size: 15px; }
+.mc-leg-dist { font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 8px; }
+.mc-leg-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+.mc-leg-link { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 9px 12px; border-radius: var(--r-sm); background: var(--panel2); border: 1px solid var(--line); color: var(--txt); text-decoration: none; font-size: 13px; transition: border-color .15s, transform .1s; }
+.mc-leg-link:hover { border-color: var(--accent2); transform: translateY(-1px); }
+
 /* the optimizer result */
 .plan-route { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0 10px; box-shadow: var(--shadow-1); }
 .pr-cities { font-size: 19px; }

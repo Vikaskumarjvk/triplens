@@ -37,6 +37,10 @@
   function buildLink(provider, from, to, dateStr) {
     let url = provider.url;
     const dp = dateParts(dateStr);
+    // {ON_DATE} is an OPTIONAL date segment: route-only search is still valid, so
+    // it never triggers the no-date fallback (it just drops out when undated).
+    const onDate = /\{ON_DATE\}/.test(url);
+    // a HARD date requirement is a {DATE...} token that is NOT the optional one
     const needsDate = /\{DATE/.test(url);
     if (needsDate && !dp) return provider.fallbackUrl || stripToOrigin(url);
     const F = (from || "").toUpperCase(), T = (to || "").toUpperCase();
@@ -45,11 +49,14 @@
       .replace(/\{FROM\}/g, F).replace(/\{TO\}/g, T);
     if (dp) {
       url = url
+        .replace(/\{ON_DATE\}/g, "%20on%20" + dp.ymd)
         .replace(/\{DATE_YYMMDD\}/g, dp.yymmdd)
         .replace(/\{DATE_DDMMYYYY_PLAIN\}/g, dp.ddmmyyyyplain)
         .replace(/\{DATE_DDMMYYYY\}/g, encodeURIComponent(dp.ddmmyyyy))
         .replace(/\{DATE_TEXT\}/g, encodeURIComponent(dp.text))
         .replace(/\{DATE\}/g, dp.ymd);
+    } else if (onDate) {
+      url = url.replace(/\{ON_DATE\}/g, ""); // undated: route-only search
     }
     return url;
   }
