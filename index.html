@@ -42,6 +42,7 @@
     </div>
     <nav id="main-nav">
       <button data-view="plan" class="active">🧭 Plan a Trip</button>
+      <button data-view="trips">🗂️ My Trips</button>
       <button data-view="flights">✈️ Flights</button>
       <button data-view="hotels">🏨 Hotels</button>
       <button data-view="ontrip">🧳 On-Trip Deals</button>
@@ -86,6 +87,45 @@
         <button class="act big" id="tp-plan">🧭 Build my trip plan →</button>
       </div>
       <div id="plan-result"></div>
+    </section>
+
+    <!-- MY TRIPS + ITINERARY (saved trips, day-by-day, packing) -->
+    <section id="view-trips" class="view">
+      <div class="hero">
+        <h2>My Trips</h2>
+        <p>Save a plan, then build it out day by day — flights, lounges, hotel, food and things to do, all on a timeline. Add a packing checklist. Everything saved on this device; export to share with whoever's travelling with you.</p>
+      </div>
+
+      <!-- list of saved trips OR the open itinerary -->
+      <div id="trips-list"></div>
+
+      <!-- new-trip quick form (also reachable from Plan via "save this trip") -->
+      <div class="about-card" id="trips-new-card">
+        <h3>➕ Start a new trip</h3>
+        <div class="trip-builder" style="margin-top:8px;">
+          <div class="fb-row">
+            <input class="fb-input" id="nt-from" placeholder="From (city)" list="fl-airport-list" autocomplete="off" aria-label="From" />
+            <input class="fb-input" id="nt-to" placeholder="To (city)" list="fl-airport-list" autocomplete="off" aria-label="To" />
+          </div>
+          <div class="fb-row">
+            <label class="tp-lbl">Depart <input class="fb-input" id="nt-depart" type="date" aria-label="Departure date" /></label>
+            <label class="tp-lbl">Nights <input class="fb-input tp-num" id="nt-nights" type="number" min="1" max="60" value="3" aria-label="Nights" /></label>
+            <label class="tp-lbl">Travellers <input class="fb-input tp-num" id="nt-adults" type="number" min="1" max="9" value="2" aria-label="Travellers" /></label>
+          </div>
+          <button class="act big" id="nt-create">Create trip + auto-fill a starter itinerary →</button>
+        </div>
+        <p class="card-sub" style="margin-top:8px;">I'll seed day 1 with your flight + lounge + hotel check-in, and the last day with checkout + return. You edit freely from there.</p>
+      </div>
+
+      <!-- restore a shared trip -->
+      <div class="about-card">
+        <h3>📲 Open a shared trip</h3>
+        <p class="card-sub" style="margin-bottom:8px;">Someone sent you a trip file? Import it here — it's added to your trips.</p>
+        <div class="row">
+          <button class="act ghost mini" id="trip-import-btn">⬆️ Import a trip file</button>
+          <input type="file" id="trip-import-file" accept="application/json,.json" style="display:none;" />
+        </div>
+      </div>
     </section>
 
     <!-- HOTELS -->
@@ -534,6 +574,7 @@
   <script src="flight-engine.js"></script>
   <script src="flight-live.js"></script>
   <script src="trip-engine.js"></script>
+  <script src="itinerary-engine.js"></script>
   <script src="selfcheck.js"></script>
   <script src="profile.js"></script>
   <script src="auth.js"></script>

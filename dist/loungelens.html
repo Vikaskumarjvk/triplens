@@ -924,6 +924,44 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .dl-offer { font-size: 12.5px; color: var(--dim); margin-top: 6px; line-height: 1.4; }
 .dl-offer:first-of-type { margin-top: 8px; }
 
+/* --- My Trips + Itinerary (added 2026-06-24) --- */
+.plan-save { margin: 4px 0 14px; }
+.trip-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 13px 15px; margin: 8px 0; box-shadow: var(--shadow-1); }
+.tc-title { font-size: 15.5px; font-weight: 700; }
+.tc-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+
+.itin-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.itin-title { flex: 1; min-width: 140px; display: flex; flex-direction: column; }
+.itin-title b { font-size: 17px; }
+.itin-tools { display: flex; gap: 6px; }
+.itin-days { display: grid; gap: 12px; }
+.itin-day { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; box-shadow: var(--shadow-1); }
+.itin-day-head { font-weight: 700; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.itin-item { display: grid; grid-template-columns: 48px 22px 1fr auto; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); }
+.itin-item:first-of-type { border-top: none; }
+.ii-time { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.ii-icon { text-align: center; }
+.ii-body { font-size: 13.5px; line-height: 1.4; }
+.ii-actions { display: flex; gap: 3px; }
+.ii-btn { background: var(--chip); border: 1px solid var(--line); color: var(--dim); border-radius: 7px; width: 26px; height: 26px; cursor: pointer; font-size: 13px; line-height: 1; transition: border-color .15s, color .15s; }
+.ii-btn:hover { border-color: var(--accent); color: var(--txt); }
+.ii-btn.del:hover { border-color: var(--bad); color: var(--bad); }
+.itin-item.kind-flight { border-left: 3px solid var(--accent2); padding-left: 7px; }
+.itin-item.kind-lounge { border-left: 3px solid var(--rail); padding-left: 7px; }
+.itin-item.kind-hotel { border-left: 3px solid var(--good); padding-left: 7px; }
+.itin-item.kind-activity { border-left: 3px solid var(--warn); padding-left: 7px; }
+.itin-empty { padding: 8px 0; }
+.itin-add { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.ia-kind { max-width: 140px; }
+.ia-time { max-width: 110px; }
+.ia-title { flex: 1; min-width: 140px; }
+
+.pack-flags { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 14px; }
+.pack-cat { margin: 10px 0; }
+.pack-cat-h { font-weight: 700; font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.pack-item { display: flex; align-items: center; gap: 9px; padding: 6px 0; font-size: 14px; cursor: pointer; }
+.pack-item.done { color: var(--dim-2); text-decoration: line-through; }
+
 </style>
 </head>
 <body>
@@ -944,6 +982,7 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
     </div>
     <nav id="main-nav">
       <button data-view="plan" class="active">🧭 Plan a Trip</button>
+      <button data-view="trips">🗂️ My Trips</button>
       <button data-view="flights">✈️ Flights</button>
       <button data-view="hotels">🏨 Hotels</button>
       <button data-view="ontrip">🧳 On-Trip Deals</button>
@@ -988,6 +1027,45 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
         <button class="act big" id="tp-plan">🧭 Build my trip plan →</button>
       </div>
       <div id="plan-result"></div>
+    </section>
+
+    <!-- MY TRIPS + ITINERARY (saved trips, day-by-day, packing) -->
+    <section id="view-trips" class="view">
+      <div class="hero">
+        <h2>My Trips</h2>
+        <p>Save a plan, then build it out day by day — flights, lounges, hotel, food and things to do, all on a timeline. Add a packing checklist. Everything saved on this device; export to share with whoever's travelling with you.</p>
+      </div>
+
+      <!-- list of saved trips OR the open itinerary -->
+      <div id="trips-list"></div>
+
+      <!-- new-trip quick form (also reachable from Plan via "save this trip") -->
+      <div class="about-card" id="trips-new-card">
+        <h3>➕ Start a new trip</h3>
+        <div class="trip-builder" style="margin-top:8px;">
+          <div class="fb-row">
+            <input class="fb-input" id="nt-from" placeholder="From (city)" list="fl-airport-list" autocomplete="off" aria-label="From" />
+            <input class="fb-input" id="nt-to" placeholder="To (city)" list="fl-airport-list" autocomplete="off" aria-label="To" />
+          </div>
+          <div class="fb-row">
+            <label class="tp-lbl">Depart <input class="fb-input" id="nt-depart" type="date" aria-label="Departure date" /></label>
+            <label class="tp-lbl">Nights <input class="fb-input tp-num" id="nt-nights" type="number" min="1" max="60" value="3" aria-label="Nights" /></label>
+            <label class="tp-lbl">Travellers <input class="fb-input tp-num" id="nt-adults" type="number" min="1" max="9" value="2" aria-label="Travellers" /></label>
+          </div>
+          <button class="act big" id="nt-create">Create trip + auto-fill a starter itinerary →</button>
+        </div>
+        <p class="card-sub" style="margin-top:8px;">I'll seed day 1 with your flight + lounge + hotel check-in, and the last day with checkout + return. You edit freely from there.</p>
+      </div>
+
+      <!-- restore a shared trip -->
+      <div class="about-card">
+        <h3>📲 Open a shared trip</h3>
+        <p class="card-sub" style="margin-bottom:8px;">Someone sent you a trip file? Import it here — it's added to your trips.</p>
+        <div class="row">
+          <button class="act ghost mini" id="trip-import-btn">⬆️ Import a trip file</button>
+          <input type="file" id="trip-import-file" accept="application/json,.json" style="display:none;" />
+        </div>
+      </div>
     </section>
 
     <!-- HOTELS -->
@@ -3385,11 +3463,14 @@ window.LL_HOTELS = {
   // cities the stay picker offers (mirrors flight + lounge city coverage) ----
   cities: [
     "Delhi", "Mumbai", "Bengaluru", "Hyderabad", "Chennai", "Kolkata",
-    "Goa", "Kochi", "Pune", "Ahmedabad", "Jaipur", "Udaipur", "Lucknow",
-    "Varanasi", "Guwahati", "Chandigarh", "Srinagar", "Thiruvananthapuram",
-    "Visakhapatnam", "Indore", "Amritsar", "Dehradun", "Port Blair",
-    "Shimla", "Manali", "Rishikesh", "Darjeeling", "Munnar", "Ooty",
-    "Dubai", "Singapore", "Bangkok",
+    "Goa", "Kochi", "Pune", "Ahmedabad", "Jaipur", "Udaipur", "Jodhpur",
+    "Jaisalmer", "Lucknow", "Varanasi", "Agra", "Guwahati", "Chandigarh",
+    "Srinagar", "Leh", "Thiruvananthapuram", "Visakhapatnam", "Indore",
+    "Amritsar", "Dehradun", "Port Blair", "Shimla", "Manali", "Rishikesh",
+    "Darjeeling", "Gangtok", "Munnar", "Ooty", "Coorg", "Alleppey",
+    "Mysuru", "Pondicherry", "Mahabaleshwar", "Nainital", "Mussoorie",
+    "Dubai", "Abu Dhabi", "Singapore", "Bangkok", "Phuket", "Bali",
+    "Kuala Lumpur", "Kathmandu", "Colombo", "Maldives",
   ],
 
   // ---- booking providers ---------------------------------------------------
@@ -3579,6 +3660,12 @@ window.LL_DEALS = {
       note: "All-electric, fixed upfront price (no surge), airport runs. Limited to a few metros — check it serves your city.",
       confidence: "med", verify: "blusmart.com", offers: [],
     },
+    {
+      id: "namma-metro", name: "Metro / city transit", category: "cab", type: "site", linkType: "search-page",
+      url: "https://www.google.com/maps",
+      note: "In Delhi/Bengaluru/Hyderabad/Mumbai/Kolkata/Chennai the metro beats a cab in traffic and costs a fraction. Most have a QR-ticket app now.",
+      confidence: "high", verify: "your city's metro app", offers: [],
+    },
 
     // ===== INTERCITY =====
     {
@@ -3670,6 +3757,12 @@ window.LL_DEALS = {
       url: "https://www.getyourguide.com/s/?q={CITY}",
       note: "Skip-the-line tickets + tours worldwide; free cancellation on most. Good for intl legs.",
       confidence: "high", verify: "getyourguide.com", offers: [],
+    },
+    {
+      id: "headout", name: "Headout", category: "activities", type: "ota", linkType: "prefilled",
+      url: "https://www.headout.com/?q={CITY}",
+      note: "Instant mobile tickets for attractions, shows + experiences; strong in India metros + Dubai/SE-Asia.",
+      confidence: "med", verify: "headout.com", offers: [],
     },
     {
       id: "district", name: "District (by Zomato)", category: "activities", type: "app", linkType: "search-page",
@@ -4912,6 +5005,211 @@ window.LL_DEALS = {
 </script>
   <script>
 /*
+ * TripLens — itinerary engine. Pure logic for saved trips + day-by-day plans.
+ * No DOM. Node-testable (tests-itinerary.js).
+ *
+ * A "trip" is a saved object the user owns:
+ *   { id, title, from, to, depart, nights, adults, days:[{items:[...]}],
+ *     packing:{checked:{}}, notes, createdTs }
+ * Each day item: { id, time, kind, title, note, link }
+ *   kind ∈ flight | hotel | lounge | cab | food | activity | note
+ *
+ * HONESTY MODEL: the itinerary stores the USER'S plan + links to real sites.
+ * It never invents a price. Any number here is user-entered (a budget note).
+ *
+ * Pure, deterministic. IDs are derived from a passed seed/counter — NO Date.now()
+ * or Math.random() inside (so it's testable + replayable). Callers pass `now`/seed.
+ */
+(function (root) {
+  "use strict";
+
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function parseISO(s) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ""); return m ? { y: +m[1], mo: +m[2], d: +m[3] } : null; }
+  function addDays(iso, days) {
+    const p = parseISO(iso); if (!p) return null;
+    const dt = new Date(Date.UTC(p.y, p.mo - 1, p.d)); dt.setUTCDate(dt.getUTCDate() + days);
+    return dt.getUTCFullYear() + "-" + pad2(dt.getUTCMonth() + 1) + "-" + pad2(dt.getUTCDate());
+  }
+  const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const MO = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function dayLabel(iso) {
+    const p = parseISO(iso); if (!p) return "";
+    const dt = new Date(Date.UTC(p.y, p.mo - 1, p.d));
+    return WD[dt.getUTCDay()] + ", " + p.d + " " + MO[p.mo - 1];
+  }
+
+  // a small deterministic id: prefix + seed counter, so tests are stable.
+  function mkId(prefix, seed) { return prefix + "-" + seed; }
+
+  // ---- create a blank trip ------------------------------------------------
+  // opts: { title, from, to, depart, nights, adults, id }
+  function newTrip(opts) {
+    opts = opts || {};
+    const nights = Math.max(1, +opts.nights || 1);
+    const dayCount = nights + 1; // arrival day ... departure day inclusive
+    const days = [];
+    for (let i = 0; i < dayCount; i++) {
+      days.push({ date: opts.depart ? addDays(opts.depart, i) : null, items: [] });
+    }
+    return {
+      id: opts.id || mkId("trip", opts.seed || 1),
+      title: opts.title || ((opts.from || "?") + " → " + (opts.to || "?")),
+      from: opts.from || "", to: opts.to || "",
+      depart: opts.depart || "", nights, adults: Math.max(1, +opts.adults || 1),
+      days, packing: { checked: {} }, notes: opts.notes || "", createdTs: opts.createdTs || 0,
+    };
+  }
+
+  // ---- day helpers --------------------------------------------------------
+  function dayCount(trip) { return (trip && trip.days && trip.days.length) || 0; }
+
+  // add an item to a day (returns the item; mutates trip.days[dayIdx])
+  function addItem(trip, dayIdx, item, seed) {
+    if (!trip.days[dayIdx]) return null;
+    const it = {
+      id: (item && item.id) || mkId("it", seed || (countItems(trip) + 1)),
+      time: (item && item.time) || "",
+      kind: (item && item.kind) || "note",
+      title: (item && item.title) || "",
+      note: (item && item.note) || "",
+      link: (item && item.link) || "",
+    };
+    trip.days[dayIdx].items.push(it);
+    sortDay(trip.days[dayIdx]);
+    return it;
+  }
+  function removeItem(trip, dayIdx, itemId) {
+    if (!trip.days[dayIdx]) return false;
+    const before = trip.days[dayIdx].items.length;
+    trip.days[dayIdx].items = trip.days[dayIdx].items.filter((x) => x.id !== itemId);
+    return trip.days[dayIdx].items.length < before;
+  }
+  // move an item between days (or within). returns true on success.
+  function moveItem(trip, fromDay, itemId, toDay) {
+    if (!trip.days[fromDay] || !trip.days[toDay]) return false;
+    const idx = trip.days[fromDay].items.findIndex((x) => x.id === itemId);
+    if (idx < 0) return false;
+    const [it] = trip.days[fromDay].items.splice(idx, 1);
+    trip.days[toDay].items.push(it);
+    sortDay(trip.days[toDay]);
+    return true;
+  }
+  // sort a day's items by time (blank times sink to the bottom, stable-ish)
+  function sortDay(day) {
+    day.items.sort((a, b) => {
+      const at = a.time || "99:99", bt = b.time || "99:99";
+      return at < bt ? -1 : at > bt ? 1 : 0;
+    });
+  }
+  function countItems(trip) { return (trip.days || []).reduce((n, d) => n + d.items.length, 0); }
+
+  // ---- seed an itinerary from a Trip-Optimizer plan ----------------------
+  // Drops sensible starter items: outbound flight + lounge on day 0, hotel
+  // check-in day 0, hotel check-out last day, a "explore" note on middle days.
+  // plan = output of LL_TRIP_ENGINE.planTrip. Returns the mutated trip.
+  function seedFromPlan(trip, plan, opts) {
+    opts = opts || {};
+    let seed = (opts.seedStart || 1000);
+    const next = () => ++seed;
+    if (!trip.days.length) return trip;
+    const last = trip.days.length - 1;
+    const r = plan && plan.route ? plan.route : {};
+    const fromCity = (r.origin && r.origin.city) || trip.from;
+    const destCity = (r.dest && r.dest.city) || trip.to;
+
+    // day 0: flight out + origin lounge + check-in
+    const topFlight = plan && plan.flights && plan.flights[0];
+    addItem(trip, 0, { time: "08:00", kind: "flight", title: "Flight " + (r.from || "") + " → " + (r.to || ""), note: "Compare + book", link: topFlight ? topFlight.link : "" }, next());
+    if (plan && plan.lounges && plan.lounges.origin && plan.lounges.origin.openCount > 0) {
+      addItem(trip, 0, { time: "06:30", kind: "lounge", title: "Lounge at " + fromCity + " airport", note: plan.lounges.origin.openCount + " your cards open — arrive early, eat free" }, next());
+    }
+    const topStay = plan && plan.stay && plan.stay[0];
+    addItem(trip, 0, { time: "14:00", kind: "hotel", title: "Hotel check-in · " + destCity, note: "Book on " + (topStay ? topStay.provider.name : "a compare site"), link: topStay ? topStay.link : "" }, next());
+
+    // middle days: an explore placeholder
+    for (let i = 1; i < last; i++) {
+      addItem(trip, i, { time: "10:00", kind: "activity", title: "Explore " + destCity, note: "Add tours / food / sights from On-Trip Deals" }, next());
+    }
+    // last day: checkout + return flight + dest lounge
+    if (last > 0) {
+      addItem(trip, last, { time: "11:00", kind: "hotel", title: "Hotel check-out", note: "" }, next());
+      if (plan && plan.lounges && plan.lounges.dest && plan.lounges.dest.openCount > 0) {
+        addItem(trip, last, { time: "16:00", kind: "lounge", title: "Lounge at " + destCity + " airport", note: plan.lounges.dest.openCount + " your cards open" }, next());
+      }
+      addItem(trip, last, { time: "18:00", kind: "flight", title: "Return flight " + (r.to || "") + " → " + (r.from || ""), note: "Book the return", link: topFlight ? topFlight.link : "" }, next());
+    }
+    return trip;
+  }
+
+  // ---- packing generator --------------------------------------------------
+  // Builds a checklist tailored to nights + a few flags. Deterministic.
+  // flags: { intl, cold, beach, business, monsoon }
+  function packingList(trip, flags) {
+    flags = flags || {};
+    const nights = trip.nights || 1;
+    const list = [];
+    const add = (cat, item) => list.push({ cat, item });
+    // essentials always
+    add("Documents", "Govt photo ID / passport" + (flags.intl ? " + visa" : ""));
+    add("Documents", "Boarding pass / ticket (offline copy)");
+    add("Documents", "Hotel booking confirmation");
+    add("Money", "Cards you actually use for offers (the trip's best card)");
+    if (flags.intl) add("Money", "Zero-markup forex card / some local cash");
+    add("Tech", "Phone + charger");
+    add("Tech", "Power bank (airport + travel days)");
+    if (flags.intl) add("Tech", "Universal travel adapter");
+    if (flags.intl) add("Tech", "eSIM activated / roaming pack");
+    // clothing scales with nights
+    const outfits = Math.min(nights + 1, 10);
+    add("Clothing", outfits + " day outfits");
+    add("Clothing", "Underwear + socks x" + (nights + 1));
+    add("Clothing", "Sleepwear");
+    if (flags.cold) { add("Clothing", "Warm jacket / layers"); add("Clothing", "Gloves + beanie"); }
+    if (flags.beach) { add("Clothing", "Swimwear + flip-flops"); add("Toiletries", "Sunscreen SPF 50"); }
+    if (flags.business) { add("Clothing", "Formal outfit + shoes"); add("Tech", "Laptop + charger"); }
+    if (flags.monsoon) { add("Clothing", "Compact umbrella / rain jacket"); add("Misc", "Dry bag for electronics"); }
+    add("Toiletries", "Toothbrush + paste, deodorant");
+    add("Toiletries", "Any prescription meds + basic first-aid");
+    add("Misc", "Reusable water bottle");
+    add("Misc", "Headphones");
+    if (nights >= 4) add("Misc", "Small laundry bag");
+    return list;
+  }
+  // stable key for a packing item so checked-state survives re-render
+  function packKey(p) { return (p.cat + ":" + p.item).toLowerCase().replace(/[^a-z0-9]+/g, "-"); }
+
+  // ---- summary for the My Trips list -------------------------------------
+  function tripSummary(trip) {
+    return {
+      id: trip.id, title: trip.title, from: trip.from, to: trip.to,
+      depart: trip.depart, nights: trip.nights, adults: trip.adults,
+      dayCount: dayCount(trip), itemCount: countItems(trip),
+      dateRange: trip.depart ? (dayLabel(trip.depart) + (trip.nights ? " · " + trip.nights + "n" : "")) : "no dates",
+    };
+  }
+
+  // ---- export / import (share a trip as a portable code) ------------------
+  function exportTrip(trip) { return JSON.stringify({ kind: "triplens-itinerary", v: 1, trip }); }
+  function importTrip(str) {
+    try {
+      const o = JSON.parse(str);
+      if (o && o.kind === "triplens-itinerary" && o.trip && o.trip.days) return o.trip;
+    } catch (e) {}
+    return null;
+  }
+
+  const Engine = {
+    parseISO, addDays, dayLabel, mkId,
+    newTrip, dayCount, addItem, removeItem, moveItem, sortDay, countItems,
+    seedFromPlan, packingList, packKey, tripSummary, exportTrip, importTrip,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = Engine;
+  root.LL_ITINERARY = Engine;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+  <script>
+/*
  * LoungeLens — self-improvement module (rung 1: free, client-side, honest).
  *
  * WHAT THIS IS (and is NOT):
@@ -5412,6 +5710,7 @@ window.LL_DEALS = {
   const BRAND = window.LL_BRAND;
   const FE = window.LL_FLIGHT_ENGINE, FLIGHTS = window.LL_FLIGHTS;
   const TE = window.LL_TRIP_ENGINE, HOTELS = window.LL_HOTELS, DEALS = window.LL_DEALS;
+  const IT = window.LL_ITINERARY;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -5426,7 +5725,7 @@ window.LL_DEALS = {
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" } }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, trips: [], openTripId: null, tripSeq: 1 }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -6688,13 +6987,15 @@ window.LL_DEALS = {
     // savings checklist
     const savingsBody = `<ul class="plan-savings">${plan.savings.map((s) => `<li><span class="psv-ic">${s.icon}</span> ${esc(s.text)}</li>`).join("")}</ul>`;
 
-    out.innerHTML = routeHead + bestCardHtml +
+    const saveBtn = `<div class="plan-save"><button class="act big" id="plan-save-trip">🗂️ Save this trip + build a day-by-day itinerary →</button></div>`;
+    out.innerHTML = routeHead + bestCardHtml + saveBtn +
       step("✈️", "Flights", flightBody) +
       step("🏨", "Stay", stayBody) +
       step("🛋️", "Lounges on the way", loungeBody) +
       step("🧳", "While you're there", ontripBody) +
       step("✅", "Your money-saving checklist", savingsBody) +
       `<div class="honesty-note">Every link opens the <b>real</b> live search on the real site — that's where the true price is. I never invent a fare or a total. Offers are recurring India card/app/coupon mechanisms, confidence-tagged; confirm today's exact terms before you pay.</div>`;
+    if ($("#plan-save-trip")) $("#plan-save-trip").onclick = saveCurrentPlanAsTrip;
     wireGoto();
   }
 
@@ -6830,6 +7131,214 @@ window.LL_DEALS = {
       return `<div class="ot-cat"><div class="ot-cat-head">${cat.label}</div><div class="card-sub ot-cat-blurb">${esc(cat.blurb)}</div><div class="ot-grid">${cards}</div></div>`;
     }).join("");
     $("#ontrip-result").innerHTML = (city ? `<div class="fl-route"><b>${esc(city)}</b> <span class="card-sub">links tailored to this city where supported</span></div>` : `<div class="card-sub" style="margin:8px 0;">Tip: type a destination city above to tailor the cab/activity links to it.</div>`) + out;
+  }
+
+  // ===================== MY TRIPS + ITINERARY ============================
+  function trips() { if (!state.trips) state.trips = []; return state.trips; }
+  function nextSeq() { state.tripSeq = (state.tripSeq || 1) + 1; return state.tripSeq; }
+  function openTrip() { return trips().find((t) => t.id === state.openTripId) || null; }
+  const KIND_ICON = { flight: "✈️", hotel: "🏨", lounge: "🛋️", cab: "🚕", food: "🍽️", activity: "🎟️", note: "📝" };
+  const KIND_LABEL = { flight: "Flight", hotel: "Hotel", lounge: "Lounge", cab: "Cab / transfer", food: "Food", activity: "Activity", note: "Note" };
+
+  // build a trip from the current Plan inputs + the optimizer plan, seed it.
+  function saveCurrentPlanAsTrip() {
+    if (!IT || !TE) return;
+    const p = planState();
+    if (!p.from || !p.to) { toast("Add where you're going first."); return; }
+    const plan = TE.planTrip({ from: p.from, to: p.to, depart: p.depart, nights: p.nights, adults: p.adults },
+      { wallet: state.wallet, visitLog: state.visitLog, spend: state.spend, now: NOW });
+    const r = plan.route;
+    const t = IT.newTrip({
+      title: ((r.origin ? r.origin.city : p.from) + " → " + (r.dest ? r.dest.city : p.to)),
+      from: r.origin ? r.origin.city : p.from, to: r.dest ? r.dest.city : p.to,
+      depart: p.depart, nights: p.nights, adults: p.adults, seed: nextSeq(), createdTs: 0,
+    });
+    IT.seedFromPlan(t, plan, { seedStart: (countAllItemsSeed()) });
+    trips().push(t);
+    state.openTripId = t.id;
+    save();
+    showView("trips", true);
+    renderTrips();
+    toast("Trip saved + starter itinerary filled in.");
+  }
+  // a monotonically rising seed base so item ids never collide across trips
+  function countAllItemsSeed() {
+    let n = 100000;
+    trips().forEach((t) => (t.days || []).forEach((d) => (n += (d.items || []).length + 1)));
+    return n + 1;
+  }
+
+  function wireTripsForm() {
+    if ($("#nt-create")) $("#nt-create").onclick = () => {
+      if (!IT) return;
+      const from = ($("#nt-from") && $("#nt-from").value || "").trim();
+      const to = ($("#nt-to") && $("#nt-to").value || "").trim();
+      if (!from || !to) { toast("Enter both cities."); return; }
+      const depart = ($("#nt-depart") && $("#nt-depart").value) || "";
+      const nights = ($("#nt-nights") && +$("#nt-nights").value) || 3;
+      const adults = ($("#nt-adults") && +$("#nt-adults").value) || 2;
+      const t = IT.newTrip({ title: from + " → " + to, from, to, depart, nights, adults, seed: nextSeq() });
+      // seed from a fresh optimizer plan so the starter itinerary is real
+      if (TE) {
+        const plan = TE.planTrip({ from, to, depart, nights, adults }, { wallet: state.wallet, visitLog: state.visitLog, spend: state.spend, now: NOW });
+        IT.seedFromPlan(t, plan, { seedStart: countAllItemsSeed() });
+      }
+      trips().push(t); state.openTripId = t.id; save(); renderTrips();
+      toast("Trip created.");
+    };
+    if ($("#nt-depart")) $("#nt-depart").setAttribute("min", todayISO());
+    if ($("#trip-import-btn")) $("#trip-import-btn").onclick = () => $("#trip-import-file") && $("#trip-import-file").click();
+    if ($("#trip-import-file")) $("#trip-import-file").onchange = (e) => {
+      const f = e.target.files && e.target.files[0]; if (!f || !IT) return;
+      const rd = new FileReader();
+      rd.onload = () => {
+        const t = IT.importTrip(String(rd.result || ""));
+        if (!t) { toast("That file isn't a TripLens trip."); return; }
+        // re-id to avoid clobbering an existing trip
+        t.id = IT.mkId("trip", nextSeq());
+        trips().push(t); state.openTripId = t.id; save(); renderTrips();
+        toast("Trip imported.");
+      };
+      rd.readAsText(f);
+      e.target.value = "";
+    };
+  }
+
+  function renderTrips() {
+    const wrap = $("#trips-list"); if (!wrap || !IT) return;
+    const open = openTrip();
+    const newCard = $("#trips-new-card");
+    if (open) {
+      if (newCard) newCard.style.display = "none";
+      wrap.innerHTML = renderItinerary(open);
+      wireItinerary(open);
+    } else {
+      if (newCard) newCard.style.display = "";
+      const list = trips();
+      if (!list.length) {
+        wrap.innerHTML = `<div class="empty">No saved trips yet. Build one on <b class="link" data-goto="plan">Plan a Trip</b> and tap “save this trip”, or start one below.</div>`;
+        wireGoto();
+        return;
+      }
+      wrap.innerHTML = `<div class="section-h">Your trips (${list.length})</div>` + list.map((t) => {
+        const s = IT.tripSummary(t);
+        return `<div class="trip-card" data-opentrip="${esc(t.id)}">
+          <div class="tc-main">
+            <div class="tc-title">🧭 ${esc(s.title)}</div>
+            <div class="card-sub">${esc(s.dateRange)} · ${s.dayCount} days · ${s.itemCount} items · ${s.adults} traveller${s.adults > 1 ? "s" : ""}</div>
+          </div>
+          <div class="tc-actions">
+            <button class="act mini" data-opentrip="${esc(t.id)}">Open →</button>
+            <button class="act ghost mini" data-deltrip="${esc(t.id)}">Delete</button>
+          </div>
+        </div>`;
+      }).join("");
+      $$("[data-opentrip]").forEach((b) => b.onclick = () => { state.openTripId = b.dataset.opentrip; save(); renderTrips(); window.scrollTo({ top: 0, behavior: "smooth" }); });
+      $$("[data-deltrip]").forEach((b) => b.onclick = () => {
+        if (!confirm("Delete this trip?")) return;
+        state.trips = trips().filter((t) => t.id !== b.dataset.deltrip);
+        save(); renderTrips();
+      });
+    }
+  }
+
+  function renderItinerary(t) {
+    const s = IT.tripSummary(t);
+    const head = `<div class="itin-head">
+      <button class="act ghost mini" id="itin-back">← All trips</button>
+      <div class="itin-title"><b>${esc(t.title)}</b><span class="card-sub">${esc(s.dateRange)} · ${s.adults} traveller${s.adults > 1 ? "s" : ""}</span></div>
+      <div class="itin-tools">
+        <button class="act ghost mini" id="itin-export">⬇️ Share</button>
+        <button class="act ghost mini" id="itin-jump-pack">🎒 Packing</button>
+      </div>
+    </div>`;
+
+    const days = t.days.map((day, di) => {
+      const dl = day.date ? IT.dayLabel(day.date) : ("Day " + (di + 1));
+      const tag = di === 0 ? `<span class="chip">arrival</span>` : di === t.days.length - 1 ? `<span class="chip rail">departure</span>` : "";
+      const items = day.items.length ? day.items.map((it) => {
+        const link = it.link ? ` <a class="fl-verify" href="${esc(it.link)}" target="_blank" rel="noopener">open ↗</a>` : "";
+        return `<div class="itin-item kind-${esc(it.kind)}">
+          <span class="ii-time">${esc(it.time || "—")}</span>
+          <span class="ii-icon">${KIND_ICON[it.kind] || "•"}</span>
+          <span class="ii-body"><b>${esc(it.title || KIND_LABEL[it.kind] || "Item")}</b>${it.note ? `<span class="card-sub"> ${esc(it.note)}</span>` : ""}${link}</span>
+          <span class="ii-actions">
+            ${di > 0 ? `<button class="ii-btn" data-mv="up" data-day="${di}" data-it="${esc(it.id)}" title="Move to previous day">↑</button>` : ""}
+            ${di < t.days.length - 1 ? `<button class="ii-btn" data-mv="down" data-day="${di}" data-it="${esc(it.id)}" title="Move to next day">↓</button>` : ""}
+            <button class="ii-btn del" data-delit data-day="${di}" data-it="${esc(it.id)}" title="Remove">✕</button>
+          </span>
+        </div>`;
+      }).join("") : `<div class="card-sub itin-empty">Nothing planned. Add something below.</div>`;
+      return `<div class="itin-day">
+        <div class="itin-day-head">${esc(dl)} ${tag}</div>
+        ${items}
+        <div class="itin-add">
+          <select class="cmp-select ia-kind" data-day="${di}" aria-label="Item type">
+            ${Object.keys(KIND_LABEL).map((k) => `<option value="${k}">${KIND_ICON[k]} ${KIND_LABEL[k]}</option>`).join("")}
+          </select>
+          <input class="leg-input ia-time" data-day="${di}" type="time" aria-label="Time" />
+          <input class="leg-input ia-title" data-day="${di}" placeholder="Add a plan (e.g. Baga beach)" aria-label="Title" />
+          <button class="act mini ia-add" data-day="${di}">Add</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    // packing
+    const flags = t.packFlags || {};
+    const pk = IT.packingList(t, flags);
+    const byCat = {};
+    pk.forEach((p) => { (byCat[p.cat] = byCat[p.cat] || []).push(p); });
+    const packing = `<div class="section-h" id="itin-pack">🎒 Packing checklist</div>
+      <div class="pack-flags">
+        ${[["intl", "✈️ International"], ["cold", "🧥 Cold"], ["beach", "🏖️ Beach"], ["business", "💼 Business"], ["monsoon", "🌧️ Monsoon"]].map(([k, l]) =>
+          `<label class="chip toggle"><input type="checkbox" class="pack-flag" data-flag="${k}" ${flags[k] ? "checked" : ""} /> ${l}</label>`).join("")}
+      </div>
+      ${Object.keys(byCat).map((cat) => `<div class="pack-cat"><div class="pack-cat-h">${esc(cat)}</div>${
+        byCat[cat].map((p) => { const key = IT.packKey(p); const on = t.packing && t.packing.checked && t.packing.checked[key];
+          return `<label class="pack-item ${on ? "done" : ""}"><input type="checkbox" class="pack-chk" data-key="${esc(key)}" ${on ? "checked" : ""} /> ${esc(p.item)}</label>`; }).join("")
+      }</div>`).join("")}
+      <p class="card-sub" style="margin-top:8px;">Tick the trip flags above to tailor the list. Checks save to this trip.</p>`;
+
+    return head + `<div class="itin-days">${days}</div>` + packing +
+      `<div class="honesty-note" style="margin-top:14px;">Your itinerary + links are saved on this device only. The links open the real booking sites. Export to share the whole plan with someone travelling with you.</div>`;
+  }
+
+  function wireItinerary(t) {
+    if ($("#itin-back")) $("#itin-back").onclick = () => { state.openTripId = null; save(); renderTrips(); };
+    if ($("#itin-jump-pack")) $("#itin-jump-pack").onclick = () => { const p = $("#itin-pack"); if (p) p.scrollIntoView({ behavior: "smooth" }); };
+    if ($("#itin-export")) $("#itin-export").onclick = () => {
+      const blob = new Blob([IT.exportTrip(t)], { type: "application/json" });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+      a.download = "triplens-" + (t.title || "trip").replace(/[^a-z0-9]+/gi, "-").toLowerCase() + ".json";
+      a.click(); URL.revokeObjectURL(a.href);
+      toast("Trip exported — share the file.");
+    };
+    // add item
+    $$(".ia-add").forEach((b) => b.onclick = () => {
+      const di = +b.dataset.day;
+      const kind = ($(`.ia-kind[data-day="${di}"]`) || {}).value || "note";
+      const time = ($(`.ia-time[data-day="${di}"]`) || {}).value || "";
+      const title = (($(`.ia-title[data-day="${di}"]`) || {}).value || "").trim();
+      if (!title) { toast("Type what to add."); return; }
+      IT.addItem(t, di, { kind, time, title }, countAllItemsSeed());
+      save(); renderTrips();
+    });
+    // remove + move
+    $$("[data-delit]").forEach((b) => b.onclick = () => { IT.removeItem(t, +b.dataset.day, b.dataset.it); save(); renderTrips(); });
+    $$("[data-mv]").forEach((b) => b.onclick = () => {
+      const di = +b.dataset.day; const to = b.dataset.mv === "up" ? di - 1 : di + 1;
+      IT.moveItem(t, di, b.dataset.it, to); save(); renderTrips();
+    });
+    // packing flags + checks
+    $$(".pack-flag").forEach((c) => c.onchange = () => {
+      t.packFlags = t.packFlags || {}; t.packFlags[c.dataset.flag] = c.checked; save(); renderTrips();
+    });
+    $$(".pack-chk").forEach((c) => c.onchange = () => {
+      t.packing = t.packing || { checked: {} }; t.packing.checked = t.packing.checked || {};
+      if (c.checked) t.packing.checked[c.dataset.key] = 1; else delete t.packing.checked[c.dataset.key];
+      save();
+      const lbl = c.closest(".pack-item"); if (lbl) lbl.classList.toggle("done", c.checked);
+    });
   }
 
   function renderFlightStats() {
@@ -7209,7 +7718,7 @@ window.LL_DEALS = {
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
     renderAirports(); renderMap(); renderCompare(); renderValue(); renderSuggestions();
     renderFlights(); renderCoupons();
-    renderPlanStats(); renderHotels(); renderOntrip();
+    renderPlanStats(); renderHotels(); renderOntrip(); renderTrips();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
     if ($("#plan-result") && $("#plan-result").innerHTML.trim()) renderPlanResult();
   }
@@ -7254,6 +7763,7 @@ window.LL_DEALS = {
   wirePlan();
   wireHotels();
   wireOntrip();
+  wireTripsForm();
   render();
   renderAuthBar();
   maybeOnboard();

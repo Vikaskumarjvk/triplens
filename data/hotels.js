@@ -27,11 +27,14 @@ window.LL_HOTELS = {
   // cities the stay picker offers (mirrors flight + lounge city coverage) ----
   cities: [
     "Delhi", "Mumbai", "Bengaluru", "Hyderabad", "Chennai", "Kolkata",
-    "Goa", "Kochi", "Pune", "Ahmedabad", "Jaipur", "Udaipur", "Lucknow",
-    "Varanasi", "Guwahati", "Chandigarh", "Srinagar", "Thiruvananthapuram",
-    "Visakhapatnam", "Indore", "Amritsar", "Dehradun", "Port Blair",
-    "Shimla", "Manali", "Rishikesh", "Darjeeling", "Munnar", "Ooty",
-    "Dubai", "Singapore", "Bangkok",
+    "Goa", "Kochi", "Pune", "Ahmedabad", "Jaipur", "Udaipur", "Jodhpur",
+    "Jaisalmer", "Lucknow", "Varanasi", "Agra", "Guwahati", "Chandigarh",
+    "Srinagar", "Leh", "Thiruvananthapuram", "Visakhapatnam", "Indore",
+    "Amritsar", "Dehradun", "Port Blair", "Shimla", "Manali", "Rishikesh",
+    "Darjeeling", "Gangtok", "Munnar", "Ooty", "Coorg", "Alleppey",
+    "Mysuru", "Pondicherry", "Mahabaleshwar", "Nainital", "Mussoorie",
+    "Dubai", "Abu Dhabi", "Singapore", "Bangkok", "Phuket", "Bali",
+    "Kuala Lumpur", "Kathmandu", "Colombo", "Maldives",
   ],
 
   // ---- booking providers ---------------------------------------------------

@@ -55,6 +55,12 @@ window.LL_DEALS = {
       note: "All-electric, fixed upfront price (no surge), airport runs. Limited to a few metros — check it serves your city.",
       confidence: "med", verify: "blusmart.com", offers: [],
     },
+    {
+      id: "namma-metro", name: "Metro / city transit", category: "cab", type: "site", linkType: "search-page",
+      url: "https://www.google.com/maps",
+      note: "In Delhi/Bengaluru/Hyderabad/Mumbai/Kolkata/Chennai the metro beats a cab in traffic and costs a fraction. Most have a QR-ticket app now.",
+      confidence: "high", verify: "your city's metro app", offers: [],
+    },
 
     // ===== INTERCITY =====
     {
@@ -146,6 +152,12 @@ window.LL_DEALS = {
       url: "https://www.getyourguide.com/s/?q={CITY}",
       note: "Skip-the-line tickets + tours worldwide; free cancellation on most. Good for intl legs.",
       confidence: "high", verify: "getyourguide.com", offers: [],
+    },
+    {
+      id: "headout", name: "Headout", category: "activities", type: "ota", linkType: "prefilled",
+      url: "https://www.headout.com/?q={CITY}",
+      note: "Instant mobile tickets for attractions, shows + experiences; strong in India metros + Dubai/SE-Asia.",
+      confidence: "med", verify: "headout.com", offers: [],
     },
     {
       id: "district", name: "District (by Zomato)", category: "activities", type: "app", linkType: "search-page",
