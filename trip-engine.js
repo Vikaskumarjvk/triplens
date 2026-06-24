@@ -71,6 +71,10 @@
   }
   function buildDealLink(service, city) {
     let url = service.url;
+    // a template that searches by city (e.g. "?q={CITY}") is useless with no
+    // city — it would open an empty search. Fall back to the working site root.
+    const needsCity = /\{CITY/.test(url);
+    if (needsCity && !(city && city.trim())) return service.fallbackUrl || stripToOrigin(url);
     const C = city || "", CL = (city || "").toLowerCase();
     return url
       .replace(/\{CITY_L\}/g, encodeURIComponent(CL))

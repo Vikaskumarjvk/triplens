@@ -55,10 +55,16 @@ ok("buildStayLink search-page provider returns its url untouched-ish", () => {
   const url = T.buildStayLink(ag, "Goa", "2026-07-12", "2026-07-15", 2);
   assert.strictEqual(url, "https://www.agoda.com/");
 });
-ok("buildDealLink fills redbus city", () => {
-  const rb = window.LL_DEALS.services.find((s) => s.id === "redbus");
-  const url = T.buildDealLink(rb, "Goa");
+ok("buildDealLink fills a {CITY}-search deal with the city", () => {
+  // getyourguide searches by city via ?q={CITY}; with a city it should appear
+  const gyg = window.LL_DEALS.services.find((s) => s.id === "getyourguide");
+  const url = T.buildDealLink(gyg, "Goa");
   assert.ok(url.toLowerCase().includes("goa"), "city in deal link: " + url);
+});
+ok("buildDealLink with no city falls back to a working root (no empty search)", () => {
+  const gyg = window.LL_DEALS.services.find((s) => s.id === "getyourguide");
+  const url = T.buildDealLink(gyg, "");
+  assert.ok(!/\?q=$|\{CITY/.test(url), "no empty query / leftover placeholder: " + url);
 });
 
 // ---- offers-for-wallet ---------------------------------------------------

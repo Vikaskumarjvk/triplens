@@ -107,9 +107,9 @@ window.LL_FLIGHTS = {
       confidence: "med", verify: "allianceair.in", offers: [],
     },
     {
-      id: "makemytrip", name: "MakeMyTrip", type: "ota", linkType: "prefilled",
-      url: "https://www.makemytrip.com/flight/search?itinerary={FROM}-{TO}-{DATE}&tripType=O&paxType=A-1_C-0_I-0&cabinClass=E",
-      note: "Big OTA. Runs the most bank instant-discount offers, but adds a convenience fee.",
+      id: "makemytrip", name: "MakeMyTrip", type: "ota", linkType: "search-page",
+      url: "https://www.makemytrip.com/flights/",
+      note: "Big OTA. Runs the most bank instant-discount offers, but adds a convenience fee. Opens the flights page — type your route there (their direct deep link stopped pre-filling reliably).",
       confidence: "med", verify: "makemytrip.com/promos/",
       offers: [
         { id: "mmt-hdfc", kind: "card", issuer: "HDFC", title: "HDFC card instant discount on domestic flights (recurring)", code: "MMTHDFC", cap: "up to a few hundred ₹", terms: "MMT runs a recurring HDFC offer; the code + cap change. Confirm on the offers page before you pay.", confidence: "low", lastChecked: "2026-06-22", verify: "makemytrip.com/promos/" },

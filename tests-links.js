@@ -14,10 +14,11 @@
 const assert = require("assert");
 global.window = global;
 require("./data/cards.js"); require("./data/lounges.js"); require("./data/flights.js");
-require("./data/hotels.js"); require("./data/deals.js");
-require("./flight-engine.js"); require("./engine.js");
+require("./data/hotels.js"); require("./data/deals.js"); require("./data/transport.js");
+require("./flight-engine.js"); require("./engine.js"); require("./geo-engine.js");
 const FE = require("./flight-engine.js");
 const TE = require("./trip-engine.js");
+const TRE = require("./transport-engine.js");
 
 let pass = 0, fail = 0;
 function ok(n, fn) { try { fn(); pass++; } catch (e) { fail++; console.log("  ✗", n, "\n     " + e.message); } }
@@ -29,6 +30,14 @@ function assertUrlClean(label, url) {
   assert.strictEqual(u.protocol, "https:", label + " -> not https: " + url);
   assert.ok(!/\{[A-Z_]+\}/.test(url), label + " -> leftover placeholder: " + url);
   assert.ok(/\.[a-z]{2,}$/i.test(u.hostname), label + " -> odd hostname: " + u.hostname);
+  // dangling-route guard: a prefilled route template whose value never got
+  // filled can leave a path like "/delhi-to-" (trailing hyphen) or "/-to-x".
+  // A trailing "/" is a normal landing page and is fine; a trailing "-" or a
+  // "-to-" with an empty side is broken. (caught the broken redbus deal link.)
+  assert.ok(!/-$/.test(u.pathname), label + " -> dangling hyphen in path: " + url);
+  assert.ok(!/-to-($|\/)|\/-to-|\/to-($|\/)/.test(u.pathname), label + " -> incomplete route slug: " + url);
+  // a query param that filled to empty (e.g. "?q=") is a dead search
+  u.searchParams.forEach((v, k) => assert.ok(v !== "", label + " -> empty query value for ?" + k + " : " + url));
 }
 
 // every flight provider, dated + undated
@@ -58,6 +67,17 @@ ok("deal service URLs build clean", () => {
     assertUrlClean("deal:" + s.id + ":nocity", TE.buildDealLink(s, ""));
     assert.ok(s.verify, "deal:" + s.id + " missing verify");
     assert.ok(["high", "med", "low"].includes(s.confidence), "deal:" + s.id + " bad confidence");
+  });
+});
+
+// every train + bus provider, dated + undated
+ok("transport (train+bus) provider URLs build clean", () => {
+  const all = [...(window.LL_TRANSPORT.trains || []), ...(window.LL_TRANSPORT.buses || [])];
+  all.forEach((p) => {
+    assertUrlClean("transport:" + p.id + ":dated", TRE.buildLink(p, "Delhi", "Mumbai", "2026-10-05"));
+    assertUrlClean("transport:" + p.id + ":undated", TRE.buildLink(p, "Delhi", "Mumbai", ""));
+    assert.ok(p.verify, "transport:" + p.id + " missing verify");
+    assert.ok(["high", "med", "low"].includes(p.confidence), "transport:" + p.id + " bad confidence");
   });
 });
 

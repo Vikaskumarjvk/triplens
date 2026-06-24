@@ -70,9 +70,9 @@ window.LL_DEALS = {
       confidence: "high", verify: "irctc.co.in", offers: [],
     },
     {
-      id: "redbus", name: "redBus", category: "intercity", type: "ota", linkType: "prefilled",
-      url: "https://www.redbus.in/bus-tickets/{CITY_L}-to-",
-      note: "Buses across India; frequent flat-off codes + wallet cashback.",
+      id: "redbus", name: "redBus", category: "intercity", type: "ota", linkType: "search-page",
+      url: "https://www.redbus.in/",
+      note: "Buses across India; frequent flat-off codes + wallet cashback. For a specific route with the live search pre-opened, use the Trains & Buses tab.",
       confidence: "high", verify: "redbus.in/offers",
       offers: [
         { id: "rb-coupon", kind: "coupon", issuer: null, title: "redBus runs recurring first-booking + flat-off codes", code: null, cap: "varies", terms: "Codes rotate; the offers page lists today's. Stack with bank offers when allowed.", confidence: "low", lastChecked: "2026-06-24", verify: "redbus.in/offers" },
