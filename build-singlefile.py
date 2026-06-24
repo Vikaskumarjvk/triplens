@@ -50,6 +50,7 @@ js_files = [
     "route-engine.js",
     "history-engine.js",
     "holiday-engine.js",
+    "brief-engine.js",
     "selfcheck.js",
     "profile.js",
     "auth.js",

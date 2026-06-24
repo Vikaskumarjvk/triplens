@@ -1001,6 +1001,20 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .mc-leg-link { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 9px 12px; border-radius: var(--r-sm); background: var(--panel2); border: 1px solid var(--line); color: var(--txt); text-decoration: none; font-size: 13px; transition: border-color .15s, transform .1s; }
 .mc-leg-link:hover { border-color: var(--accent2); transform: translateY(-1px); }
 
+/* SMART TRIP BRIEF — every decision, made, on top */
+.trip-brief { background: linear-gradient(180deg, rgba(54,211,153,.08), var(--panel)); border: 1px solid rgba(54,211,153,.35); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0; box-shadow: var(--shadow-1); }
+.tb-head { font-size: 16px; margin-bottom: 10px; }
+.tb-move { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tb-move-ic { flex-shrink: 0; }
+.tb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.tb-card { display: flex; align-items: flex-start; gap: 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 13px; }
+.tb-ic { font-size: 20px; flex-shrink: 0; line-height: 1.2; }
+.tb-body { flex: 1; min-width: 0; }
+.tb-title { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--dim); }
+.tb-value { font-size: 15px; font-weight: 600; margin: 2px 0; }
+.tb-why { line-height: 1.45; }
+.tb-act { flex-shrink: 0; align-self: center; }
+
 /* the optimizer result */
 .plan-route { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0 10px; box-shadow: var(--shadow-1); }
 .pr-cities { font-size: 19px; }
@@ -6690,6 +6704,130 @@ window.LL_HOLIDAYS = {
 </script>
   <script>
 /*
+ * TripLens — Smart Trip Brief engine. Pure, no DOM, no clock, no network.
+ *
+ * THE CAPSTONE: you give it one trip, it gives you every decision already made,
+ * ranked, on top of your mind. It does NOT fetch anything itself — the app feeds
+ * it the values the other engines already computed (distance, transport compare,
+ * best card, lounges, weather, holiday timing). This engine's job is the JUDGEMENT:
+ * pick the best option on each dimension, say why in one line, and surface the
+ * single most important next move.
+ *
+ * HONESTY: it decides between OPTIONS and picks the smart DEFAULT — it never
+ * invents a price or a total. Every "why" is a real reason (distance band, a card
+ * you actually hold, a real forecast flag, an exact weekday). Confidence-tagged.
+ */
+(function (root) {
+  "use strict";
+
+  // ---- "getting there" decision from real distance + transport bands ------
+  // transport = LL_TRANSPORT_ENGINE.compareModes() result (or null if no coords).
+  function getThereDecision(km, transport) {
+    if (km == null || !transport) {
+      return { key: "mode", icon: "🧭", title: "Getting there", value: "Add cities I can map", why: "I need both ends on the map to call the best way.", confidence: "low" };
+    }
+    var rec = transport.recommend;
+    var map = {
+      train_bus: { value: "Take a train or bus", why: "Only " + fmtKm(km) + " — flying wastes more time at the airport than it saves." },
+      compare: { value: "Compare train vs fly", why: fmtKm(km) + " is the toss-up zone; an overnight train can save a hotel night." },
+      fly_or_overnight_train: { value: "Fly (or overnight train to save cash)", why: fmtKm(km) + " — flying is the practical pick, overnight train is the cheap one." },
+      fly: { value: "Fly", why: fmtKm(km) + " — too far for road or rail to make sense." },
+    };
+    var m = map[rec] || map.fly;
+    return { key: "mode", icon: rec === "fly" || rec === "fly_or_overnight_train" ? "✈️" : "🚆", title: "Getting there", value: m.value, why: m.why, confidence: "high" };
+  }
+  function fmtKm(km) { return km != null ? km.toLocaleString("en-IN") + " km" : ""; }
+
+  // ---- "pay with" decision from the best card already computed ------------
+  function payDecision(bestCard, walletCount) {
+    if (!walletCount) return { key: "pay", icon: "💳", title: "Pay with", value: "Add your cards", why: "Tell me which cards you hold and I'll pick the one that discounts the most of this trip.", confidence: "low", action: "addcard" };
+    if (!bestCard) return { key: "pay", icon: "💳", title: "Pay with", value: "Any card — no tracked match", why: "None of your cards hit a tracked offer on this trip's sites; the sites may still run a generic discount.", confidence: "med" };
+    var n = (bestCard.places && bestCard.places.length) || 0;
+    return { key: "pay", icon: "💳", title: "Pay with", value: bestCard.card.name, why: "Has offers on " + n + " of this trip's booking site" + (n > 1 ? "s" : "") + ". Confirm today's exact terms before you pay.", confidence: "med", card: bestCard.card };
+  }
+
+  // ---- "best timing" decision from holiday/long-weekend assessment --------
+  // holiday = { onOrNearLongWeekend, assess, nextLongWeekend } (app composes it).
+  function timingDecision(dates, holiday) {
+    if (!holiday) return null;
+    if (holiday.assess && dates && dates.depart) {
+      var a = holiday.assess;
+      if (a.verdict === "free_long_weekend" || (a.zeroLeave && a.zeroLeave.days >= 3)) {
+        return { key: "timing", icon: "🎉", title: "Your timing", value: "Already a long weekend", why: a.name + " gives you a " + a.zeroLeave.days + "-day break with zero leave. Great dates.", confidence: "high" };
+      }
+      if (a.best && a.best.leaveCount <= 2) {
+        return { key: "timing", icon: "🗓️", title: "Your timing", value: "Take " + a.best.leaveCount + " day off for a " + a.best.days + "-day break", why: "Your dates are next to " + a.name + " — one bridge day stretches it.", confidence: "high" };
+      }
+    }
+    if (holiday.nextLongWeekend) {
+      var nlw = holiday.nextLongWeekend;
+      return { key: "timing", icon: "🏖️", title: "Smarter dates", value: nlw.name + " is a long weekend", why: "Not on a holiday now — " + nlw.name + " (" + nlw.date + ") gives a " + nlw.days + "-day break if your dates are flexible.", confidence: "high" };
+    }
+    return null;
+  }
+
+  // ---- lounges decision ----------------------------------------------------
+  function loungeDecision(lounges, walletCount) {
+    if (!lounges) return null;
+    var oOpen = lounges.originOpen || 0, dOpen = lounges.destOpen || 0;
+    var oTot = lounges.originTotal || 0, dTot = lounges.destTotal || 0;
+    if (!oTot && !dTot) return null;
+    if (!walletCount) return { key: "lounge", icon: "🛋️", title: "Airport lounges", value: (oTot + dTot) + " on your route", why: "Add your cards to see which you can walk into free.", confidence: "low", action: "addcard" };
+    var open = oOpen + dOpen;
+    if (!open) return { key: "lounge", icon: "🛋️", title: "Airport lounges", value: "None your cards open", why: "Your current cards don't unlock a lounge on this route.", confidence: "med" };
+    return { key: "lounge", icon: "🛋️", title: "Airport lounges", value: open + " you can walk into", why: "Your cards open " + oOpen + " at the start and " + dOpen + " at the destination — free.", confidence: "med" };
+  }
+
+  // ---- weather + one-line packing -----------------------------------------
+  // weather = parsed flags from live-data (cold/hot/monsoon/maxC/minC) or null.
+  function weatherDecision(weather, destCity) {
+    if (!weather) return null;
+    var bits = [];
+    if (weather.monsoon) bits.push("pack a rain layer");
+    if (weather.cold) bits.push("it'll be cold, bring warm clothes");
+    if (weather.hot) bits.push("it'll be hot, pack light + sunscreen");
+    var why = bits.length ? bits.join("; ") : "mild — pack normal.";
+    var range = (weather.minC != null && weather.maxC != null) ? weather.minC + "–" + weather.maxC + "°C" : "";
+    return { key: "weather", icon: weather.monsoon ? "🌧️" : weather.cold ? "🧥" : weather.hot ? "☀️" : "🌤️", title: "Weather + packing", value: range || "Forecast loaded", why: (destCity ? destCity + ": " : "") + why, confidence: "high" };
+  }
+
+  // ---- compose: rank the decisions + pick the single top move -------------
+  function compose(inp) {
+    inp = inp || {};
+    var decisions = [];
+    var push = function (d) { if (d) decisions.push(d); };
+    push(getThereDecision(inp.km, inp.transport));
+    push(payDecision(inp.bestCard, inp.walletCount || 0));
+    push(timingDecision(inp.dates, inp.holiday));
+    push(loungeDecision(inp.lounges, inp.walletCount || 0));
+    push(weatherDecision(inp.weather, inp.route && inp.route.toCity));
+
+    // the single most important next move = first unmet setup, else first action.
+    var topMove = null;
+    if (!(inp.walletCount > 0)) topMove = { text: "Add the cards you hold — that unlocks the best-pay + lounge calls.", action: "addcard" };
+    else if (!(inp.dates && inp.dates.depart)) topMove = { text: "Pick your travel date so I can pull live fares + check your timing.", action: "plan" };
+    else {
+      var mode = decisions.find(function (d) { return d.key === "mode"; });
+      topMove = { text: mode ? mode.value + " — open the live search and book the smart way." : "Open the booking links below.", action: "plan" };
+    }
+
+    // headline = the route + the mode call in one breath
+    var modeDec = decisions.find(function (d) { return d.key === "mode"; });
+    var headline = (inp.route && inp.route.fromCity && inp.route.toCity)
+      ? inp.route.fromCity + " to " + inp.route.toCity + (modeDec && modeDec.confidence === "high" ? " · " + modeDec.value : "")
+      : "Your trip at a glance";
+
+    return { headline: headline, decisions: decisions, topMove: topMove };
+  }
+
+  var Engine = { getThereDecision: getThereDecision, payDecision: payDecision, timingDecision: timingDecision, loungeDecision: loungeDecision, weatherDecision: weatherDecision, compose: compose };
+  if (typeof module !== "undefined" && module.exports) module.exports = Engine;
+  root.LL_BRIEF = Engine;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+  <script>
+/*
  * LoungeLens — self-improvement module (rung 1: free, client-side, honest).
  *
  * WHAT THIS IS (and is NOT):
@@ -7198,6 +7336,7 @@ window.LL_HOLIDAYS = {
   const ROUTE = window.LL_ROUTE;
   const HIST = window.LL_HISTORY;
   const HOL = window.LL_HOLIDAY, HOLIDAYS = window.LL_HOLIDAYS;
+  const BRIEF = window.LL_BRIEF;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -8451,6 +8590,35 @@ window.LL_HOLIDAYS = {
   }
   function todayISO() { const n = new Date(); return n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2) + "-" + ("0" + n.getDate()).slice(-2); }
 
+  // honest holiday-timing for a depart date: does it sit on/next to a holiday
+  // (with the leave-bridge math), and what's the next long weekend after it.
+  function holidayTimingFor(departISO) {
+    if (!HOL || !HOLIDAYS) return null;
+    const lw = (state.lw && state.lw.custom) || [];
+    const out = { assess: null, nextLongWeekend: null };
+    if (departISO && /^\d{4}-\d{2}-\d{2}$/.test(departISO)) {
+      const year = +departISO.slice(0, 4);
+      const items = HOL.planYear(HOLIDAYS.fixed, lw, year);
+      // is the depart date inside any holiday's zero-leave or bridged block?
+      for (const it of items) {
+        const a = it.assess; if (!a) continue;
+        const block = a.best || a.zeroLeave;
+        if (block && departISO >= block.start && departISO <= block.end) { out.assess = a; break; }
+        if (a.date === departISO) { out.assess = a; break; }
+      }
+      // next long weekend strictly after the depart date (good-dates nudge)
+      if (!out.assess) {
+        const future = items.filter((it) => it.assess && it.date > departISO && (it.assess.verdict === "free_long_weekend" || it.assess.verdict === "one_bridge"));
+        if (future.length) {
+          const a = future[0].assess;
+          const days = (a.best && a.best.days) || (a.zeroLeave && a.zeroLeave.days) || 3;
+          out.nextLongWeekend = { name: a.name, date: future[0].date, days };
+        }
+      }
+    }
+    return (out.assess || out.nextLongWeekend) ? out : null;
+  }
+
   function renderPlanResult() {
     const out = $("#plan-result"); if (!out || !TE) return;
     const p = planState();
@@ -8525,7 +8693,41 @@ window.LL_HOLIDAYS = {
     const savingsBody = `<ul class="plan-savings">${plan.savings.map((s) => `<li><span class="psv-ic">${s.icon}</span> ${esc(s.text)}</li>`).join("")}</ul>`;
 
     const saveBtn = `<div class="plan-save"><button class="act big" id="plan-save-trip">🗂️ Save this trip + build a day-by-day itinerary →</button></div>`;
-    out.innerHTML = routeHead + bestCardHtml + saveBtn +
+
+    // ---- SMART TRIP BRIEF: every decision, made, on top ----
+    let briefHtml = "";
+    if (BRIEF) {
+      const km = (GEO && r.from && r.to) ? GEO.distanceKm(r.from, r.to) : null;
+      const transport = (TRE && r.from && r.to && km != null) ? TRE.compareModes(r.from, r.to) : null;
+      const lo = plan.lounges.origin, ld = plan.lounges.dest;
+      const composed = BRIEF.compose({
+        route: { fromCity: r.origin ? r.origin.city : p.from, toCity: r.dest ? r.dest.city : p.to },
+        km, transport,
+        bestCard: plan.bestCard && plan.bestCard.length ? plan.bestCard[0] : null,
+        walletCount: state.wallet.length,
+        dates: { depart: d.depart },
+        holiday: holidayTimingFor(d.depart),
+        lounges: lo || ld ? { originOpen: lo ? lo.openCount : 0, destOpen: ld ? ld.openCount : 0, originTotal: lo ? lo.total : 0, destTotal: ld ? ld.total : 0 } : null,
+        weather: null, // weather is async; it has its own live line in the route header
+      });
+      const cards = composed.decisions.map((dec) => `<div class="tb-card">
+        <div class="tb-ic">${dec.icon}</div>
+        <div class="tb-body">
+          <div class="tb-title">${esc(dec.title)}</div>
+          <div class="tb-value">${esc(dec.value)} ${confBadge(dec.confidence)}</div>
+          <div class="card-sub tb-why">${esc(dec.why)}</div>
+        </div>
+        ${dec.action ? `<button class="act ghost mini tb-act" data-goto="${esc(dec.action)}">go</button>` : ""}
+      </div>`).join("");
+      const move = composed.topMove;
+      briefHtml = `<div class="trip-brief">
+        <div class="tb-head">⚡ <b>Your trip brief</b> <span class="card-sub">${esc(composed.headline)}</span></div>
+        ${move ? `<div class="tb-move"><span class="tb-move-ic">👉</span> <b>Do this first:</b> ${esc(move.text)} ${move.action ? `<button class="act ghost mini" data-goto="${esc(move.action)}">go</button>` : ""}</div>` : ""}
+        <div class="tb-grid">${cards}</div>
+      </div>`;
+    }
+
+    out.innerHTML = briefHtml + routeHead + bestCardHtml + saveBtn +
       step("✈️", "Flights", flightBody) +
       step("🏨", "Stay", stayBody) +
       step("🛋️", "Lounges on the way", loungeBody) +

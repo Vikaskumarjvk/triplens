@@ -977,6 +977,20 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .mc-leg-link { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 9px 12px; border-radius: var(--r-sm); background: var(--panel2); border: 1px solid var(--line); color: var(--txt); text-decoration: none; font-size: 13px; transition: border-color .15s, transform .1s; }
 .mc-leg-link:hover { border-color: var(--accent2); transform: translateY(-1px); }
 
+/* SMART TRIP BRIEF — every decision, made, on top */
+.trip-brief { background: linear-gradient(180deg, rgba(54,211,153,.08), var(--panel)); border: 1px solid rgba(54,211,153,.35); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0; box-shadow: var(--shadow-1); }
+.tb-head { font-size: 16px; margin-bottom: 10px; }
+.tb-move { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tb-move-ic { flex-shrink: 0; }
+.tb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.tb-card { display: flex; align-items: flex-start; gap: 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 13px; }
+.tb-ic { font-size: 20px; flex-shrink: 0; line-height: 1.2; }
+.tb-body { flex: 1; min-width: 0; }
+.tb-title { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--dim); }
+.tb-value { font-size: 15px; font-weight: 600; margin: 2px 0; }
+.tb-why { line-height: 1.45; }
+.tb-act { flex-shrink: 0; align-self: center; }
+
 /* the optimizer result */
 .plan-route { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0 10px; box-shadow: var(--shadow-1); }
 .pr-cities { font-size: 19px; }

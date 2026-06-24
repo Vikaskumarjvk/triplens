@@ -13,6 +13,7 @@
   const ROUTE = window.LL_ROUTE;
   const HIST = window.LL_HISTORY;
   const HOL = window.LL_HOLIDAY, HOLIDAYS = window.LL_HOLIDAYS;
+  const BRIEF = window.LL_BRIEF;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -1266,6 +1267,35 @@
   }
   function todayISO() { const n = new Date(); return n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2) + "-" + ("0" + n.getDate()).slice(-2); }
 
+  // honest holiday-timing for a depart date: does it sit on/next to a holiday
+  // (with the leave-bridge math), and what's the next long weekend after it.
+  function holidayTimingFor(departISO) {
+    if (!HOL || !HOLIDAYS) return null;
+    const lw = (state.lw && state.lw.custom) || [];
+    const out = { assess: null, nextLongWeekend: null };
+    if (departISO && /^\d{4}-\d{2}-\d{2}$/.test(departISO)) {
+      const year = +departISO.slice(0, 4);
+      const items = HOL.planYear(HOLIDAYS.fixed, lw, year);
+      // is the depart date inside any holiday's zero-leave or bridged block?
+      for (const it of items) {
+        const a = it.assess; if (!a) continue;
+        const block = a.best || a.zeroLeave;
+        if (block && departISO >= block.start && departISO <= block.end) { out.assess = a; break; }
+        if (a.date === departISO) { out.assess = a; break; }
+      }
+      // next long weekend strictly after the depart date (good-dates nudge)
+      if (!out.assess) {
+        const future = items.filter((it) => it.assess && it.date > departISO && (it.assess.verdict === "free_long_weekend" || it.assess.verdict === "one_bridge"));
+        if (future.length) {
+          const a = future[0].assess;
+          const days = (a.best && a.best.days) || (a.zeroLeave && a.zeroLeave.days) || 3;
+          out.nextLongWeekend = { name: a.name, date: future[0].date, days };
+        }
+      }
+    }
+    return (out.assess || out.nextLongWeekend) ? out : null;
+  }
+
   function renderPlanResult() {
     const out = $("#plan-result"); if (!out || !TE) return;
     const p = planState();
@@ -1340,7 +1370,41 @@
     const savingsBody = `<ul class="plan-savings">${plan.savings.map((s) => `<li><span class="psv-ic">${s.icon}</span> ${esc(s.text)}</li>`).join("")}</ul>`;
 
     const saveBtn = `<div class="plan-save"><button class="act big" id="plan-save-trip">🗂️ Save this trip + build a day-by-day itinerary →</button></div>`;
-    out.innerHTML = routeHead + bestCardHtml + saveBtn +
+
+    // ---- SMART TRIP BRIEF: every decision, made, on top ----
+    let briefHtml = "";
+    if (BRIEF) {
+      const km = (GEO && r.from && r.to) ? GEO.distanceKm(r.from, r.to) : null;
+      const transport = (TRE && r.from && r.to && km != null) ? TRE.compareModes(r.from, r.to) : null;
+      const lo = plan.lounges.origin, ld = plan.lounges.dest;
+      const composed = BRIEF.compose({
+        route: { fromCity: r.origin ? r.origin.city : p.from, toCity: r.dest ? r.dest.city : p.to },
+        km, transport,
+        bestCard: plan.bestCard && plan.bestCard.length ? plan.bestCard[0] : null,
+        walletCount: state.wallet.length,
+        dates: { depart: d.depart },
+        holiday: holidayTimingFor(d.depart),
+        lounges: lo || ld ? { originOpen: lo ? lo.openCount : 0, destOpen: ld ? ld.openCount : 0, originTotal: lo ? lo.total : 0, destTotal: ld ? ld.total : 0 } : null,
+        weather: null, // weather is async; it has its own live line in the route header
+      });
+      const cards = composed.decisions.map((dec) => `<div class="tb-card">
+        <div class="tb-ic">${dec.icon}</div>
+        <div class="tb-body">
+          <div class="tb-title">${esc(dec.title)}</div>
+          <div class="tb-value">${esc(dec.value)} ${confBadge(dec.confidence)}</div>
+          <div class="card-sub tb-why">${esc(dec.why)}</div>
+        </div>
+        ${dec.action ? `<button class="act ghost mini tb-act" data-goto="${esc(dec.action)}">go</button>` : ""}
+      </div>`).join("");
+      const move = composed.topMove;
+      briefHtml = `<div class="trip-brief">
+        <div class="tb-head">⚡ <b>Your trip brief</b> <span class="card-sub">${esc(composed.headline)}</span></div>
+        ${move ? `<div class="tb-move"><span class="tb-move-ic">👉</span> <b>Do this first:</b> ${esc(move.text)} ${move.action ? `<button class="act ghost mini" data-goto="${esc(move.action)}">go</button>` : ""}</div>` : ""}
+        <div class="tb-grid">${cards}</div>
+      </div>`;
+    }
+
+    out.innerHTML = briefHtml + routeHead + bestCardHtml + saveBtn +
       step("✈️", "Flights", flightBody) +
       step("🏨", "Stay", stayBody) +
       step("🛋️", "Lounges on the way", loungeBody) +
