@@ -828,7 +828,25 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .flex-day.is-dip { background: var(--warn-dim); border-color: rgba(251,191,36,.5); }
 .flex-day.is-dip .fd-price { color: var(--warn); }
 .flex-foot { margin-top: 10px; }
+/* fare-calendar heatmap: relative to this route's own median */
+.flex-day.heat-low { background: rgba(54,211,153,.14); border-color: rgba(54,211,153,.35); }
+.flex-day.heat-mid { background: var(--bg-2); }
+.flex-day.heat-high { background: rgba(248,113,113,.12); border-color: rgba(248,113,113,.32); }
+.flex-day.heat-high .fd-price { color: #fca5a5; }
+.heat-key { display: inline-flex; align-items: center; gap: 6px; margin-right: 4px; }
+.heat-key .hk { display: inline-block; width: 11px; height: 11px; border-radius: 3px; border: 1px solid var(--line); vertical-align: middle; }
+.heat-key .hk.low { background: rgba(54,211,153,.3); }
+.heat-key .hk.mid { background: var(--bg-2); }
+.heat-key .hk.high { background: rgba(248,113,113,.3); }
 @media (max-width: 560px) { .flex-grid { grid-template-columns: repeat(5, 1fr); } }
+
+/* price-drop watches */
+.watch-list { display: grid; gap: 8px; }
+.watch-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 11px 14px; }
+.watch-route { font-size: 15px; }
+.watch-prices { font-size: 13px; margin: 4px 0; }
+.watch-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.watch-foot { margin-top: 8px; }
 
 /* free key setup */
 .key-setup { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 4px 16px; margin: 16px 0; }

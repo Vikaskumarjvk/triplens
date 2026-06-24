@@ -8,6 +8,7 @@
   const IT = window.LL_ITINERARY, BUD = window.LL_BUDGET;
   const GEO = window.LL_GEO, LD = window.LL_LIVE;
   const TR = window.LL_TRANSPORT, TRE = window.LL_TRANSPORT_ENGINE;
+  const WATCH = window.LL_WATCH;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -22,7 +23,7 @@
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, watches: [], trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -2170,7 +2171,10 @@
         const rows = res.rows || [];
         if (!rows.length) { status.innerHTML = `<div class="empty">No live fares returned for ${esc(from.code)} → ${esc(to.code)} on that date. Try another date, or this route may not be in the provider's inventory.</div>`; return; }
         renderLiveFares(rows, from, to, creds);
-        status.innerHTML = `<div class="fl-livehead">⚡ ${Number(rows.length)} live fares · ${esc(from.code)} → ${esc(to.code)} · ${esc(FE.dateParts(f.date) ? FE.dateParts(f.date).text : f.date)}${creds.env === "test" ? ` <span class="chip warn">test/sample data</span>` : ` <span class="chip good">live</span>`}</div>`;
+        const cheapestNow = rows[0] ? rows[0].priceTotal : null;
+        status.innerHTML = `<div class="fl-livehead">⚡ ${Number(rows.length)} live fares · ${esc(from.code)} → ${esc(to.code)} · ${esc(FE.dateParts(f.date) ? FE.dateParts(f.date).text : f.date)}${creds.env === "test" ? ` <span class="chip warn">test/sample data</span>` : ` <span class="chip good">live</span>`} ${cheapestNow ? `<button class="act ghost mini" id="fl-watch-live">🔔 Watch at ₹${Number(cheapestNow).toLocaleString("en-IN")}</button>` : ""}</div>`;
+        const wb = $("#fl-watch-live");
+        if (wb) wb.onclick = () => { addWatch(from, to, f.date, cheapestNow, rows[0] ? rows[0].airline : null); toast("Watching this route. I'll re-check the fare each time you open the app."); };
       })
       .catch((err) => {
         status.innerHTML = `<div class="fl-err">Couldn't fetch live fares: ${(err && err.message) || "request failed"}.<br><span class="card-sub">If this is an auth error, re-check your key/secret and environment in the setup below. Test keys only return sample inventory.</span></div>`;
@@ -2209,19 +2213,33 @@
 
     LIVE.searchFlexible(creds, { from: from.code, to: to.code, startDate: f.date, days: DAYS, adults: 1 }, onDay)
       .then((res) => {
-        // mark cheapest + dips
-        res.days.forEach((d) => {
+        // heatmap: color each day low/mid/high vs the route's own median, and
+        // flag the cheapest day + statistical dips (real fetched prices only).
+        const cal = WATCH ? WATCH.calendarModel(res.days, res.median) : null;
+        (cal ? cal.days : res.days).forEach((d) => {
           const cell = grid && grid.querySelector(`[data-d="${d.date}"]`);
           if (!cell) return;
+          if (d.heat) cell.classList.add("heat-" + d.heat);
           if (d.isCheapest) cell.classList.add("is-cheapest");
           else if (d.isDip) cell.classList.add("is-dip");
         });
         const head = $("#fl-flex-result .flex-head");
         if (res.cheapest && head) {
           const dips = res.days.filter((d) => d.isDip && !d.isCheapest).length;
-          head.innerHTML = `📅 Cheapest in the next ${DAYS} days: <b>₹${Number(res.cheapest.minPrice).toLocaleString("en-IN")}</b> on ${esc(res.cheapest.date)}${res.cheapest.airline ? " (" + esc(res.cheapest.airline) + ")" : ""} · median ₹${Number(res.median).toLocaleString("en-IN")}${dips ? ` · <span class="chip warn">${Number(dips)} price dip${dips > 1 ? "s" : ""} flagged</span>` : ""}`;
+          const dowTip = cal && cal.cheapestDow ? ` · <span class="chip">${esc(cal.cheapestDow.label)}s look cheapest here</span>` : "";
+          head.innerHTML = `📅 Cheapest in the next ${DAYS} days: <b>₹${Number(res.cheapest.minPrice).toLocaleString("en-IN")}</b> on ${esc(res.cheapest.date)}${res.cheapest.airline ? " (" + esc(res.cheapest.airline) + ")" : ""} · median ₹${Number(res.median).toLocaleString("en-IN")}${dips ? ` · <span class="chip warn">${Number(dips)} price dip${dips > 1 ? "s" : ""} flagged</span>` : ""}${dowTip}`;
         } else if (head) {
           head.innerHTML = `📅 No live fares returned across those ${DAYS} days. Try a different route or date.`;
+        }
+        // legend + watch-the-cheapest-day action
+        const foot = $("#fl-flex-result .flex-foot");
+        if (foot) {
+          foot.innerHTML = `<span class="heat-key"><span class="hk low"></span> cheaper day · <span class="hk mid"></span> typical · <span class="hk high"></span> pricier</span> — colors are relative to this route's own median, not absolute. Each day is a real live fare lookup.`;
+          if (res.cheapest) {
+            foot.innerHTML += ` <button class="act ghost mini" id="fl-watch-cheapest">🔔 Watch this route at ₹${Number(res.cheapest.minPrice).toLocaleString("en-IN")}</button>`;
+            const wb = $("#fl-watch-cheapest");
+            if (wb) wb.onclick = () => { addWatch(from, to, f.date, res.cheapest.minPrice, res.cheapest.airline); toast("Watching this route. I'll re-check the fare each time you open the app."); };
+          }
         }
       })
       .catch((err) => { out.innerHTML = `<div class="fl-err">Scan failed: ${(err && err.message) || "request error"}.</div>`; });
@@ -2260,6 +2278,111 @@
 
     out.innerHTML = `<div class="lf-grid">${cards}</div>
       <div class="card-sub lf-foot">Cheapest per airline shown (${rows.length} total fares seen). Prices are live from the flight-data provider; the final price on the airline/OTA can differ slightly after taxes/fees. Tap through to book.</div>`;
+  }
+
+  // ===================== PRICE-DROP WATCHES ===============================
+  // honest model: we store the real fare you watched it at, and re-check the
+  // live fare when you open the app (no server pinging you). The watch-engine
+  // is pure; this layer does storage + the live re-check + render.
+  function watches() { if (!state.watches) state.watches = []; return state.watches; }
+  function addWatch(from, to, date, price, airline) {
+    if (!WATCH) return;
+    const id = from.code + "_" + to.code + "_" + (date || "any");
+    const existing = watches().find((w) => w.id === id);
+    const ts = Date.now();
+    if (existing) {
+      const i = watches().indexOf(existing);
+      watches()[i] = WATCH.recordCheck(existing, price, ts);
+    } else {
+      watches().push(WATCH.newWatch({ from: from.code, to: to.code, date: date || "", price: price, airline: airline, ts: ts }));
+    }
+    save();
+    renderWatches();
+  }
+  function removeWatch(id) {
+    state.watches = watches().filter((w) => w.id !== id);
+    save();
+    renderWatches();
+  }
+  function renderWatches() {
+    const el = $("#fl-watches");
+    if (!el || !WATCH) return;
+    const ws = watches();
+    if (!ws.length) { el.innerHTML = ""; return; }
+    const fmtAgo = (ts) => {
+      if (!ts) return "";
+      const mins = Math.round((Date.now() - ts) / 60000);
+      if (mins < 1) return "just now";
+      if (mins < 60) return mins + "m ago";
+      const h = Math.round(mins / 60);
+      if (h < 24) return h + "h ago";
+      return Math.round(h / 24) + "d ago";
+    };
+    const rows = ws.map((w) => {
+      const d = WATCH.delta(w);
+      const low = WATCH.lowestSeen(w);
+      let deltaChip = `<span class="chip">no change yet</span>`;
+      if (d && d.dir === "down") deltaChip = `<span class="chip good">▼ down ₹${Number(d.absShown).toLocaleString("en-IN")} (${d.pctShown}%)</span>`;
+      else if (d && d.dir === "up") deltaChip = `<span class="chip warn">▲ up ₹${Number(d.absShown).toLocaleString("en-IN")} (${d.pctShown}%)</span>`;
+      else if (d && d.dir === "flat") deltaChip = `<span class="chip">no change</span>`;
+      return `<div class="watch-row" data-w="${esc(w.id)}">
+        <div class="watch-main">
+          <div class="watch-route"><b>${esc(w.from)} → ${esc(w.to)}</b> ${w.date ? `<span class="card-sub">${esc(w.date)}</span>` : `<span class="card-sub">any date</span>`}</div>
+          <div class="watch-prices">watched at <b>₹${w.basePrice != null ? Number(w.basePrice).toLocaleString("en-IN") : "—"}</b> · now <b>₹${w.lastPrice != null ? Number(w.lastPrice).toLocaleString("en-IN") : "—"}</b> ${deltaChip}</div>
+          <div class="card-sub">${low ? `lowest I've seen: ₹${Number(low.price).toLocaleString("en-IN")} · ` : ""}checked ${fmtAgo(w.lastTs || w.lastCheckedTs)}</div>
+        </div>
+        <div class="watch-actions">
+          <button class="act ghost mini" data-recheck="${esc(w.id)}">↻ re-check</button>
+          <button class="act ghost mini" data-unwatch="${esc(w.id)}">✕</button>
+        </div>
+      </div>`;
+    }).join("");
+    el.innerHTML = `<div class="section-h">🔔 Price watches <span class="card-sub" style="font-weight:400;">re-checked live when you open the app</span></div>
+      <div class="watch-list">${rows}</div>
+      <div class="card-sub watch-foot">There's no server emailing you — I re-check the live fare right here when you open the app or tap re-check. The price you watched + the lowest I've seen are real fares I actually fetched, never guessed.</div>`;
+    $$("[data-unwatch]").forEach((b) => b.onclick = () => removeWatch(b.dataset.unwatch));
+    $$("[data-recheck]").forEach((b) => b.onclick = () => recheckWatch(b.dataset.recheck));
+  }
+  // re-check ONE watch against the live fare API (needs a connected key).
+  function recheckWatch(id) {
+    const w = watches().find((x) => x.id === id);
+    if (!w || !WATCH || !LIVE) return;
+    const creds = loadCreds();
+    if (!creds || !creds.clientId) { toast("Connect a free fare key to re-check live prices."); return; }
+    const btn = document.querySelector(`[data-recheck="${id}"]`);
+    if (btn) { btn.textContent = "checking…"; btn.disabled = true; }
+    LIVE.searchLive(creds, { from: w.from, to: w.to, date: w.date || (state.flight || {}).date, adults: 1, max: 5 })
+      .then((res) => {
+        const price = (res.rows && res.rows.length) ? res.rows[0].priceTotal : null;
+        const i = watches().indexOf(w);
+        watches()[i] = WATCH.recordCheck(w, price, Date.now());
+        save();
+        renderWatches();
+        toast(price == null ? "No live fare came back this time — kept the last real price." : "Re-checked: ₹" + Number(price).toLocaleString("en-IN"));
+      })
+      .catch(() => { if (btn) { btn.textContent = "↻ re-check"; btn.disabled = false; } toast("Re-check failed (offline or key issue)."); });
+  }
+  // on app open: auto re-check watches IF a key is connected, quietly, one at a
+  // time (free-tier rate limit). No key = panel still shows last real prices.
+  function autoRecheckWatches() {
+    if (!WATCH || !LIVE) return;
+    const ws = watches();
+    if (!ws.length) return;
+    const creds = loadCreds();
+    if (!creds || !creds.clientId) return; // no key: show stored prices only
+    let chain = Promise.resolve();
+    ws.forEach((w) => {
+      chain = chain.then(() =>
+        LIVE.searchLive(creds, { from: w.from, to: w.to, date: w.date || (state.flight || {}).date, adults: 1, max: 5 })
+          .then((res) => {
+            const price = (res.rows && res.rows.length) ? res.rows[0].priceTotal : null;
+            const i = watches().indexOf(w);
+            if (i >= 0) watches()[i] = WATCH.recordCheck(watches()[i], price, Date.now());
+          })
+          .catch(() => {})
+      );
+    });
+    chain.then(() => { save(); renderWatches(); });
   }
 
   // flight input wiring
@@ -2398,7 +2521,7 @@
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
     renderAirports(); renderMap(); renderCompare(); renderValue(); renderSuggestions();
     renderFlights(); renderCoupons();
-    renderPlanStats(); renderHotels(); renderOntrip(); renderGround(); renderTrips();
+    renderPlanStats(); renderHotels(); renderOntrip(); renderGround(); renderWatches(); renderTrips();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
     if ($("#plan-result") && $("#plan-result").innerHTML.trim()) renderPlanResult();
   }
@@ -2449,4 +2572,5 @@
   render();
   renderAuthBar();
   maybeOnboard();
+  autoRecheckWatches();
 })();
