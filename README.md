@@ -1,6 +1,6 @@
 # TripLens 🧭
 
-**Live:** https://vikaskumarjvk.github.io/loungelens/ — installable, works offline, free.
+**Live:** https://vikaskumarjvk.github.io/triplens/ — installable, works offline, free.
 
 **Plan the whole trip, pay the smart way.** One free app for everything a trip needs —
 flights, hotels, airport lounges, cabs and local deals — with the single best card to

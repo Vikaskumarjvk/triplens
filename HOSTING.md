@@ -20,7 +20,7 @@ If you still want to limit *who can open the page at all*, see "Restricting to a
 Best when you just want a link in 2 minutes with no account.
 
 1. Open https://app.netlify.com/drop in your browser.
-2. Drag the whole `loungelens` folder (the one with `index.html` inside) onto the page.
+2. Drag the whole `triplens` folder (the one with `index.html` inside) onto the page.
 3. Wait a few seconds. Netlify gives you a public URL like `https://sunny-lounge-1a2b3c.netlify.app`.
 4. Share that URL with your friends. HTTPS is automatic.
 5. To keep the same link and update it later, create a free Netlify account and "claim" the site.
@@ -31,13 +31,13 @@ Pros: trivial, instant, no command line. Cons: random URL unless you make an acc
 Best when you want a stable link and don't mind a few steps.
 
 1. Make a free account at https://github.com if you don't have one.
-2. Create a new repository, e.g. `loungelens` (keep it Public — Pages is free for public repos).
+2. Create a new repository, e.g. `triplens` (keep it Public — Pages is free for public repos).
 3. Upload the files: on the repo page click **Add file → Upload files**, drag in
    `index.html`, `styles.css`, `app.js`, and the `data/` folder, then **Commit**.
-   (Or with git: `git add . && git commit -m "loungelens" && git push`.)
+   (Or with git: `git add . && git commit -m "triplens" && git push`.)
 4. Go to **Settings → Pages**.
 5. Under **Source**, pick branch `main` and folder `/ (root)`, click **Save**.
-6. In ~1-2 minutes your site is live at `https://YOURNAME.github.io/loungelens/`.
+6. In ~1-2 minutes your site is live at `https://YOURNAME.github.io/triplens/`.
 7. Share that link.
 
 Pros: permanent, reliable, free. Cons: needs a GitHub account; public repo means the *code* is public (the code is fine to be public — no secrets in it).
@@ -51,8 +51,8 @@ Pros: permanent, reliable, free. Cons: needs a GitHub account; public repo means
 ### Option 4 — Surge.sh (fastest via command line, needs Node)
 1. Install Node from https://nodejs.org if needed.
 2. `npm install --global surge`
-3. `cd` into the `loungelens` folder, run `surge`.
-4. Press Enter through the prompts; pick a name like `loungelens.surge.sh`.
+3. `cd` into the `triplens` folder, run `surge`.
+4. Press Enter through the prompts; pick a name like `triplens.surge.sh`.
 5. Live with free HTTPS.
 
 ## Restricting to "a few members"
