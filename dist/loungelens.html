@@ -3395,10 +3395,10 @@ window.LL_FLIGHTS = {
       confidence: "high", verify: "google.com/travel/flights", offers: [],
     },
     {
-      id: "skyscanner", name: "Skyscanner", type: "meta", linkType: "prefilled",
-      url: "https://www.skyscanner.co.in/transport/flights/{FROM_L}/{TO_L}/{DATE_YYMMDD}/",
-      note: "Compares airlines + OTAs, flags the cheapest. No card offers of its own.",
-      confidence: "high", verify: "skyscanner.co.in", offers: [],
+      id: "ixigo-meta", name: "ixigo", type: "meta", linkType: "prefilled",
+      url: "https://www.ixigo.com/search/result/flight?from={FROM}&to={TO}&date={DATE_DDMMYYYY_PLAIN}&adults=1&class=e",
+      note: "India-first flight search + compare; opens straight to results for your route + date.",
+      confidence: "high", verify: "ixigo.com/flights", offers: [],
     },
     {
       id: "indigo", name: "IndiGo (6E)", type: "airline", linkType: "search-page",
@@ -4467,6 +4467,7 @@ window.LL_DEALS = {
       ymd: y + "-" + mo + "-" + d,
       yymmdd: y.slice(2) + mo + d,
       ddmmyyyy: d + "/" + mo + "/" + y,
+      ddmmyyyyplain: d + mo + y,
       text: d + " " + months[Number(mo) - 1] + " " + y,
     };
   }
@@ -4485,6 +4486,7 @@ window.LL_DEALS = {
     if (dp) {
       url = url
         .replace(/\{DATE_YYMMDD\}/g, dp.yymmdd)
+        .replace(/\{DATE_DDMMYYYY_PLAIN\}/g, dp.ddmmyyyyplain)
         .replace(/\{DATE_DDMMYYYY\}/g, encodeURIComponent(dp.ddmmyyyy))
         .replace(/\{DATE_TEXT\}/g, encodeURIComponent(dp.text))
         .replace(/\{DATE\}/g, dp.ymd);
@@ -7340,9 +7342,25 @@ window.LL_DEALS = {
     if (byCode) return byCode;
     const byCity = (FLIGHTS.airports || []).find((a) => a.city.toLowerCase() === v.toLowerCase());
     if (byCity) return byCity;
+    // partial city match (e.g. "Goa" -> "Goa (Dabolim)" GOI, "Bengal" -> BLR).
+    // Prefer the first match so a real IATA code is always used in deep links.
+    const byPartial = (FLIGHTS.airports || []).find((a) => a.city.toLowerCase().includes(v.toLowerCase()));
+    if (byPartial) return byPartial;
     // accept a raw 3-letter code the user typed even if not in our list
     if (/^[A-Za-z]{3}$/.test(v)) return { code: up, city: up };
     return null;
+  }
+
+  // make EVERY date input open its native picker on a tap anywhere in the field
+  // (not just the tiny calendar icon) — fixes the "can't select the date" feel.
+  // showPicker() is supported in modern browsers; guarded so it never throws.
+  function wireDatePickers() {
+    document.addEventListener("click", (e) => {
+      const t = e.target;
+      if (t && t.tagName === "INPUT" && t.type === "date" && typeof t.showPicker === "function") {
+        try { t.showPicker(); } catch (err) { /* user-gesture / unsupported: native click still works */ }
+      }
+    });
   }
 
   // prevent past-date flight searches (Amadeus rejects them with a vague error)
@@ -8336,18 +8354,24 @@ window.LL_DEALS = {
   };
 
   // ---- onboarding (first run) -------------------------------------------
+  function dismissOnboard(goAddCards) {
+    const m = $("#onboard");
+    if (m) m.hidden = true;
+    state.onboarded = true; save();
+    if (goAddCards) showView("addcard", true);
+  }
   function maybeOnboard() {
     if (state.onboarded) return;
     const m = $("#onboard");
     if (!m) return;
     m.hidden = false;
-    $("#onboard-start").onclick = () => {
-      m.hidden = true;
-      state.onboarded = true; save();
-      // jump them to Add Cards to start
-      $$("nav button").forEach((x) => x.classList.toggle("active", x.dataset.view === "addcard"));
-      $$(".view").forEach((s) => s.classList.toggle("active", s.id === "view-addcard"));
-    };
+    // primary CTA: start at Add Cards
+    $("#onboard-start").onclick = () => dismissOnboard(true);
+    // never trap the user: clicking the dim backdrop OR pressing Esc closes it
+    m.addEventListener("click", (e) => { if (e.target === m) dismissOnboard(false); });
+    document.addEventListener("keydown", function onEsc(e) {
+      if (e.key === "Escape" && !m.hidden) { dismissOnboard(false); document.removeEventListener("keydown", onEsc); }
+    });
   }
 
   // ---- toast (small non-blocking notice) --------------------------------
@@ -8425,6 +8449,7 @@ window.LL_DEALS = {
   wireHotels();
   wireOntrip();
   wireTripsForm();
+  wireDatePickers();
   render();
   renderAuthBar();
   maybeOnboard();

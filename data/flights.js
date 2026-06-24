@@ -58,10 +58,10 @@ window.LL_FLIGHTS = {
       confidence: "high", verify: "google.com/travel/flights", offers: [],
     },
     {
-      id: "skyscanner", name: "Skyscanner", type: "meta", linkType: "prefilled",
-      url: "https://www.skyscanner.co.in/transport/flights/{FROM_L}/{TO_L}/{DATE_YYMMDD}/",
-      note: "Compares airlines + OTAs, flags the cheapest. No card offers of its own.",
-      confidence: "high", verify: "skyscanner.co.in", offers: [],
+      id: "ixigo-meta", name: "ixigo", type: "meta", linkType: "prefilled",
+      url: "https://www.ixigo.com/search/result/flight?from={FROM}&to={TO}&date={DATE_DDMMYYYY_PLAIN}&adults=1&class=e",
+      note: "India-first flight search + compare; opens straight to results for your route + date.",
+      confidence: "high", verify: "ixigo.com/flights", offers: [],
     },
     {
       id: "indigo", name: "IndiGo (6E)", type: "airline", linkType: "search-page",

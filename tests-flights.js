@@ -28,10 +28,10 @@ console.log("\n[2] buildLink fills prefilled templates");
   ok("FROM upper", url.includes("DEL"));
   ok("TO upper", url.includes("BOM"));
   ok("date in url", url.includes("2026-07-12"));
-  const sky = FL.providers.find((p) => p.id === "skyscanner");
-  const su = FE.buildLink(sky, "DEL", "BOM", "2026-07-12");
-  ok("skyscanner lowercases codes", su.includes("/del/bom/"));
-  ok("skyscanner yymmdd", su.includes("260712"));
+  const ix = FL.providers.find((p) => p.id === "ixigo-meta");
+  const iu = FE.buildLink(ix, "DEL", "BOM", "2026-07-12");
+  ok("ixigo meta carries route codes", iu.includes("from=DEL") && iu.includes("to=BOM"));
+  ok("ixigo meta plain ddmmyyyy date", iu.includes("date=12072026"));
 }
 
 console.log("\n[3] buildLink handles search-page (no date placeholder)");

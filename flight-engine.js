@@ -27,6 +27,7 @@
       ymd: y + "-" + mo + "-" + d,
       yymmdd: y.slice(2) + mo + d,
       ddmmyyyy: d + "/" + mo + "/" + y,
+      ddmmyyyyplain: d + mo + y,
       text: d + " " + months[Number(mo) - 1] + " " + y,
     };
   }
@@ -45,6 +46,7 @@
     if (dp) {
       url = url
         .replace(/\{DATE_YYMMDD\}/g, dp.yymmdd)
+        .replace(/\{DATE_DDMMYYYY_PLAIN\}/g, dp.ddmmyyyyplain)
         .replace(/\{DATE_DDMMYYYY\}/g, encodeURIComponent(dp.ddmmyyyy))
         .replace(/\{DATE_TEXT\}/g, encodeURIComponent(dp.text))
         .replace(/\{DATE\}/g, dp.ymd);

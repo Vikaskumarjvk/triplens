@@ -1167,9 +1167,25 @@
     if (byCode) return byCode;
     const byCity = (FLIGHTS.airports || []).find((a) => a.city.toLowerCase() === v.toLowerCase());
     if (byCity) return byCity;
+    // partial city match (e.g. "Goa" -> "Goa (Dabolim)" GOI, "Bengal" -> BLR).
+    // Prefer the first match so a real IATA code is always used in deep links.
+    const byPartial = (FLIGHTS.airports || []).find((a) => a.city.toLowerCase().includes(v.toLowerCase()));
+    if (byPartial) return byPartial;
     // accept a raw 3-letter code the user typed even if not in our list
     if (/^[A-Za-z]{3}$/.test(v)) return { code: up, city: up };
     return null;
+  }
+
+  // make EVERY date input open its native picker on a tap anywhere in the field
+  // (not just the tiny calendar icon) — fixes the "can't select the date" feel.
+  // showPicker() is supported in modern browsers; guarded so it never throws.
+  function wireDatePickers() {
+    document.addEventListener("click", (e) => {
+      const t = e.target;
+      if (t && t.tagName === "INPUT" && t.type === "date" && typeof t.showPicker === "function") {
+        try { t.showPicker(); } catch (err) { /* user-gesture / unsupported: native click still works */ }
+      }
+    });
   }
 
   // prevent past-date flight searches (Amadeus rejects them with a vague error)
@@ -2163,18 +2179,24 @@
   };
 
   // ---- onboarding (first run) -------------------------------------------
+  function dismissOnboard(goAddCards) {
+    const m = $("#onboard");
+    if (m) m.hidden = true;
+    state.onboarded = true; save();
+    if (goAddCards) showView("addcard", true);
+  }
   function maybeOnboard() {
     if (state.onboarded) return;
     const m = $("#onboard");
     if (!m) return;
     m.hidden = false;
-    $("#onboard-start").onclick = () => {
-      m.hidden = true;
-      state.onboarded = true; save();
-      // jump them to Add Cards to start
-      $$("nav button").forEach((x) => x.classList.toggle("active", x.dataset.view === "addcard"));
-      $$(".view").forEach((s) => s.classList.toggle("active", s.id === "view-addcard"));
-    };
+    // primary CTA: start at Add Cards
+    $("#onboard-start").onclick = () => dismissOnboard(true);
+    // never trap the user: clicking the dim backdrop OR pressing Esc closes it
+    m.addEventListener("click", (e) => { if (e.target === m) dismissOnboard(false); });
+    document.addEventListener("keydown", function onEsc(e) {
+      if (e.key === "Escape" && !m.hidden) { dismissOnboard(false); document.removeEventListener("keydown", onEsc); }
+    });
   }
 
   // ---- toast (small non-blocking notice) --------------------------------
@@ -2252,6 +2274,7 @@
   wireHotels();
   wireOntrip();
   wireTripsForm();
+  wireDatePickers();
   render();
   renderAuthBar();
   maybeOnboard();
