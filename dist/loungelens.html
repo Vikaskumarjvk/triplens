@@ -897,6 +897,42 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .tp-lbl .fb-input { width: 100%; }
 .tp-num { max-width: 100%; }
 
+/* trip-type toggle (one-way / round) */
+.triptype { gap: 8px; }
+.trip-opt { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel2); cursor: pointer; font-size: 13px; transition: border-color .15s, background .15s; }
+.trip-opt input { accent-color: var(--accent2); margin: 0; }
+.trip-opt:has(input:checked) { border-color: var(--accent2); background: rgba(54,211,153,.1); }
+
+/* trains & buses: the fly-vs-train-vs-bus recommendation block */
+.gr-rec { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0 10px; box-shadow: var(--shadow-1); }
+.gr-rec-dist { font-size: 14px; }
+.gr-rec-band { margin-top: 8px; font-size: 15px; font-weight: 600; line-height: 1.4; }
+.gr-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin: 4px 0 8px; }
+.gr-mode { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; }
+.gr-mode-h { font-size: 15px; margin-bottom: 4px; }
+.gr-mode-time { font-size: 18px; font-weight: 700; color: var(--accent2); margin-bottom: 4px; }
+.gr-mode-d2d { color: var(--txt); margin-bottom: 4px; }
+.gr-mode-cost { margin-top: 6px; }
+.gr-leg-tag { font-size: 13px; font-weight: 700; color: var(--accent2); margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+
+/* best-pick (cheapest / fastest / comfortable) */
+.gr-pick-box { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 13px 15px; margin: 10px 0; box-shadow: var(--shadow-1); }
+.gr-pick-head { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+.gr-pick-row { display: flex; align-items: baseline; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+.gr-pick-row:first-of-type { border-top: none; }
+.gr-pick-row.top { background: rgba(54,211,153,.08); border-radius: var(--r-sm); padding: 8px 10px; margin: 2px -4px; }
+.gr-pick-rank { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--panel2); border: 1px solid var(--line); font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.gr-pick-row.top .gr-pick-rank { background: var(--accent2); color: #04130c; border-color: var(--accent2); }
+.gr-pick-mode { font-weight: 600; font-size: 14px; min-width: 88px; }
+.gr-pick-why { flex: 1; }
+.gr-pick-note { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+
+/* non-stop / connections / alternate routes */
+.gr-stops-box { background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 13px 15px; margin: 10px 0; }
+.gr-stops-head { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.gr-stops-row { padding: 6px 0; font-size: 13px; line-height: 1.5; }
+.gr-stops-row + .gr-stops-row { border-top: 1px solid var(--line); }
+
 /* the optimizer result */
 .plan-route { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; margin: 14px 0 10px; box-shadow: var(--shadow-1); }
 .pr-cities { font-size: 19px; }
@@ -1067,6 +1103,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       <button data-view="trips">🗂️ My Trips</button>
       <button data-view="flights">✈️ Flights</button>
       <button data-view="hotels">🏨 Hotels</button>
+      <button data-view="ground">🚆 Trains &amp; Buses</button>
       <button data-view="ontrip">🧳 On-Trip Deals</button>
       <button data-view="coupons">🎟️ Coupons &amp; Offers</button>
       <button data-view="wallet">💳 My Cards</button>
@@ -1173,6 +1210,46 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       <div class="section-h">🏨 Hotel money-saving plays</div>
       <div id="hotel-coupons"></div>
       <div class="honesty-note" id="hotel-honesty"></div>
+    </section>
+
+    <!-- TRAINS & BUSES (ground transport, multi-modal compare) -->
+    <section id="view-ground" class="view">
+      <div class="hero">
+        <h2>Trains &amp; buses — and is it even worth flying?</h2>
+        <p>Put in your two cities and I work out the real distance, then tell you honestly whether to take a train, a bus, or fly. I open the live search on every booking site for your route. Real fares and timetables stay on the real sites — I never invent a price.</p>
+      </div>
+      <div class="flight-builder">
+        <div class="fb-row triptype" role="radiogroup" aria-label="Trip type">
+          <label class="trip-opt"><input type="radio" name="gr-trip" value="oneway" checked /> <span>One way</span></label>
+          <label class="trip-opt"><input type="radio" name="gr-trip" value="round" /> <span>Round trip</span></label>
+        </div>
+        <div class="fb-row">
+          <input class="fb-input" id="gr-from" placeholder="From (city or code)" list="fl-airport-list" autocomplete="off" aria-label="From city" />
+          <button class="act ghost mini" id="gr-swap" title="Swap" aria-label="Swap origin and destination">⇄</button>
+          <input class="fb-input" id="gr-to" placeholder="To (city or code)" list="fl-airport-list" autocomplete="off" aria-label="To city" />
+        </div>
+        <div class="fb-row">
+          <label class="tp-lbl">Travel date <input class="fb-input" id="gr-date" type="date" aria-label="Travel date" /></label>
+          <label class="tp-lbl" id="gr-return-wrap" style="display:none;">Return date <input class="fb-input" id="gr-return" type="date" aria-label="Return date" /></label>
+          <label class="tp-lbl">What matters most?
+            <select class="fb-input" id="gr-priority" aria-label="What matters most">
+              <option value="fast">Fastest (door to door)</option>
+              <option value="cheap">Cheapest</option>
+              <option value="comfort">Most comfortable</option>
+            </select>
+          </label>
+          <button class="act big" id="gr-go">Compare ways to get there →</button>
+        </div>
+      </div>
+
+      <div id="gr-compare"></div>
+      <div id="gr-pick"></div>
+      <div id="gr-stops"></div>
+      <div id="gr-trains"></div>
+      <div id="gr-buses"></div>
+      <div class="section-h">🎟️ Train &amp; bus money-saving plays</div>
+      <div id="gr-tips"></div>
+      <div class="honesty-note" id="gr-honesty"></div>
     </section>
 
     <!-- ON-TRIP DEALS (cabs, eSIM/forex, dining, activities) -->
@@ -3889,6 +3966,97 @@ window.LL_DEALS = {
 
 </script>
   <script>
+/*
+ * TripLens — ground transport (trains + buses) providers + deep links + offers.
+ *
+ * HONESTY MODEL (same as flights/hotels): no fake prices. Each provider opens the
+ * REAL live search on the real site for your route + date. Deep-link formats here
+ * were verified in a real browser (redBus + ixigo land on actual results, 2026-06-24).
+ *
+ * Placeholders the transport engine fills:
+ *   {FROM_SLUG} {TO_SLUG}   url-safe lowercase city ("new-delhi")
+ *   {FROM} {TO}             raw city, url-encoded
+ *   {DATE}                  YYYY-MM-DD
+ *   {DATE_DDMMMYYYY}        24-Jun-2026 (redBus style)
+ */
+window.LL_TRANSPORT = {
+  // ---- TRAIN providers (India) -------------------------------------------
+  trains: [
+    {
+      id: "ixigo-trains", name: "ixigo Trains", type: "aggregator", linkType: "prefilled",
+      url: "https://www.ixigo.com/trains/{FROM_SLUG}-to-{TO_SLUG}",
+      note: "Trains between your cities with live running status + seat availability. IRCTC-authorised partner, so you can book here too.",
+      confidence: "high", verify: "ixigo.com/trains",
+      offers: [
+        { id: "ixt-app", kind: "app", issuer: null, title: "ixigo app shows free cancellation + assured options on trains", code: null, cap: "varies", terms: "App-first features + occasional bank offers on train bookings.", confidence: "low", lastChecked: "2026-06-24", verify: "ixigo.com/trains" },
+      ],
+    },
+    {
+      id: "confirmtkt", name: "ConfirmTkt", type: "aggregator", linkType: "prefilled",
+      url: "https://www.confirmtkt.com/trains-between-stations/{FROM_SLUG}-to-{TO_SLUG}",
+      note: "Best for waitlist prediction — tells you the real chance a waitlisted ticket clears before you book.",
+      confidence: "med", verify: "confirmtkt.com", offers: [],
+    },
+    {
+      id: "railyatri", name: "RailYatri", type: "aggregator", linkType: "search-page",
+      url: "https://www.railyatri.in/trains-between-stations",
+      note: "Trains between stations + live status + intercity buses too. Type your stations on the page.",
+      confidence: "med", verify: "railyatri.in", offers: [],
+    },
+    {
+      id: "irctc", name: "IRCTC (official)", type: "official", linkType: "search-page",
+      url: "https://www.irctc.co.in/nget/train-search",
+      note: "The only OFFICIAL Indian Railways booking site. Cheapest (no convenience fee) but the UI is clunky and needs an IRCTC login. Aggregators above add a small fee for a smoother flow.",
+      confidence: "high", verify: "irctc.co.in", offers: [],
+    },
+  ],
+
+  // ---- BUS providers (India) ---------------------------------------------
+  buses: [
+    {
+      id: "redbus", name: "redBus", type: "ota", linkType: "prefilled",
+      url: "https://www.redbus.in/bus-tickets/{FROM_SLUG}-to-{TO_SLUG}",
+      note: "India's biggest bus platform — most operators, seat selection, live tracking. Opens straight to buses on your route.",
+      confidence: "high", verify: "redbus.in/offers",
+      offers: [
+        { id: "rb-coupon", kind: "coupon", issuer: null, title: "redBus runs recurring first-booking + flat-off codes", code: "FIRST", cap: "varies", terms: "New-user + flat-off codes rotate; the offers page lists today's. Bank offers stack sometimes.", confidence: "low", lastChecked: "2026-06-24", verify: "redbus.in/offers" },
+      ],
+    },
+    {
+      id: "abhibus", name: "AbhiBus", type: "ota", linkType: "search-page",
+      url: "https://www.abhibus.com/",
+      note: "Alternative bus platform — sometimes different operators + codes than redBus. Worth comparing for the same route.",
+      confidence: "med", verify: "abhibus.com/offers",
+      offers: [
+        { id: "ab-coupon", kind: "coupon", issuer: null, title: "AbhiBus flat-off + wallet cashback codes recur", code: null, cap: "varies", terms: "Codes rotate weekly. Confirm on the offers page.", confidence: "low", lastChecked: "2026-06-24", verify: "abhibus.com/offers" },
+      ],
+    },
+    {
+      id: "paytm-bus", name: "Paytm Bus", type: "ota", linkType: "prefilled",
+      url: "https://tickets.paytm.com/bus/search/{FROM}/{TO}/{DATE}/1",
+      note: "Paytm wallet cashback on buses; app-first. Prefilled to your route + date.",
+      confidence: "med", verify: "paytm.com/bus-tickets", offers: [],
+    },
+    {
+      id: "ixigo-bus", name: "ixigo Bus", type: "aggregator", linkType: "search-page",
+      url: "https://www.ixigo.com/buses",
+      note: "Bus search inside ixigo — handy if you're already comparing its trains/flights for the same route.",
+      confidence: "med", verify: "ixigo.com/buses", offers: [],
+    },
+  ],
+
+  // ---- cross-mode money plays --------------------------------------------
+  tips: [
+    { id: "tr-tip-tatkal", title: "Tatkal opens 1 day before for last-minute trains", who: "IRCTC / ixigo / ConfirmTkt", note: "If regular quota is full, Tatkal seats open at 10-11 AM one day before travel. ConfirmTkt's prediction tells you if a waitlist is worth holding.", confidence: "med", lastChecked: "2026-06-24", verify: "the train's quota on IRCTC" },
+    { id: "tr-tip-class", title: "Pick the right train class for the distance", who: "trains", note: "Sub-6h day journeys: Chair Car (CC) / 2S is cheap + fast. Overnight: 3AC is the value sweet spot; SL is cheapest but books out. A night train also saves a hotel night.", confidence: "high", lastChecked: "2026-06-24", verify: "class availability for your train" },
+    { id: "tr-tip-bus-sleeper", title: "Overnight sleeper bus can beat a flight + hotel", who: "redBus / AbhiBus", note: "For 300-700km, an AC sleeper bus overnight saves both a flight fare and a hotel night. Compare the all-in cost, not just the ticket.", confidence: "med", lastChecked: "2026-06-24", verify: "sleeper bus timings on redBus" },
+  ],
+
+  lastReviewed: "2026-06-24",
+};
+
+</script>
+  <script>
 /* brand.js — visual brand system for LoungeLens.
  * Maps issuers to brand colors + logo initials, and networks to gradients,
  * so every card renders as real card-art (gradient + issuer badge + network
@@ -5680,6 +5848,180 @@ window.LL_DEALS = {
 </script>
   <script>
 /*
+ * TripLens — transport engine. Trains + buses, multi-modal compare. Pure, no DOM.
+ *
+ * Builds the browser-verified deep links in data/transport.js, and produces an
+ * honest fly-vs-train-vs-bus recommendation from REAL distance (geo-engine).
+ *
+ * HONESTY: no fake prices or schedules. Distance is real (haversine). Durations
+ * are clearly-labelled ESTIMATES from distance + typical speeds (train ~55 km/h
+ * effective incl. stops, bus ~45 km/h on Indian highways, flight via geo-engine).
+ * Cost direction is a heuristic ("usually cheaper"), never a number. Booking links
+ * open the real live search where the true price + timetable live.
+ */
+(function (root) {
+  "use strict";
+
+  function geo() { return root.LL_GEO || (typeof require !== "undefined" ? safeReq("./geo-engine.js") : null); }
+  function safeReq(p) { try { return require(p); } catch (e) { return null; } }
+
+  // city -> url slug ("New Delhi" -> "new-delhi", "Goa (Dabolim)" -> "goa")
+  function slug(city) {
+    return (city || "").toLowerCase()
+      .replace(/\(.*?\)/g, " ")              // drop "(Dabolim)" etc
+      .replace(/[^a-z0-9]+/g, " ").trim()
+      .replace(/\s+/g, "-");
+  }
+
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function ddmmmyyyy(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); if (!m) return "";
+    const mon = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+m[2] - 1];
+    return m[3] + "-" + mon + "-" + m[1];
+  }
+
+  // fill a transport provider/template url with route + date
+  function buildLink(provider, fromCity, toCity, dateISO) {
+    let url = provider.url;
+    const fs = slug(fromCity), ts = slug(toCity);
+    const F = encodeURIComponent(fromCity || ""), T = encodeURIComponent(toCity || "");
+    url = url
+      .replace(/\{FROM_SLUG\}/g, fs).replace(/\{TO_SLUG\}/g, ts)
+      .replace(/\{FROM\}/g, F).replace(/\{TO\}/g, T);
+    if (/\{DATE/.test(url)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO || "")) {
+        // date-needing template but no date: fall back to the site origin
+        try { return new URL(url).origin + "/"; } catch (e) { return url; }
+      }
+      url = url.replace(/\{DATE_DDMMMYYYY\}/g, ddmmmyyyy(dateISO)).replace(/\{DATE\}/g, dateISO);
+    }
+    return url;
+  }
+
+  // duration estimates (minutes) from distance. Clearly estimates.
+  function trainTimeMin(km) { return km == null ? null : Math.round((km / 55) * 60 + 20); }
+  function busTimeMin(km) { return km == null ? null : Math.round((km / 45) * 60 + 25); }
+  function fmtDur(mins) { if (mins == null) return ""; const h = Math.floor(mins / 60), m = mins % 60; return (h ? h + "h " : "") + m + "m"; }
+
+  // door-to-door overhead (minutes) — the honest "total trip" view, not just the
+  // headline number. Flying looks fast on the air time but loses hours to airport
+  // buffer + getting to/from airports that sit outside the city. Trains and buses
+  // leave from central stations so their overhead is small. All clearly estimates.
+  var FLIGHT_OVERHEAD_MIN = 165; // ~2h before + ~45m airport-to-city after, India domestic
+  var TRAIN_OVERHEAD_MIN = 40;   // central station, reach a bit early
+  var BUS_OVERHEAD_MIN = 30;     // board at a central stand
+  function doorToDoorMin(mode, km, flightAirMin) {
+    if (km == null) return null;
+    if (mode === "flight") return flightAirMin == null ? null : flightAirMin + FLIGHT_OVERHEAD_MIN;
+    if (mode === "train") return trainTimeMin(km) + TRAIN_OVERHEAD_MIN;
+    if (mode === "bus") return busTimeMin(km) + BUS_OVERHEAD_MIN;
+    return null;
+  }
+
+  // honest ordinal ranks (1 = best) used for the cheaper / faster / comfortable
+  // picks. Cost + comfort are general India heuristics (no fabricated prices);
+  // speed is computed from the real door-to-door estimate above.
+  // comfort: trains let you walk around + sleep flat overnight, so usually the
+  // comfiest; flight is fast but cramped + airport hassle; bus is the least comfy.
+  function costRank(mode) { return mode === "bus" ? 1 : mode === "train" ? 2 : 3; }     // bus usually cheapest
+  function comfortRank(mode) { return mode === "train" ? 1 : mode === "flight" ? 2 : 3; } // train usually comfiest
+
+  // rank the three modes by what the traveller cares about most.
+  // priority: "cheap" | "fast" | "comfort". Returns [{mode, why}] best-first.
+  function rankModes(fromCode, toCode, priority, opts) {
+    opts = opts || {};
+    const G = geo();
+    const km = opts.km != null ? opts.km : (G ? G.distanceKm(fromCode, toCode) : null);
+    if (km == null) return null;
+    const air = opts.flightAirMin != null ? opts.flightAirMin : (G ? G.flightTimeMin(fromCode, toCode) : null);
+    const modes = ["flight", "train", "bus"].map((m) => ({
+      mode: m,
+      d2d: doorToDoorMin(m, km, air),
+      cost: costRank(m),
+      comfort: comfortRank(m),
+    }));
+    let scored;
+    if (priority === "cheap") {
+      scored = modes.slice().sort((a, b) => a.cost - b.cost || (a.d2d || 1e9) - (b.d2d || 1e9));
+      scored.forEach((x) => x.why = x.cost === 1 ? "usually the cheapest fare" : x.cost === 2 ? "mid-priced, often cheaper than flying" : "usually the priciest (fares vary)");
+    } else if (priority === "fast") {
+      scored = modes.slice().sort((a, b) => (a.d2d || 1e9) - (b.d2d || 1e9));
+      scored.forEach((x) => x.why = x.d2d == null ? "no estimate (no map data)" : "~" + fmtDur(x.d2d) + " door-to-door (incl. airport/station time)");
+    } else { // comfort
+      scored = modes.slice().sort((a, b) => a.comfort - b.comfort || (a.d2d || 1e9) - (b.d2d || 1e9));
+      scored.forEach((x) => x.why = x.comfort === 1 ? "roomiest — walk around, sleep flat on overnight trains" : x.comfort === 2 ? "fast but cramped + airport hassle" : "tightest seat, but cheap");
+    }
+    return { km, priority, ranked: scored };
+  }
+
+  // honest stops / non-stop guidance. We do NOT have live schedules, so this tells
+  // the traveller what to EXPECT and exactly which filter to use on the booking site
+  // — never claims a specific flight is non-stop.
+  function stopsGuidance(km) {
+    if (km == null) return null;
+    let flight;
+    if (km <= 1000) flight = "Non-stop flights are common on a hop this short. On the booking site set the Stops filter to Non-stop so you don't get routed through a hub.";
+    else if (km <= 2000) flight = "Most flights here are non-stop, but some route via a hub. Use the Stops filter: pick Non-stop for speed, or allow 1 stop if it's a lot cheaper.";
+    else flight = "Long route — non-stop may exist, but 1-stop connections via Delhi, Mumbai or Bengaluru are common and often cheaper. Compare Non-stop vs 1-stop on the site.";
+    return {
+      flight,
+      train: "Trains don't have stops like flights. Instead pick the class: express trains (Vande Bharat, Shatabdi, Rajdhani) are fastest; passenger trains stop everywhere. Sort by duration on the search.",
+      bus: "Buses are direct point-to-point. For comfort pick AC Sleeper over a seater, and check pick-up/drop points — some stop on the outskirts, not the centre.",
+    };
+  }
+
+  // the headline: fly vs train vs bus for a route, by REAL distance between airports.
+  // Returns modes with estimated time + a cost/comfort lean + a "best for" tag.
+  // distanceKm can be passed (city-level) or derived from airport codes via geo.
+  function compareModes(fromCode, toCode, opts) {
+    opts = opts || {};
+    const G = geo();
+    const km = opts.km != null ? opts.km : (G ? G.distanceKm(fromCode, toCode) : null);
+    if (km == null) return null;
+    const flightMin = G ? G.flightTimeMin(fromCode, toCode) : null;
+    // honest banding
+    let recommend, bands;
+    if (km <= 300) {
+      recommend = "train_bus";
+      bands = { train: "fast + cheap", bus: "cheapest", fly: "rarely worth it (airport time > the trip)" };
+    } else if (km <= 700) {
+      recommend = "compare";
+      bands = { train: "overnight train saves a hotel night", bus: "sleeper bus = cheapest overnight", fly: "fastest if fare is low" };
+    } else if (km <= 1500) {
+      recommend = "fly_or_overnight_train";
+      bands = { train: "long but cheap (overnight/day)", bus: "long-haul, only if very cheap", fly: "usually the practical pick" };
+    } else {
+      recommend = "fly";
+      bands = { train: "very long (1+ nights)", bus: "not practical", fly: "the only sensible option" };
+    }
+    const flightD2D = doorToDoorMin("flight", km, flightMin);
+    return {
+      km,
+      recommend,
+      modes: [
+        { mode: "flight", icon: "✈️", timeMin: flightMin, timeLabel: flightMin ? "~" + fmtDur(flightMin) + " in air" : "—", d2dMin: flightD2D, d2dLabel: flightD2D ? "~" + fmtDur(flightD2D) + " door-to-door" : "", note: bands.fly, costLean: km <= 300 ? "highest (after airport time)" : "varies" },
+        { mode: "train", icon: "🚆", timeMin: trainTimeMin(km), timeLabel: "~" + fmtDur(trainTimeMin(km)), d2dMin: doorToDoorMin("train", km), d2dLabel: "~" + fmtDur(doorToDoorMin("train", km)) + " door-to-door", note: bands.train, costLean: "usually cheaper" },
+        { mode: "bus", icon: "🚌", timeMin: busTimeMin(km), timeLabel: "~" + fmtDur(busTimeMin(km)), d2dMin: doorToDoorMin("bus", km), d2dLabel: "~" + fmtDur(doorToDoorMin("bus", km)) + " door-to-door", note: bands.bus, costLean: "often cheapest" },
+      ],
+    };
+  }
+
+  // provider lists with links filled for a route
+  function trainOptions(data, fromCity, toCity, dateISO) {
+    return (data.trains || []).map((p) => ({ provider: p, link: buildLink(p, fromCity, toCity, dateISO) }));
+  }
+  function busOptions(data, fromCity, toCity, dateISO) {
+    return (data.buses || []).map((p) => ({ provider: p, link: buildLink(p, fromCity, toCity, dateISO) }));
+  }
+
+  const Engine = { slug, ddmmmyyyy, buildLink, trainTimeMin, busTimeMin, fmtDur, doorToDoorMin, compareModes, rankModes, stopsGuidance, trainOptions, busOptions };
+  if (typeof module !== "undefined" && module.exports) module.exports = Engine;
+  root.LL_TRANSPORT_ENGINE = Engine;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+  <script>
+/*
  * LoungeLens — self-improvement module (rung 1: free, client-side, honest).
  *
  * WHAT THIS IS (and is NOT):
@@ -6182,6 +6524,7 @@ window.LL_DEALS = {
   const TE = window.LL_TRIP_ENGINE, HOTELS = window.LL_HOTELS, DEALS = window.LL_DEALS;
   const IT = window.LL_ITINERARY, BUD = window.LL_BUDGET;
   const GEO = window.LL_GEO, LD = window.LL_LIVE;
+  const TR = window.LL_TRANSPORT, TRE = window.LL_TRANSPORT_ENGINE;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -6196,7 +6539,7 @@ window.LL_DEALS = {
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -7694,6 +8037,175 @@ window.LL_DEALS = {
     $("#ontrip-result").innerHTML = (city ? `<div class="fl-route"><b>${esc(city)}</b> <span class="card-sub">links tailored to this city where supported</span></div>` : `<div class="card-sub" style="margin:8px 0;">Tip: type a destination city above to tailor the cab/activity links to it.</div>`) + out;
   }
 
+  // ========================= TRAINS & BUSES ==============================
+  function groundState() {
+    if (!state.ground) state.ground = { from: "", to: "", date: "", tripType: "oneway", returnDate: "", priority: "fast" };
+    if (!state.ground.tripType) state.ground.tripType = "oneway";
+    if (!state.ground.priority) state.ground.priority = "fast";
+    return state.ground;
+  }
+  // for a slug, use the city the user typed; if they typed a 3-letter code,
+  // expand it to the airport's city so booking-site route slugs resolve.
+  function slugCityName(input, label) {
+    const v = (input || "").trim();
+    if (/^[A-Za-z]{3}$/.test(v) && label && label.city) return label.city;
+    return v || (label && label.city) || "";
+  }
+  function wireGround() {
+    const g = groundState();
+    if ($("#gr-from")) $("#gr-from").value = g.from || "";
+    if ($("#gr-to")) $("#gr-to").value = g.to || "";
+    if ($("#gr-date")) { $("#gr-date").value = g.date || ""; $("#gr-date").setAttribute("min", todayISO()); }
+    if ($("#gr-return")) { $("#gr-return").value = g.returnDate || ""; $("#gr-return").setAttribute("min", todayISO()); }
+    if ($("#gr-priority")) $("#gr-priority").value = g.priority || "fast";
+    syncGroundTripType();
+    const persist = () => {
+      state.ground = {
+        from: ($("#gr-from") && $("#gr-from").value) || "",
+        to: ($("#gr-to") && $("#gr-to").value) || "",
+        date: ($("#gr-date") && $("#gr-date").value) || "",
+        tripType: ($$("#view-ground [name=gr-trip]:checked")[0] || {}).value || "oneway",
+        returnDate: ($("#gr-return") && $("#gr-return").value) || "",
+        priority: ($("#gr-priority") && $("#gr-priority").value) || "fast",
+      };
+      save();
+    };
+    ["#gr-from", "#gr-to", "#gr-date", "#gr-return"].forEach((s) => { const el = $(s); if (el) el.oninput = persist; });
+    $$("#view-ground [name=gr-trip]").forEach((r) => r.onchange = () => { persist(); syncGroundTripType(); });
+    // priority change re-ranks live if a result is already on screen
+    if ($("#gr-priority")) $("#gr-priority").onchange = () => { persist(); if ($("#gr-trains") && $("#gr-trains").innerHTML.indexOf("empty") === -1 && (groundState().from || "").trim() && (groundState().to || "").trim()) renderGround(); };
+    if ($("#gr-swap")) $("#gr-swap").onclick = () => { const a = $("#gr-from"), b = $("#gr-to"); if (a && b) { const t = a.value; a.value = b.value; b.value = t; persist(); } };
+    if ($("#gr-go")) $("#gr-go").onclick = () => { persist(); renderGround(); const r = $("#gr-compare"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); };
+  }
+  // show/hide the return-date field based on the one-way vs round-trip pick
+  function syncGroundTripType() {
+    const g = groundState();
+    const round = g.tripType === "round";
+    const wrap = $("#gr-return-wrap");
+    if (wrap) wrap.style.display = round ? "" : "none";
+  }
+  // one set of provider links for a single direction + date
+  function groundLinkSet(fromName, toName, dateISO) {
+    const trains = TRE.trainOptions(TR, fromName, toName, dateISO);
+    const buses = TRE.busOptions(TR, fromName, toName, dateISO);
+    const provRow = (o) => {
+      const p = o.provider;
+      const tag = p.type === "official" ? `<span class="chip rail">official</span>` : p.type === "aggregator" ? `<span class="chip">compare</span>` : `<span class="chip">booking site</span>`;
+      const offerChips = (p.offers || []).map((of) => {
+        const code = of.code ? ` <code class="fl-code">${esc(of.code)}</code>` : "";
+        return `<div class="fl-offer"><span class="fl-offer-k">${kindIcon(of.kind)}</span>
+          <span class="fl-offer-t">${esc(of.title)}${code} ${confBadge(of.confidence)}</span>
+          ${of.verify ? `<a class="fl-verify" href="https://${esc(String(of.verify).replace(/^https?:\/\//, ""))}" target="_blank" rel="noopener">verify ↗</a>` : ""}</div>`;
+      }).join("");
+      return `<div class="fl-prov">
+        <div class="fl-prov-head"><div><b>${esc(p.name)}</b> ${tag} ${confBadge(p.confidence)}</div>
+        <a class="act mini fl-open" href="${o.link}" target="_blank" rel="noopener">open live search ↗</a></div>
+        <div class="card-sub fl-note">${esc(p.note)}</div>${offerChips}</div>`;
+    };
+    return {
+      trains: `<div class="fl-group">🚆 Trains · ${esc(fromName)} → ${esc(toName)}</div>` + trains.map(provRow).join(""),
+      buses: `<div class="fl-group">🚌 Buses · ${esc(fromName)} → ${esc(toName)}</div>` + buses.map(provRow).join(""),
+    };
+  }
+  function renderGround() {
+    if (!$("#gr-trains") || !TRE || !TR) return;
+    const g = groundState();
+    const round = g.tripType === "round";
+
+    // tips always render
+    const tipsEl = $("#gr-tips");
+    if (tipsEl) tipsEl.innerHTML = (TR.tips || []).map((t) => `<div class="coupon-row">
+      <div class="cp-main"><div class="cp-title">🎟️ <b>${esc(t.title)}</b> ${confBadge(t.confidence)}</div><div class="card-sub">${esc(t.note)} · ${esc(t.who)}</div></div>
+      <div class="cp-side"><span class="card-sub">checked ${esc(t.lastChecked)}</span></div></div>`).join("");
+
+    const honesty = $("#gr-honesty");
+    if (honesty) honesty.innerHTML = `<b>How this works:</b> distance is the real straight-line distance between the two cities; train and bus durations are honest estimates from that distance (trains average about 55 km/h with stops, buses about 45 km/h), not live timetables. Each link opens the real live search where the actual times, seats and fares live. I never invent a price.`;
+
+    const fromIn = (g.from || "").trim(), toIn = (g.to || "").trim();
+    if (!fromIn || !toIn) {
+      $("#gr-compare").innerHTML = "";
+      $("#gr-trains").innerHTML = `<div class="empty">Enter both cities — I'll work out whether to train, bus or fly, and open the live search on every booking site.</div>`;
+      $("#gr-buses").innerHTML = "";
+      return;
+    }
+    const fL = flAirportLabel(fromIn), tL = flAirportLabel(toIn);
+    const fromName = slugCityName(fromIn, fL), toName = slugCityName(toIn, tL);
+
+    // honest fly-vs-train-vs-bus compare (needs real coords for both ends)
+    const cmp = (fL && tL) ? TRE.compareModes(fL.code, tL.code) : null;
+    const cEl = $("#gr-compare");
+    if (cEl) {
+      if (cmp) {
+        const recLabel = {
+          train_bus: "🚆 Take a train or bus — flying isn't worth it on this short a hop",
+          compare: "🤔 It's a close call — compare all three (an overnight train or bus can save a hotel night)",
+          fly_or_overnight_train: "✈️ Flying is usually the practical pick — but an overnight train is the cheap option",
+          fly: "✈️ Fly — it's the only sensible option over this distance",
+        };
+        const modeCard = (m) => `<div class="gr-mode">
+          <div class="gr-mode-h">${m.icon} <b>${m.mode === "flight" ? "Flight" : m.mode === "train" ? "Train" : "Bus"}</b></div>
+          <div class="gr-mode-time">${esc(m.timeLabel)}</div>
+          ${m.d2dLabel ? `<div class="card-sub gr-mode-d2d">${esc(m.d2dLabel)}</div>` : ""}
+          <div class="card-sub">${esc(m.note)}</div>
+          <div class="card-sub gr-mode-cost">cost: ${esc(m.costLean)}</div>
+        </div>`;
+        cEl.innerHTML = `<div class="gr-rec"><div class="gr-rec-dist">📏 ${cmp.km.toLocaleString("en-IN")} km between <b>${esc(fL.city)}</b> and <b>${esc(tL.city)}</b> <span class="card-sub">(straight-line)</span></div>
+          <div class="gr-rec-band">${recLabel[cmp.recommend] || ""}</div></div>
+          <div class="gr-modes">${cmp.modes.map(modeCard).join("")}</div>`;
+      } else {
+        cEl.innerHTML = `<div class="card-sub" style="margin:8px 0;">I don't have map coordinates for one of these cities, so I can't compare distances — but the live train and bus searches below still work.</div>`;
+      }
+    }
+
+    // best pick for what the traveller cares about (cheapest / fastest / comfiest)
+    const pickEl = $("#gr-pick");
+    if (pickEl) {
+      const rank = (fL && tL) ? TRE.rankModes(fL.code, tL.code, g.priority) : null;
+      if (rank) {
+        const modeName = (m) => m === "flight" ? "✈️ Flight" : m === "train" ? "🚆 Train" : "🚌 Bus";
+        const priLabel = { fast: "Fastest door-to-door", cheap: "Cheapest", comfort: "Most comfortable" };
+        const rows = rank.ranked.map((x, i) => `<div class="gr-pick-row ${i === 0 ? "top" : ""}">
+          <span class="gr-pick-rank">${i + 1}</span>
+          <span class="gr-pick-mode">${modeName(x.mode)}</span>
+          <span class="gr-pick-why card-sub">${esc(x.why)}</span></div>`).join("");
+        pickEl.innerHTML = `<div class="gr-pick-box"><div class="gr-pick-head">🎯 For "${esc(priLabel[g.priority] || g.priority)}", my honest order:</div>${rows}
+          <div class="card-sub gr-pick-note">Cost and comfort are general India rules of thumb (overnight trains let you sleep flat; buses are usually cheapest; flights are quick but lose hours at the airport). Real fares live on the booking sites below — open them to confirm.</div></div>`;
+      } else {
+        pickEl.innerHTML = "";
+      }
+    }
+
+    // honest non-stop vs connecting + alternate-route guidance (no fake schedules)
+    const stopsEl = $("#gr-stops");
+    if (stopsEl) {
+      const sg = (fL && tL) ? TRE.stopsGuidance(TRE.compareModes(fL.code, tL.code) ? GEO.distanceKm(fL.code, tL.code) : null) : null;
+      if (sg) {
+        stopsEl.innerHTML = `<div class="gr-stops-box"><div class="gr-stops-head">🧭 Non-stop, connections &amp; smarter routes</div>
+          <div class="gr-stops-row">✈️ <b>Flights:</b> <span class="card-sub">${esc(sg.flight)}</span></div>
+          <div class="gr-stops-row">🚆 <b>Trains:</b> <span class="card-sub">${esc(sg.train)}</span></div>
+          <div class="gr-stops-row">🚌 <b>Buses:</b> <span class="card-sub">${esc(sg.bus)}</span></div></div>`;
+      } else {
+        stopsEl.innerHTML = "";
+      }
+    }
+
+    // outbound links
+    const outSet = groundLinkSet(fromName, toName, g.date);
+    let trainsHtml = outSet.trains, busesHtml = outSet.buses;
+
+    // round trip: add the return-direction link sets too (Indian trains/buses
+    // are booked one leg at a time, so two honest search sets is the real flow)
+    if (round) {
+      const retSet = groundLinkSet(toName, fromName, g.returnDate);
+      trainsHtml = `<div class="gr-leg-tag">↗ Outbound${g.date ? " · " + esc(g.date) : ""}</div>` + outSet.trains
+        + `<div class="gr-leg-tag">↙ Return${g.returnDate ? " · " + esc(g.returnDate) : ""}</div>` + retSet.trains;
+      busesHtml = `<div class="gr-leg-tag">↗ Outbound${g.date ? " · " + esc(g.date) : ""}</div>` + outSet.buses
+        + `<div class="gr-leg-tag">↙ Return${g.returnDate ? " · " + esc(g.returnDate) : ""}</div>` + retSet.buses;
+    }
+    $("#gr-trains").innerHTML = trainsHtml;
+    $("#gr-buses").innerHTML = busesHtml;
+  }
+
   // ===================== MY TRIPS + ITINERARY ============================
   function trips() { if (!state.trips) state.trips = []; return state.trips; }
   function nextSeq() { state.tripSeq = (state.tripSeq || 1) + 1; return state.tripSeq; }
@@ -8403,7 +8915,7 @@ window.LL_DEALS = {
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
     renderAirports(); renderMap(); renderCompare(); renderValue(); renderSuggestions();
     renderFlights(); renderCoupons();
-    renderPlanStats(); renderHotels(); renderOntrip(); renderTrips();
+    renderPlanStats(); renderHotels(); renderOntrip(); renderGround(); renderTrips();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
     if ($("#plan-result") && $("#plan-result").innerHTML.trim()) renderPlanResult();
   }
@@ -8448,6 +8960,7 @@ window.LL_DEALS = {
   wirePlan();
   wireHotels();
   wireOntrip();
+  wireGround();
   wireTripsForm();
   wireDatePickers();
   render();

@@ -7,6 +7,7 @@
   const TE = window.LL_TRIP_ENGINE, HOTELS = window.LL_HOTELS, DEALS = window.LL_DEALS;
   const IT = window.LL_ITINERARY, BUD = window.LL_BUDGET;
   const GEO = window.LL_GEO, LD = window.LL_LIVE;
+  const TR = window.LL_TRANSPORT, TRE = window.LL_TRANSPORT_ENGINE;
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -21,7 +22,7 @@
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -1519,6 +1520,175 @@
     $("#ontrip-result").innerHTML = (city ? `<div class="fl-route"><b>${esc(city)}</b> <span class="card-sub">links tailored to this city where supported</span></div>` : `<div class="card-sub" style="margin:8px 0;">Tip: type a destination city above to tailor the cab/activity links to it.</div>`) + out;
   }
 
+  // ========================= TRAINS & BUSES ==============================
+  function groundState() {
+    if (!state.ground) state.ground = { from: "", to: "", date: "", tripType: "oneway", returnDate: "", priority: "fast" };
+    if (!state.ground.tripType) state.ground.tripType = "oneway";
+    if (!state.ground.priority) state.ground.priority = "fast";
+    return state.ground;
+  }
+  // for a slug, use the city the user typed; if they typed a 3-letter code,
+  // expand it to the airport's city so booking-site route slugs resolve.
+  function slugCityName(input, label) {
+    const v = (input || "").trim();
+    if (/^[A-Za-z]{3}$/.test(v) && label && label.city) return label.city;
+    return v || (label && label.city) || "";
+  }
+  function wireGround() {
+    const g = groundState();
+    if ($("#gr-from")) $("#gr-from").value = g.from || "";
+    if ($("#gr-to")) $("#gr-to").value = g.to || "";
+    if ($("#gr-date")) { $("#gr-date").value = g.date || ""; $("#gr-date").setAttribute("min", todayISO()); }
+    if ($("#gr-return")) { $("#gr-return").value = g.returnDate || ""; $("#gr-return").setAttribute("min", todayISO()); }
+    if ($("#gr-priority")) $("#gr-priority").value = g.priority || "fast";
+    syncGroundTripType();
+    const persist = () => {
+      state.ground = {
+        from: ($("#gr-from") && $("#gr-from").value) || "",
+        to: ($("#gr-to") && $("#gr-to").value) || "",
+        date: ($("#gr-date") && $("#gr-date").value) || "",
+        tripType: ($$("#view-ground [name=gr-trip]:checked")[0] || {}).value || "oneway",
+        returnDate: ($("#gr-return") && $("#gr-return").value) || "",
+        priority: ($("#gr-priority") && $("#gr-priority").value) || "fast",
+      };
+      save();
+    };
+    ["#gr-from", "#gr-to", "#gr-date", "#gr-return"].forEach((s) => { const el = $(s); if (el) el.oninput = persist; });
+    $$("#view-ground [name=gr-trip]").forEach((r) => r.onchange = () => { persist(); syncGroundTripType(); });
+    // priority change re-ranks live if a result is already on screen
+    if ($("#gr-priority")) $("#gr-priority").onchange = () => { persist(); if ($("#gr-trains") && $("#gr-trains").innerHTML.indexOf("empty") === -1 && (groundState().from || "").trim() && (groundState().to || "").trim()) renderGround(); };
+    if ($("#gr-swap")) $("#gr-swap").onclick = () => { const a = $("#gr-from"), b = $("#gr-to"); if (a && b) { const t = a.value; a.value = b.value; b.value = t; persist(); } };
+    if ($("#gr-go")) $("#gr-go").onclick = () => { persist(); renderGround(); const r = $("#gr-compare"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); };
+  }
+  // show/hide the return-date field based on the one-way vs round-trip pick
+  function syncGroundTripType() {
+    const g = groundState();
+    const round = g.tripType === "round";
+    const wrap = $("#gr-return-wrap");
+    if (wrap) wrap.style.display = round ? "" : "none";
+  }
+  // one set of provider links for a single direction + date
+  function groundLinkSet(fromName, toName, dateISO) {
+    const trains = TRE.trainOptions(TR, fromName, toName, dateISO);
+    const buses = TRE.busOptions(TR, fromName, toName, dateISO);
+    const provRow = (o) => {
+      const p = o.provider;
+      const tag = p.type === "official" ? `<span class="chip rail">official</span>` : p.type === "aggregator" ? `<span class="chip">compare</span>` : `<span class="chip">booking site</span>`;
+      const offerChips = (p.offers || []).map((of) => {
+        const code = of.code ? ` <code class="fl-code">${esc(of.code)}</code>` : "";
+        return `<div class="fl-offer"><span class="fl-offer-k">${kindIcon(of.kind)}</span>
+          <span class="fl-offer-t">${esc(of.title)}${code} ${confBadge(of.confidence)}</span>
+          ${of.verify ? `<a class="fl-verify" href="https://${esc(String(of.verify).replace(/^https?:\/\//, ""))}" target="_blank" rel="noopener">verify ↗</a>` : ""}</div>`;
+      }).join("");
+      return `<div class="fl-prov">
+        <div class="fl-prov-head"><div><b>${esc(p.name)}</b> ${tag} ${confBadge(p.confidence)}</div>
+        <a class="act mini fl-open" href="${o.link}" target="_blank" rel="noopener">open live search ↗</a></div>
+        <div class="card-sub fl-note">${esc(p.note)}</div>${offerChips}</div>`;
+    };
+    return {
+      trains: `<div class="fl-group">🚆 Trains · ${esc(fromName)} → ${esc(toName)}</div>` + trains.map(provRow).join(""),
+      buses: `<div class="fl-group">🚌 Buses · ${esc(fromName)} → ${esc(toName)}</div>` + buses.map(provRow).join(""),
+    };
+  }
+  function renderGround() {
+    if (!$("#gr-trains") || !TRE || !TR) return;
+    const g = groundState();
+    const round = g.tripType === "round";
+
+    // tips always render
+    const tipsEl = $("#gr-tips");
+    if (tipsEl) tipsEl.innerHTML = (TR.tips || []).map((t) => `<div class="coupon-row">
+      <div class="cp-main"><div class="cp-title">🎟️ <b>${esc(t.title)}</b> ${confBadge(t.confidence)}</div><div class="card-sub">${esc(t.note)} · ${esc(t.who)}</div></div>
+      <div class="cp-side"><span class="card-sub">checked ${esc(t.lastChecked)}</span></div></div>`).join("");
+
+    const honesty = $("#gr-honesty");
+    if (honesty) honesty.innerHTML = `<b>How this works:</b> distance is the real straight-line distance between the two cities; train and bus durations are honest estimates from that distance (trains average about 55 km/h with stops, buses about 45 km/h), not live timetables. Each link opens the real live search where the actual times, seats and fares live. I never invent a price.`;
+
+    const fromIn = (g.from || "").trim(), toIn = (g.to || "").trim();
+    if (!fromIn || !toIn) {
+      $("#gr-compare").innerHTML = "";
+      $("#gr-trains").innerHTML = `<div class="empty">Enter both cities — I'll work out whether to train, bus or fly, and open the live search on every booking site.</div>`;
+      $("#gr-buses").innerHTML = "";
+      return;
+    }
+    const fL = flAirportLabel(fromIn), tL = flAirportLabel(toIn);
+    const fromName = slugCityName(fromIn, fL), toName = slugCityName(toIn, tL);
+
+    // honest fly-vs-train-vs-bus compare (needs real coords for both ends)
+    const cmp = (fL && tL) ? TRE.compareModes(fL.code, tL.code) : null;
+    const cEl = $("#gr-compare");
+    if (cEl) {
+      if (cmp) {
+        const recLabel = {
+          train_bus: "🚆 Take a train or bus — flying isn't worth it on this short a hop",
+          compare: "🤔 It's a close call — compare all three (an overnight train or bus can save a hotel night)",
+          fly_or_overnight_train: "✈️ Flying is usually the practical pick — but an overnight train is the cheap option",
+          fly: "✈️ Fly — it's the only sensible option over this distance",
+        };
+        const modeCard = (m) => `<div class="gr-mode">
+          <div class="gr-mode-h">${m.icon} <b>${m.mode === "flight" ? "Flight" : m.mode === "train" ? "Train" : "Bus"}</b></div>
+          <div class="gr-mode-time">${esc(m.timeLabel)}</div>
+          ${m.d2dLabel ? `<div class="card-sub gr-mode-d2d">${esc(m.d2dLabel)}</div>` : ""}
+          <div class="card-sub">${esc(m.note)}</div>
+          <div class="card-sub gr-mode-cost">cost: ${esc(m.costLean)}</div>
+        </div>`;
+        cEl.innerHTML = `<div class="gr-rec"><div class="gr-rec-dist">📏 ${cmp.km.toLocaleString("en-IN")} km between <b>${esc(fL.city)}</b> and <b>${esc(tL.city)}</b> <span class="card-sub">(straight-line)</span></div>
+          <div class="gr-rec-band">${recLabel[cmp.recommend] || ""}</div></div>
+          <div class="gr-modes">${cmp.modes.map(modeCard).join("")}</div>`;
+      } else {
+        cEl.innerHTML = `<div class="card-sub" style="margin:8px 0;">I don't have map coordinates for one of these cities, so I can't compare distances — but the live train and bus searches below still work.</div>`;
+      }
+    }
+
+    // best pick for what the traveller cares about (cheapest / fastest / comfiest)
+    const pickEl = $("#gr-pick");
+    if (pickEl) {
+      const rank = (fL && tL) ? TRE.rankModes(fL.code, tL.code, g.priority) : null;
+      if (rank) {
+        const modeName = (m) => m === "flight" ? "✈️ Flight" : m === "train" ? "🚆 Train" : "🚌 Bus";
+        const priLabel = { fast: "Fastest door-to-door", cheap: "Cheapest", comfort: "Most comfortable" };
+        const rows = rank.ranked.map((x, i) => `<div class="gr-pick-row ${i === 0 ? "top" : ""}">
+          <span class="gr-pick-rank">${i + 1}</span>
+          <span class="gr-pick-mode">${modeName(x.mode)}</span>
+          <span class="gr-pick-why card-sub">${esc(x.why)}</span></div>`).join("");
+        pickEl.innerHTML = `<div class="gr-pick-box"><div class="gr-pick-head">🎯 For "${esc(priLabel[g.priority] || g.priority)}", my honest order:</div>${rows}
+          <div class="card-sub gr-pick-note">Cost and comfort are general India rules of thumb (overnight trains let you sleep flat; buses are usually cheapest; flights are quick but lose hours at the airport). Real fares live on the booking sites below — open them to confirm.</div></div>`;
+      } else {
+        pickEl.innerHTML = "";
+      }
+    }
+
+    // honest non-stop vs connecting + alternate-route guidance (no fake schedules)
+    const stopsEl = $("#gr-stops");
+    if (stopsEl) {
+      const sg = (fL && tL) ? TRE.stopsGuidance(TRE.compareModes(fL.code, tL.code) ? GEO.distanceKm(fL.code, tL.code) : null) : null;
+      if (sg) {
+        stopsEl.innerHTML = `<div class="gr-stops-box"><div class="gr-stops-head">🧭 Non-stop, connections &amp; smarter routes</div>
+          <div class="gr-stops-row">✈️ <b>Flights:</b> <span class="card-sub">${esc(sg.flight)}</span></div>
+          <div class="gr-stops-row">🚆 <b>Trains:</b> <span class="card-sub">${esc(sg.train)}</span></div>
+          <div class="gr-stops-row">🚌 <b>Buses:</b> <span class="card-sub">${esc(sg.bus)}</span></div></div>`;
+      } else {
+        stopsEl.innerHTML = "";
+      }
+    }
+
+    // outbound links
+    const outSet = groundLinkSet(fromName, toName, g.date);
+    let trainsHtml = outSet.trains, busesHtml = outSet.buses;
+
+    // round trip: add the return-direction link sets too (Indian trains/buses
+    // are booked one leg at a time, so two honest search sets is the real flow)
+    if (round) {
+      const retSet = groundLinkSet(toName, fromName, g.returnDate);
+      trainsHtml = `<div class="gr-leg-tag">↗ Outbound${g.date ? " · " + esc(g.date) : ""}</div>` + outSet.trains
+        + `<div class="gr-leg-tag">↙ Return${g.returnDate ? " · " + esc(g.returnDate) : ""}</div>` + retSet.trains;
+      busesHtml = `<div class="gr-leg-tag">↗ Outbound${g.date ? " · " + esc(g.date) : ""}</div>` + outSet.buses
+        + `<div class="gr-leg-tag">↙ Return${g.returnDate ? " · " + esc(g.returnDate) : ""}</div>` + retSet.buses;
+    }
+    $("#gr-trains").innerHTML = trainsHtml;
+    $("#gr-buses").innerHTML = busesHtml;
+  }
+
   // ===================== MY TRIPS + ITINERARY ============================
   function trips() { if (!state.trips) state.trips = []; return state.trips; }
   function nextSeq() { state.tripSeq = (state.tripSeq || 1) + 1; return state.tripSeq; }
@@ -2228,7 +2398,7 @@
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
     renderAirports(); renderMap(); renderCompare(); renderValue(); renderSuggestions();
     renderFlights(); renderCoupons();
-    renderPlanStats(); renderHotels(); renderOntrip(); renderTrips();
+    renderPlanStats(); renderHotels(); renderOntrip(); renderGround(); renderTrips();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
     if ($("#plan-result") && $("#plan-result").innerHTML.trim()) renderPlanResult();
   }
@@ -2273,6 +2443,7 @@
   wirePlan();
   wireHotels();
   wireOntrip();
+  wireGround();
   wireTripsForm();
   wireDatePickers();
   render();

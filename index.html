@@ -45,6 +45,7 @@
       <button data-view="trips">🗂️ My Trips</button>
       <button data-view="flights">✈️ Flights</button>
       <button data-view="hotels">🏨 Hotels</button>
+      <button data-view="ground">🚆 Trains &amp; Buses</button>
       <button data-view="ontrip">🧳 On-Trip Deals</button>
       <button data-view="coupons">🎟️ Coupons &amp; Offers</button>
       <button data-view="wallet">💳 My Cards</button>
@@ -151,6 +152,46 @@
       <div class="section-h">🏨 Hotel money-saving plays</div>
       <div id="hotel-coupons"></div>
       <div class="honesty-note" id="hotel-honesty"></div>
+    </section>
+
+    <!-- TRAINS & BUSES (ground transport, multi-modal compare) -->
+    <section id="view-ground" class="view">
+      <div class="hero">
+        <h2>Trains &amp; buses — and is it even worth flying?</h2>
+        <p>Put in your two cities and I work out the real distance, then tell you honestly whether to take a train, a bus, or fly. I open the live search on every booking site for your route. Real fares and timetables stay on the real sites — I never invent a price.</p>
+      </div>
+      <div class="flight-builder">
+        <div class="fb-row triptype" role="radiogroup" aria-label="Trip type">
+          <label class="trip-opt"><input type="radio" name="gr-trip" value="oneway" checked /> <span>One way</span></label>
+          <label class="trip-opt"><input type="radio" name="gr-trip" value="round" /> <span>Round trip</span></label>
+        </div>
+        <div class="fb-row">
+          <input class="fb-input" id="gr-from" placeholder="From (city or code)" list="fl-airport-list" autocomplete="off" aria-label="From city" />
+          <button class="act ghost mini" id="gr-swap" title="Swap" aria-label="Swap origin and destination">⇄</button>
+          <input class="fb-input" id="gr-to" placeholder="To (city or code)" list="fl-airport-list" autocomplete="off" aria-label="To city" />
+        </div>
+        <div class="fb-row">
+          <label class="tp-lbl">Travel date <input class="fb-input" id="gr-date" type="date" aria-label="Travel date" /></label>
+          <label class="tp-lbl" id="gr-return-wrap" style="display:none;">Return date <input class="fb-input" id="gr-return" type="date" aria-label="Return date" /></label>
+          <label class="tp-lbl">What matters most?
+            <select class="fb-input" id="gr-priority" aria-label="What matters most">
+              <option value="fast">Fastest (door to door)</option>
+              <option value="cheap">Cheapest</option>
+              <option value="comfort">Most comfortable</option>
+            </select>
+          </label>
+          <button class="act big" id="gr-go">Compare ways to get there →</button>
+        </div>
+      </div>
+
+      <div id="gr-compare"></div>
+      <div id="gr-pick"></div>
+      <div id="gr-stops"></div>
+      <div id="gr-trains"></div>
+      <div id="gr-buses"></div>
+      <div class="section-h">🎟️ Train &amp; bus money-saving plays</div>
+      <div id="gr-tips"></div>
+      <div class="honesty-note" id="gr-honesty"></div>
     </section>
 
     <!-- ON-TRIP DEALS (cabs, eSIM/forex, dining, activities) -->
@@ -582,6 +623,7 @@
   <script src="data/flights.js"></script>
   <script src="data/hotels.js"></script>
   <script src="data/deals.js"></script>
+  <script src="data/transport.js"></script>
   <script src="brand.js"></script>
   <script src="engine.js"></script>
   <script src="flight-engine.js"></script>
@@ -591,6 +633,7 @@
   <script src="budget-engine.js"></script>
   <script src="geo-engine.js"></script>
   <script src="live-data.js"></script>
+  <script src="transport-engine.js"></script>
   <script src="selfcheck.js"></script>
   <script src="profile.js"></script>
   <script src="auth.js"></script>
