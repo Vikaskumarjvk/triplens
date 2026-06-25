@@ -14,6 +14,10 @@
   const HIST = window.LL_HISTORY;
   const HOL = window.LL_HOLIDAY, HOLIDAYS = window.LL_HOLIDAYS;
   const BRIEF = window.LL_BRIEF;
+  const READY = window.LL_READINESS;
+  // international hubs in our data — the ONE source for "is this trip international?".
+  // shared by autoWeatherFlags + the readiness checklist so they never disagree.
+  const INTL_CODES = ["DXB", "SIN", "BKK", "LHR", "JFK"];
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
@@ -2113,14 +2117,14 @@
     const coords = code && GEO.AIRPORT_COORDS[code];
     if (!coords) return;
     // mark intl if the destination is one of the known intl hubs
-    const INTL = new Set(["DXB", "SIN", "BKK", "LHR", "JFK"]);
+    const isIntl = INTL_CODES.indexOf(code) !== -1;
     LD.getWeather(coords[0], coords[1], 14).then((wx) => {
       const s = wx.parsed && wx.parsed.suggest; if (!s) return;
       t.packFlags = t.packFlags || {};
       let changed = false;
       const setFlag = (k, v) => { if (v && !t.packFlags[k]) { t.packFlags[k] = true; changed = true; } };
       setFlag("cold", s.cold); setFlag("monsoon", s.monsoon);
-      if (INTL.has(code) && !t.packFlags.intl) { t.packFlags.intl = true; changed = true; }
+      if (isIntl && !t.packFlags.intl) { t.packFlags.intl = true; changed = true; }
       if (changed) { save(); if (state.openTripId === t.id) renderTrips(); }
     }).catch(() => {});
   }
@@ -2265,8 +2269,63 @@
       }</div>`).join("")}
       <p class="card-sub" style="margin-top:8px;">Tick the trip flags above to tailor the list. Checks save to this trip.</p>`;
 
-    return head + `<div class="itin-days">${days}</div>` + budgetBlock(t) + packing +
+    return head + readinessBlock(t) + `<div class="itin-days">${days}</div>` + budgetBlock(t) + packing +
       `<div class="honesty-note" style="margin-top:14px;">Your itinerary, budget + links are saved on this device only. The links open the real booking sites. Every rupee in the budget is a number you typed — TripLens never guesses a price. Export to share the whole plan.</div>`;
+  }
+
+  // pre-departure readiness block: countdown + tickable checklist (docs/money/packing).
+  // honest by design — never claims you need a visa, just links you to check. intl
+  // decided by the shared INTL_CODES list, not guessed.
+  function readinessBlock(t) {
+    if (!READY) return "";
+    const dest = TE ? TE.resolvePlace(t.to, FLIGHTS) : null;
+    const toCode = (dest && dest.code) || "";
+    // map the trip's packing flags into weather flags the engine understands
+    const pf = t.packFlags || {};
+    const weather = (pf.monsoon || pf.cold) ? { monsoon: !!pf.monsoon, cold: !!pf.cold } : null;
+    const c = READY.buildChecklist(
+      { toCode: toCode, toCity: t.to, nights: t.nights },
+      { intlCodes: INTL_CODES, hasCards: state.wallet.length > 0, weather: weather }
+    );
+    const checked = (t.readiness && t.readiness.checked) || {};
+    const p = READY.progress(c.items, checked);
+
+    // countdown (only if the trip has a depart date)
+    let countdown = "";
+    if (t.depart) {
+      const n = READY.daysToGo(t.depart, todayISO());
+      if (n != null) {
+        const cls = n < 0 ? "rail" : n <= 2 ? "warn" : "";
+        countdown = `<span class="chip ${cls}">🗓️ ${esc(READY.countdownLabel(n))}</span>`;
+      }
+    }
+
+    // group items by their group label, render in a stable order
+    const order = ["Documents", "Bookings", "Money", "Packing"];
+    const byGroup = {};
+    c.items.forEach((i) => { (byGroup[i.group] = byGroup[i.group] || []).push(i); });
+    const groups = order.filter((g) => byGroup[g]).map((g) => {
+      const rows = byGroup[g].map((i) => {
+        const on = checked[i.id] || (i.auto && checked[i.id] !== false);
+        const link = i.link ? ` <a class="fl-verify" href="${esc(i.link)}" target="_blank" rel="noopener">check ↗</a>` : "";
+        const autoTag = i.auto ? ` <span class="chip auto">auto</span>` : "";
+        return `<label class="rd-item ${on ? "done" : ""}">
+          <input type="checkbox" class="rd-chk" data-rdkey="${esc(i.id)}" ${on ? "checked" : ""} />
+          <span class="rd-body"><b>${esc(i.label)}</b>${autoTag}${link}<span class="card-sub">${esc(i.hint)}</span></span>
+        </label>`;
+      }).join("");
+      return `<div class="rd-group"><div class="rd-group-h">${esc(g)}</div>${rows}</div>`;
+    }).join("");
+
+    const readyTag = p.ready
+      ? `<span class="chip ok">✅ ready to go</span>`
+      : `<span class="card-sub">${p.done}/${p.total} done</span>`;
+
+    return `<div class="section-h" id="itin-ready">🧳 Trip readiness ${countdown}</div>
+      <div class="rd-bar"><div class="rd-bar-fill" style="width:${p.pct}%;"></div></div>
+      <div class="rd-meta">${readyTag}${c.international ? ` <span class="chip">🌍 international</span>` : ""}</div>
+      ${groups}
+      <p class="card-sub" style="margin-top:8px;">This is a checklist, not a rule. On visas I only point you to the official source — your passport + destination decide it, not me. Checks save to this trip.</p>`;
   }
 
   // budget tracker block for a trip (your numbers only, never fabricated)
@@ -2359,6 +2418,12 @@
       if (c.checked) t.packing.checked[c.dataset.key] = 1; else delete t.packing.checked[c.dataset.key];
       save();
       const lbl = c.closest(".pack-item"); if (lbl) lbl.classList.toggle("done", c.checked);
+    });
+    // readiness checklist checks — persist explicit true/false so auto items can be un-ticked
+    $$(".rd-chk").forEach((c) => c.onchange = () => {
+      t.readiness = t.readiness || { checked: {} }; t.readiness.checked = t.readiness.checked || {};
+      t.readiness.checked[c.dataset.rdkey] = c.checked;
+      save(); renderTrips();
     });
 
     // ---- budget handlers ----

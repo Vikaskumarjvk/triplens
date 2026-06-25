@@ -51,6 +51,7 @@ js_files = [
     "history-engine.js",
     "holiday-engine.js",
     "brief-engine.js",
+    "readiness-engine.js",
     "selfcheck.js",
     "profile.js",
     "auth.js",
