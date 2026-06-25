@@ -42,6 +42,7 @@
     </div>
     <nav id="main-nav">
       <button data-view="plan" class="active">🧭 Plan a Trip</button>
+      <button data-view="explore">🧭 Where to?</button>
       <button data-view="multicity">🗺️ Multi-city</button>
       <button data-view="longweekend">🏖️ Long Weekends</button>
       <button data-view="trips">🗂️ My Trips</button>
@@ -196,6 +197,24 @@
       <div class="section-h">🎟️ Train &amp; bus money-saving plays</div>
       <div id="gr-tips"></div>
       <div class="honesty-note" id="gr-honesty"></div>
+    </section>
+
+    <!-- EXPLORE ("Where to?" — rank real destinations on honest facts) -->
+    <section id="view-explore" class="view">
+      <div class="hero">
+        <h2>Where to? — let the trip find you</h2>
+        <p>Not sure where to go? Tell me where you're starting and what matters, and I'll rank real destinations on facts I can prove — how far, fly or train, and how many lounges your cards actually open there. Then open the live search to see the real price. No invented fares, no fake "from ₹X".</p>
+      </div>
+      <div class="flight-builder">
+        <div class="fb-row">
+          <input class="fb-input" id="xp-from" placeholder="Starting city (e.g. Delhi)" list="hotel-city-list" autocomplete="off" aria-label="Starting city" />
+          <button class="act" id="xp-go">Find places →</button>
+        </div>
+        <div class="fb-row" id="xp-priorities" role="group" aria-label="What matters most"></div>
+      </div>
+
+      <div id="xp-list"></div>
+      <div class="honesty-note" id="xp-honesty"></div>
     </section>
 
     <!-- MULTI-CITY (chain stops, per-leg fly/train/bus compare + links) -->
@@ -695,6 +714,7 @@
   <script src="holiday-engine.js"></script>
   <script src="brief-engine.js"></script>
   <script src="readiness-engine.js"></script>
+  <script src="explore-engine.js"></script>
   <script src="selfcheck.js"></script>
   <script src="profile.js"></script>
   <script src="auth.js"></script>

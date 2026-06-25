@@ -15,6 +15,7 @@
   const HOL = window.LL_HOLIDAY, HOLIDAYS = window.LL_HOLIDAYS;
   const BRIEF = window.LL_BRIEF;
   const READY = window.LL_READINESS;
+  const XP = window.LL_EXPLORE;
   // international hubs in our data — the ONE source for "is this trip international?".
   // shared by autoWeatherFlags + the readiness checklist so they never disagree.
   const INTL_CODES = ["DXB", "SIN", "BKK", "LHR", "JFK"];
@@ -32,7 +33,7 @@
       return s && s.wallet ? s : blank();
     } catch (e) { return blank(); }
   }
-  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, multicity: ["", "", ""], watches: [], searches: [], lw: { year: 0, custom: [] }, trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
+  function blank() { return { wallet: [], visitLog: [], spend: {}, mode: "simple", trip: ["Hyderabad", ""], experiences: [], onboarded: false, profileName: "", suggestions: [], flight: { from: "", to: "", date: "" }, plan: { from: "", to: "", depart: "", nights: 3, adults: 2 }, hotel: { city: "", checkin: "", checkout: "", adults: 2 }, ontrip: { city: "" }, ground: { from: "", to: "", date: "" }, multicity: ["", "", ""], watches: [], searches: [], lw: { year: 0, custom: [] }, explore: { from: "", priority: "balanced" }, trips: [], openTripId: null, tripSeq: 1, fx: { from: "INR", to: "USD", amount: 1000 } }; }
 
   // account store (login): { username: { pinHash, data } } + the active username
   const ACCT_KEY = "loungelens.accounts";
@@ -1987,6 +1988,121 @@
     }
   }
 
+  // ===================== EXPLORE ("Where to?") ===========================
+  function exploreState() {
+    if (!state.explore) state.explore = { from: "", priority: "balanced" };
+    if (!state.explore.priority) state.explore.priority = "balanced";
+    return state.explore;
+  }
+
+  // the destination universe: every airport we can measure a distance to, tagged
+  // with intl from the shared INTL_CODES list. Real codes only, no invented places.
+  function exploreDests() {
+    const airports = (FLIGHTS && FLIGHTS.airports) || [];
+    return airports
+      .filter((a) => GEO && GEO.hasCoords(a.code))
+      .map((a) => ({ code: a.code, city: a.city, intl: INTL_CODES.indexOf(a.code) !== -1 }));
+  }
+
+  // a closure that counts how many lounges the user's wallet actually opens in a
+  // city (by code). Zero when no wallet — the engine then ranks on distance only.
+  function loungeOpenCounter() {
+    const byCode = {};
+    return (code) => {
+      if (!TE || !code) return 0;
+      if (byCode[code] != null) return byCode[code];
+      // find the city name for this code so loungesAtCity can match on city
+      const ap = ((FLIGHTS && FLIGHTS.airports) || []).find((a) => a.code === code);
+      const city = ap ? ap.city : code;
+      const res = TE.loungesAtCity(city, state.wallet, CARDS, LOUNGES, state.visitLog, state.spend, NOW);
+      byCode[code] = res ? res.openCount : 0;
+      return byCode[code];
+    };
+  }
+
+  function wireExplore() {
+    if (!XP) return;
+    const st = exploreState();
+    const fromEl = $("#xp-from");
+    if (fromEl) {
+      fromEl.value = st.from || "";
+      fromEl.oninput = () => { st.from = fromEl.value; save(); };
+      fromEl.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); st.from = fromEl.value; save(); renderExplore(); } };
+    }
+    // priority chips
+    const pr = $("#xp-priorities");
+    if (pr) {
+      pr.innerHTML = XP.PRIORITIES.map((p) =>
+        `<button class="chip toggle xp-pri ${st.priority === p.id ? "on" : ""}" data-xp-pri="${p.id}" title="${esc(p.hint)}">${esc(p.label)}</button>`
+      ).join("");
+      $$("[data-xp-pri]").forEach((b) => b.onclick = () => {
+        st.priority = b.dataset.xpPri; save();
+        $$(".xp-pri").forEach((x) => x.classList.toggle("on", x.dataset.xpPri === st.priority));
+        if (st.from && st.from.trim()) renderExplore();
+      });
+    }
+    if ($("#xp-go")) $("#xp-go").onclick = () => { const fe = $("#xp-from"); if (fe) st.from = fe.value; save(); renderExplore(); };
+  }
+
+  function renderExplore() {
+    const wrap = $("#xp-list"); if (!wrap || !XP) return;
+    const st = exploreState();
+    const honesty = $("#xp-honesty");
+    const fromInput = (st.from || "").trim();
+    if (!fromInput) {
+      wrap.innerHTML = `<div class="empty">Type where you're starting from, pick what matters, and I'll find places worth the trip.</div>`;
+      if (honesty) honesty.innerHTML = "";
+      return;
+    }
+    const origin = TE ? TE.resolvePlace(fromInput, FLIGHTS) : null;
+    if (!origin || !origin.code || !GEO || !GEO.hasCoords(origin.code)) {
+      wrap.innerHTML = `<div class="empty">I don't have ${esc(fromInput)} on the map yet, so I can't measure distances from there. Try a major city (Delhi, Mumbai, Bengaluru, Hyderabad, Chennai, Kolkata...).</div>`;
+      if (honesty) honesty.innerHTML = "";
+      return;
+    }
+
+    const ranked = XP.rank(origin, exploreDests(), { distanceKm: GEO.distanceKm, loungeOpenCount: loungeOpenCounter() }, { priority: st.priority, limit: 9, measurableOnly: true });
+    const prLabel = (XP.PRIORITIES.find((p) => p.id === st.priority) || {}).label || "Balanced";
+    const flyProv = (FLIGHTS.providers || []).find((p) => p.id === "google-flights");
+
+    const modeIcon = { train: "🚆", either: "🚆/✈️", fly: "✈️", unknown: "•" };
+    const cards = ranked.map((d) => {
+      const flyLink = flyProv && FE ? FE.buildLink(flyProv, origin.code, d.code, "") : null;
+      const tag = d.international ? `<span class="chip">🌍 intl</span>` : "";
+      const lounge = d.loungeOpen > 0 ? `<span class="chip ok">🛋️ ${d.loungeOpen} open</span>` : "";
+      const kmLine = d.km != null ? `${d.km} km · ${modeIcon[d.mode] || "•"} ${esc(d.modeLabel)}` : "distance unknown";
+      const open = flyLink ? `<a class="plan-link" href="${esc(flyLink)}" target="_blank" rel="noopener"><span>see flights</span><span class="pl-go">open ↗</span></a>` : "";
+      return `<div class="xp-card">
+        <div class="xp-head">
+          <div class="xp-city"><b>${esc(d.city)}</b> <span class="card-sub">${esc(d.code)}</span></div>
+          <div class="xp-tags">${lounge}${tag}</div>
+        </div>
+        <div class="card-sub xp-km">${kmLine}</div>
+        <div class="xp-why">${esc(d.why)}</div>
+        <div class="xp-actions">
+          ${open}
+          <button class="act ghost mini" data-xp-plan="${esc(d.city)}">Plan this trip →</button>
+        </div>
+      </div>`;
+    }).join("");
+
+    wrap.innerHTML = `<div class="section-h">From ${esc(origin.city)} · ${esc(prLabel)} <span class="card-sub" style="font-weight:400;">${ranked.length} places</span></div>
+      <div class="xp-grid">${cards}</div>`;
+
+    // "Plan this trip" prefills the Plan view with this origin -> dest and jumps there
+    $$("[data-xp-plan]").forEach((b) => b.onclick = () => {
+      const p = planState();
+      p.from = origin.city; p.to = b.dataset.xpPlan;
+      save();
+      showView("plan", true);
+      if ($("#tp-from")) $("#tp-from").value = origin.city;
+      if ($("#tp-to")) $("#tp-to").value = b.dataset.xpPlan;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    if (honesty) honesty.innerHTML = `Ranked on facts I can prove — real distance, your real wallet's lounge access, and a distance-based fly/train hint. The score is a transparent blend of those, not a magic number. I never invent a price; tap a place to open the live flight search and see the real fare.`;
+  }
+
   // ===================== LONG WEEKENDS ===================================
   function lwState() {
     if (!state.lw) state.lw = { year: 0, custom: [] };
@@ -2972,7 +3088,7 @@
     renderWallet(); renderLounges(); renderRecommend(); renderAddCard(); renderHealth(); renderProfile();
     renderAirports(); renderMap(); renderCompare(); renderValue(); renderSuggestions();
     renderFlights(); renderCoupons();
-    renderPlanStats(); renderHotels(); renderOntrip(); renderGround(); renderWatches(); renderRecentSearches(); renderLongWeekend(); renderTrips();
+    renderPlanStats(); renderHotels(); renderOntrip(); renderGround(); renderWatches(); renderRecentSearches(); renderLongWeekend(); renderExplore(); renderTrips();
     if ($("#trip-result").innerHTML.trim()) renderTripResult();
     if ($("#plan-result") && $("#plan-result").innerHTML.trim()) renderPlanResult();
   }
@@ -3020,6 +3136,7 @@
   wireGround();
   wireMulticity();
   wireLongWeekend();
+  wireExplore();
   wireTripsForm();
   wireDatePickers();
   render();

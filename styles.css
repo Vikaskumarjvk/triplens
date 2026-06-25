@@ -1071,6 +1071,19 @@ button.act:disabled { opacity: .38; cursor: not-allowed; transform: none; box-sh
 .rd-body .card-sub { font-size: 12.5px; line-height: 1.35; }
 .rd-item.done > .rd-body > b { color: var(--dim-2); text-decoration: line-through; }
 
+/* --- Explore "Where to?" (added 2026-06-26) --- */
+.chip.toggle.xp-pri { cursor: pointer; }
+.chip.toggle.xp-pri.on { color: var(--good); border-color: rgba(54, 211, 153, 0.4); background: var(--good-dim); }
+.xp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin: 10px 0; }
+.xp-card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: 13px 15px; box-shadow: var(--shadow-1); display: flex; flex-direction: column; gap: 6px; }
+.xp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.xp-city { font-size: 15px; }
+.xp-tags { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+.xp-km { font-size: 12.5px; }
+.xp-why { font-size: 13.5px; color: var(--txt); }
+.xp-actions { display: flex; gap: 8px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+.xp-actions .plan-link { flex: 1; min-width: 120px; }
+
 /* --- Budget tracker (added 2026-06-24) --- */
 .bud-set { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 12px; }
 .bud-line { font-size: 14.5px; margin: 8px 0; }
