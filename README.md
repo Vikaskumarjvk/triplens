@@ -62,8 +62,9 @@ Run the tests (pure engines, Node):
 node tests.js          # lounge engine
 node tests-trip.js     # trip optimizer
 node tests-itinerary.js
-node tests-budget.js
-# full suite: 306 assertions across 11 files, all green
+node tests-geo.js      # distance foundation (haversine accuracy + picker coverage)
+node tests-explore.js  # "where to?" destination ranker
+# full suite: 526 assertions across 22 files, all green
 ```
 
 ## Architecture
@@ -120,7 +121,7 @@ verify queue, so stale data is flagged rather than trusted blindly.
 > lounge overhaul, tagged low-confidence; a research+verify pass bumps records to verified as
 > it confirms them against issuer pages. Booking-site offers describe recurring mechanisms, not
 > guaranteed live codes. **Desk-check spend gates, visit counts and today's offer terms before
-> a trip.** The engines and UX are fully verified (306 tests + browser runs).
+> a trip.** The engines and UX are fully verified (526 tests + browser runs).
 
 ## Known limitations (tracked, not hidden)
 
