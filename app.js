@@ -366,7 +366,17 @@
   }
 
   function wireGoto() {
-    $$("[data-goto]").forEach((el) => el.onclick = () => showView(el.dataset.goto, true));
+    $$("[data-goto]").forEach((el) => {
+      const go = () => showView(el.dataset.goto, true);
+      el.onclick = go;
+      // a11y: spans-as-links must be keyboard operable like a real button.
+      // real <button>/<a> already are, so only upgrade the others.
+      if (el.tagName !== "BUTTON" && el.tagName !== "A") {
+        if (!el.hasAttribute("role")) el.setAttribute("role", "button");
+        if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+        el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+      }
+    });
   }
 
   // ============================ WALLET ====================================
@@ -644,9 +654,9 @@
           <button class="seg-btn ${addF.type === "debit" ? "on" : ""}" data-addtype="debit">🏧 Debit ${nDebit}</button>
         </div>
         <div class="filter-controls">
-          <select class="cmp-select" id="add-issuer">${issuerOpts}</select>
-          <select class="cmp-select" id="add-network">${netOpts}</select>
-          <select class="cmp-select" id="add-sort">${sortOpts}</select>
+          <select class="cmp-select" id="add-issuer" aria-label="Filter cards by issuer">${issuerOpts}</select>
+          <select class="cmp-select" id="add-network" aria-label="Filter cards by network">${netOpts}</select>
+          <select class="cmp-select" id="add-sort" aria-label="Sort cards">${sortOpts}</select>
           <label class="chip toggle"><input type="checkbox" id="add-hidenolounge" ${addF.hideNoLounge ? "checked" : ""} /> Lounge cards only</label>
           <label class="chip toggle"><input type="checkbox" id="add-ltf" ${addF.lifetimeFree ? "checked" : ""} /> Lifetime-free</label>
         </div>

@@ -277,6 +277,10 @@ main { max-width: 940px; margin: 0 auto; padding: 22px 18px 0; }
   border-radius: var(--r-pill); padding: 4px 10px;
   font-size: 11px; color: var(--dim); font-weight: 600; white-space: nowrap;
 }
+/* Contrast note: a CSS linter flags these chips as low-contrast because it can't
+   composite the translucent --*-dim backgrounds over the dark page. Measured on the
+   real rendered pixels they all clear WCAG AA: good 7.27:1, bad 5.62:1, warn 8.37:1,
+   rail 5.78:1 (AA needs 4.5:1). Do NOT "fix" these — they already pass. */
 .chip.rail { color: var(--rail); border-color: rgba(192, 139, 255, 0.3); background: var(--rail-dim); }
 .chip.good { color: var(--good); border-color: rgba(54, 211, 153, 0.32); background: var(--good-dim); }
 .chip.warn { color: var(--warn); border-color: rgba(251, 191, 36, 0.32); background: var(--warn-dim); }
@@ -1313,7 +1317,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         <p class="card-sub" style="margin-bottom:8px;">Someone sent you a trip file? Import it here — it's added to your trips.</p>
         <div class="row">
           <button class="act ghost mini" id="trip-import-btn">⬆️ Import a trip file</button>
-          <input type="file" id="trip-import-file" accept="application/json,.json" style="display:none;" />
+          <input type="file" id="trip-import-file" aria-label="Import a trip file" accept="application/json,.json" style="display:none;" />
         </div>
       </div>
     </section>
@@ -1351,8 +1355,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       </div>
       <div class="flight-builder">
         <div class="fb-row triptype" role="radiogroup" aria-label="Trip type">
-          <label class="trip-opt"><input type="radio" name="gr-trip" value="oneway" checked /> <span>One way</span></label>
-          <label class="trip-opt"><input type="radio" name="gr-trip" value="round" /> <span>Round trip</span></label>
+          <label class="trip-opt"><input type="radio" name="gr-trip" value="oneway" aria-label="One way" checked />  <span>One way</span></label>
+          <label class="trip-opt"><input type="radio" name="gr-trip" value="round" aria-label="Round trip" /> <span>Round trip</span></label>
         </div>
         <div class="fb-row">
           <input class="fb-input" id="gr-from" placeholder="From (city or code)" list="fl-airport-list" autocomplete="off" aria-label="From city" />
@@ -1493,9 +1497,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       </div>
       <div class="flight-builder">
         <div class="fb-row">
-          <input class="fb-input" id="fl-from" placeholder="From (city or code)" list="fl-airport-list" autocomplete="off" />
+          <input class="fb-input" id="fl-from" aria-label="Flight origin" placeholder="From (city or code)" list="fl-airport-list" autocomplete="off" />
           <button class="act ghost mini" id="fl-swap" title="Swap" aria-label="Swap origin and destination">⇄</button>
-          <input class="fb-input" id="fl-to" placeholder="To (city or code)" list="fl-airport-list" autocomplete="off" />
+          <input class="fb-input" id="fl-to" aria-label="Flight destination" placeholder="To (city or code)" list="fl-airport-list" autocomplete="off" />
         </div>
         <div class="fb-row">
           <input class="fb-input" id="fl-date" type="date" aria-label="Travel date" />
@@ -1527,8 +1531,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
             <li>Paste them below. Keep environment on <b>Test</b> to start (free, sample inventory). Switch to <b>Production</b> once you add a card on Amadeus for real fares.</li>
           </ol>
           <div class="fb-row">
-            <input class="fb-input" id="fl-key-id" placeholder="API Key (client id)" autocomplete="off" />
-            <input class="fb-input" id="fl-key-secret" type="password" placeholder="API Secret" autocomplete="off" />
+            <input class="fb-input" id="fl-key-id" aria-label="Amadeus API key (client id)" placeholder="API Key (client id)" autocomplete="off" />
+            <input class="fb-input" id="fl-key-secret" aria-label="Amadeus API secret" type="password" placeholder="API Secret" autocomplete="off" />
           </div>
           <div class="fb-row">
             <select class="fb-input" id="fl-key-env" aria-label="Amadeus environment">
@@ -1560,7 +1564,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
           <button class="seg-btn" data-ck="app">📱 App</button>
           <button class="seg-btn" data-ck="coupon">🎟️ Coupon</button>
         </div>
-        <label class="check"><input type="checkbox" id="coupon-mine" /> Only offers for cards I hold</label>
+        <label class="check"><input type="checkbox" id="coupon-mine" aria-label="Show only offers for cards in my wallet" /> Only offers for cards I hold</label>
       </div>
       <div id="coupon-list"></div>
     </section>
@@ -1579,7 +1583,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         <p>Tell me your cities. I'll show exactly which lounges you can walk into, and which card to flash at each one.</p>
       </div>
       <div class="trip-builder">
-        <div class="leg-row"><span class="leg-pin">🏠</span><input class="leg-input" id="leg-from" placeholder="From (e.g. Hyderabad)" list="city-list" /></div>
+        <div class="leg-row"><span class="leg-pin">🏠</span><input class="leg-input" id="leg-from" aria-label="Lounge trip origin" placeholder="From (e.g. Hyderabad)" list="city-list" /></div>
         <div id="leg-extra"></div>
         <button class="act ghost mini" id="add-leg">➕ add a stop / destination</button>
         <datalist id="city-list"></datalist>
@@ -1605,18 +1609,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         Amber = you have a card but a spend gate or empty quota blocks it.
       </div>
       <div class="filters">
-        <input id="lounge-search" placeholder="Search city, airport, station…" />
-        <select id="lounge-type">
+        <input id="lounge-search" aria-label="Search lounges by city, airport or station" placeholder="Search city, airport, station…" />
+        <select id="lounge-type" aria-label="Filter lounges by type">
           <option value="">✈️ + 🚆 All</option>
           <option value="airport">✈️ Airport</option>
           <option value="railway">🚆 Railway</option>
         </select>
-        <select id="lounge-city"><option value="">All cities</option></select>
-        <select id="lounge-filter">
+        <select id="lounge-city" aria-label="Filter lounges by city"><option value="">All cities</option></select>
+        <select id="lounge-filter" aria-label="Filter lounges by access">
           <option value="all">All lounges</option>
           <option value="open">Only ones I can enter</option>
         </select>
-        <select id="lounge-sort">
+        <select id="lounge-sort" aria-label="Sort lounges">
           <option value="default">Sort: default</option>
           <option value="open">Enterable first</option>
           <option value="city">City A-Z</option>
@@ -1633,8 +1637,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         <p>Ranked by new lounges it unlocks for you, how easy it is to get, and how fast it arrives — important if you're applying before a trip.</p>
       </div>
       <div class="filters">
-        <label class="chip toggle"><input type="checkbox" id="rec-easy" checked />⚡ Only cards I can likely get fast</label>
-        <select id="rec-type">
+        <label class="chip toggle"><input type="checkbox" id="rec-easy" aria-label="Show only easy-access recommendations" checked />⚡ Only cards I can likely get fast</label>
+        <select id="rec-type" aria-label="Recommendation card type">
           <option value="">Airport + railway</option>
           <option value="airport">✈️ Airport</option>
           <option value="railway">🚆 Railway</option>
@@ -1647,7 +1651,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     <section id="view-addcard" class="view">
       <div class="section-h">Tap the cards you hold</div>
       <p class="card-sub" style="margin-bottom:12px;">Saved only in this browser. Nothing leaves your device, ever.</p>
-      <input id="addcard-search" class="leg-input" style="margin-bottom:12px;" placeholder="Search cards…" />
+      <input id="addcard-search" aria-label="Search cards to add" class="leg-input" style="margin-bottom:12px;" placeholder="Search cards…" />
       <div id="addcard-list"></div>
     </section>
 
@@ -1676,19 +1680,19 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       <div class="row">
         <button class="act mini" id="export-data">⬇️ Export my data</button>
         <button class="act ghost mini" id="import-data">⬆️ Import a file</button>
-        <input type="file" id="import-file" accept="application/json" style="display:none;" />
+        <input type="file" id="import-file" aria-label="Import verify-signals file" accept="application/json" style="display:none;" />
       </div>
 
       <div class="section-h">➕ Suggest a missing lounge or card</div>
       <p class="card-sub" style="margin-bottom:8px;">Spotted a lounge or card we don't list? Add it. It shows in your app right away and you can export it to share so it gets verified into the main data.</p>
       <div class="suggest-form">
-        <select id="sug-kind" class="cmp-select">
+        <select id="sug-kind" aria-label="Suggestion type" class="cmp-select">
           <option value="lounge">🛋️ Lounge</option>
           <option value="card">💳 Card</option>
         </select>
-        <input id="sug-name" class="leg-input" placeholder="Name (e.g. Indore Domestic Lounge)" />
-        <input id="sug-where" class="leg-input" placeholder="City (lounge) or issuer (card)" />
-        <input id="sug-note" class="leg-input" placeholder="Optional note (terminal, which card works…)" />
+        <input id="sug-name" aria-label="Suggestion name" class="leg-input" placeholder="Name (e.g. Indore Domestic Lounge)" />
+        <input id="sug-where" aria-label="City or issuer" class="leg-input" placeholder="City (lounge) or issuer (card)" />
+        <input id="sug-note" aria-label="Optional note" class="leg-input" placeholder="Optional note (terminal, which card works…)" />
         <button class="act mini" id="sug-add">Add suggestion</button>
       </div>
       <div id="sug-list"></div>
@@ -1716,8 +1720,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         <p>Pick a place. See every lounge there and which of your cards walks you in. Unlike other finders, this one knows your wallet.</p>
       </div>
       <div class="filters">
-        <input id="airport-search" placeholder="Search airport / station / city…" />
-        <select id="airport-type">
+        <input id="airport-search" aria-label="Search airports and stations" placeholder="Search airport / station / city…" />
+        <select id="airport-type" aria-label="Filter airports by type">
           <option value="">All</option>
           <option value="airport">🛫 Airports</option>
           <option value="railway">🚆 Stations</option>
@@ -1733,9 +1737,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         <p>Pick two. See who wins on lounge coverage, visits, ease, spend gates and railway — head to head.</p>
       </div>
       <div class="compare-pick">
-        <select id="compare-a" class="cmp-select"></select>
+        <select id="compare-a" aria-label="First card to compare" class="cmp-select"></select>
         <span class="vs">vs</span>
-        <select id="compare-b" class="cmp-select"></select>
+        <select id="compare-b" aria-label="Second card to compare" class="cmp-select"></select>
       </div>
       <div id="compare-result"></div>
     </section>
@@ -1747,8 +1751,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         <p>Tell me how often you fly and what a lounge is worth to you. I'll tell you if a card's fee pays for itself — for every card.</p>
       </div>
       <div class="value-inputs">
-        <label>Trips per year <input id="val-trips" type="number" min="0" value="12" /></label>
-        <label>A lounge visit is worth (₹) <input id="val-worth" type="number" min="0" value="1200" /></label>
+        <label>Trips per year <input id="val-trips" aria-label="Trips per year" type="number" min="0" value="12" /></label>
+        <label>A lounge visit is worth (₹) <input id="val-worth" aria-label="Value per lounge visit" type="number" min="0" value="1200" /></label>
       </div>
       <p class="card-sub" style="margin:6px 0 12px;">A lounge visit is usually worth ₹800-₹2000 to most people (food + a quiet seat + wifi). Adjust to your taste.</p>
       <div id="value-list"></div>
@@ -1764,7 +1768,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       <div class="about-card">
         <h3>👤 Name</h3>
         <p class="card-sub" style="margin-bottom:8px;">Optional. Just so it feels like yours.</p>
-        <input id="profile-name" class="leg-input" placeholder="Your name" />
+        <input id="profile-name" aria-label="Your name" class="leg-input" placeholder="Your name" />
       </div>
 
       <div class="about-card">
@@ -1775,15 +1779,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
           <button class="act ghost mini" id="copy-code">Copy</button>
           <button class="act ghost mini" id="profile-export-file">⬇️ Save as file</button>
         </div>
-        <textarea id="sync-code-out" class="sync-box" readonly placeholder="Your sync code appears here…"></textarea>
+        <textarea id="sync-code-out" aria-label="Your sync code" class="sync-box" readonly placeholder="Your sync code appears here…"></textarea>
 
         <div class="section-h" style="margin-top:18px;">Restore on this device</div>
         <p class="card-sub" style="margin-bottom:8px;">Paste a sync code from your other device, or import a backup file. This MERGES (it won't wipe what's already here).</p>
-        <textarea id="sync-code-in" class="sync-box" placeholder="Paste a sync code here…"></textarea>
+        <textarea id="sync-code-in" aria-label="Paste a sync code" class="sync-box" placeholder="Paste a sync code here…"></textarea>
         <div class="row">
           <button class="act mini" id="apply-code">Restore from code</button>
           <button class="act ghost mini" id="profile-import-file">⬆️ Import file</button>
-          <input type="file" id="profile-file" accept="application/json,.txt" style="display:none;" />
+          <input type="file" id="profile-file" aria-label="Import a profile file" accept="application/json,.txt" style="display:none;" />
         </div>
       </div>
 
@@ -1859,8 +1863,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
       <div class="modal-logo">👤</div>
       <h2 id="login-title">Log in</h2>
       <p class="card-sub" id="login-sub">Saves your cards and preferences. Free, no email needed.</p>
-      <input id="login-user" class="leg-input" placeholder="Username" autocomplete="username" />
-      <input id="login-pin" class="leg-input" type="password" inputmode="numeric" placeholder="PIN (4+ digits)" autocomplete="current-password" style="margin-top:8px;" />
+      <input id="login-user" aria-label="Username" class="leg-input" placeholder="Username" autocomplete="username" />
+      <input id="login-pin" aria-label="PIN" class="leg-input" type="password" inputmode="numeric" placeholder="PIN (4+ digits)" autocomplete="current-password" style="margin-top:8px;" />
       <div id="login-error" class="login-error" hidden></div>
       <button class="act big" id="login-submit" style="margin-top:12px;">Log in</button>
       <p class="onboard-fine" id="login-switch">New here? <span class="link" id="to-signup">Create a profile</span></p>
@@ -8195,7 +8199,17 @@ window.LL_HOLIDAYS = {
   }
 
   function wireGoto() {
-    $$("[data-goto]").forEach((el) => el.onclick = () => showView(el.dataset.goto, true));
+    $$("[data-goto]").forEach((el) => {
+      const go = () => showView(el.dataset.goto, true);
+      el.onclick = go;
+      // a11y: spans-as-links must be keyboard operable like a real button.
+      // real <button>/<a> already are, so only upgrade the others.
+      if (el.tagName !== "BUTTON" && el.tagName !== "A") {
+        if (!el.hasAttribute("role")) el.setAttribute("role", "button");
+        if (!el.hasAttribute("tabindex")) el.setAttribute("tabindex", "0");
+        el.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+      }
+    });
   }
 
   // ============================ WALLET ====================================
@@ -8473,9 +8487,9 @@ window.LL_HOLIDAYS = {
           <button class="seg-btn ${addF.type === "debit" ? "on" : ""}" data-addtype="debit">🏧 Debit ${nDebit}</button>
         </div>
         <div class="filter-controls">
-          <select class="cmp-select" id="add-issuer">${issuerOpts}</select>
-          <select class="cmp-select" id="add-network">${netOpts}</select>
-          <select class="cmp-select" id="add-sort">${sortOpts}</select>
+          <select class="cmp-select" id="add-issuer" aria-label="Filter cards by issuer">${issuerOpts}</select>
+          <select class="cmp-select" id="add-network" aria-label="Filter cards by network">${netOpts}</select>
+          <select class="cmp-select" id="add-sort" aria-label="Sort cards">${sortOpts}</select>
           <label class="chip toggle"><input type="checkbox" id="add-hidenolounge" ${addF.hideNoLounge ? "checked" : ""} /> Lounge cards only</label>
           <label class="chip toggle"><input type="checkbox" id="add-ltf" ${addF.lifetimeFree ? "checked" : ""} /> Lifetime-free</label>
         </div>
