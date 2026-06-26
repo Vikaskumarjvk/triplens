@@ -2483,8 +2483,20 @@
       const payerSel = groupOn
         ? `<select class="cmp-select bs-payer" data-payerfor="${esc(sp.id)}" aria-label="Who paid">${payerOpts(sp.paidBy)}</select>`
         : "";
+      // and a "who shares this" chip row — empty selection means everyone (engine default).
+      // an explicit subset lets one person's solo cost skip the others.
+      let shareRow = "";
+      if (groupOn) {
+        const shared = Array.isArray(sp.sharedBy) && sp.sharedBy.length ? new Set(sp.sharedBy) : null;
+        const allLabel = shared ? `${shared.size} of ${gms.length}` : "everyone";
+        const chips = gms.map((m) => {
+          const on = shared ? shared.has(m.id) : true;
+          return `<button class="bs-share-chip ${on ? "on" : ""}" data-sharefor="${esc(sp.id)}" data-shareid="${esc(m.id)}" title="${esc(m.name)} ${on ? "splits" : "skips"} this">${esc(m.name.split(" ")[0])}</button>`;
+        }).join("");
+        shareRow = `<div class="bs-shares"><span class="card-sub">split between <b>${allLabel}</b>:</span> ${chips}</div>`;
+      }
       return `<div class="bud-spend"><span>${cat.icon} ${esc(sp.label || cat.label)} <span class="card-sub">· ${dayTxt}</span></span>
-        <span class="bs-amt">${payerSel}${BUD.fmt(sp.amount, b.currency)} <button class="ii-btn del" data-delspend="${esc(sp.id)}" title="Remove">✕</button></span></div>`;
+        <span class="bs-amt">${payerSel}${BUD.fmt(sp.amount, b.currency)} <button class="ii-btn del" data-delspend="${esc(sp.id)}" title="Remove">✕</button></span></div>${shareRow}`;
     }).join("") || `<div class="card-sub" style="padding:6px 0;">No spends logged yet. Add what you actually pay as you go — those are your real numbers.</div>`;
 
     const dayOpts = `<option value="">unscheduled</option>` + t.days.map((d, i) => `<option value="${i}">Day ${i + 1}${d.date ? " · " + IT.dayLabel(d.date) : ""}</option>`).join("");
@@ -2551,7 +2563,7 @@
     } else {
       settleHtml = `<div class="sp-settle-h">Simplest way to settle up</div>` + o.transfers.map((x) =>
         `<div class="sp-transfer"><b>${esc(x.fromName)}</b> pays <b>${esc(x.toName)}</b> <span class="sp-amt">${BUD.fmt(x.amount, cur)}</span></div>`
-      ).join("");
+      ).join("") + `<button class="act ghost mini" id="sp-share" style="margin-top:8px;">📤 Share settle-up</button>`;
     }
     const unattr = o.unattributedCount > 0
       ? `<div class="card-sub" style="margin-top:8px;">${o.unattributedCount} spend${o.unattributedCount > 1 ? "s" : ""} (${BUD.fmt(o.unattributedTotal, cur)}) ${o.unattributedCount > 1 ? "have" : "has"} no "paid by" set yet, so ${o.unattributedCount > 1 ? "they're" : "it's"} not in the settlement. Tag the payer above to include ${o.unattributedCount > 1 ? "them" : "it"}.</div>`
@@ -2649,6 +2661,21 @@
         const sp = (t.budget.spends || []).find((x) => x.id === sel.dataset.payerfor);
         if (sp) { sp.paidBy = sel.value || null; save(); renderTrips(); }
       });
+      // group-mode: toggle who shares each spend (uneven splits)
+      $$("[data-sharefor]").forEach((btn) => btn.onclick = () => {
+        const sp = (t.budget.spends || []).find((x) => x.id === btn.dataset.sharefor);
+        if (!sp) return;
+        const all = (t.group.members || []).map((m) => m.id);
+        // start from the effective set (null/empty => everyone)
+        let set = new Set(Array.isArray(sp.sharedBy) && sp.sharedBy.length ? sp.sharedBy : all);
+        const id = btn.dataset.shareid;
+        if (set.has(id)) set.delete(id); else set.add(id);
+        // never let a spend be shared by nobody — re-toggling the last one back on
+        if (set.size === 0) return; // ignore the un-toggle that would empty it
+        // canonicalize: "everyone" stored as null so adding a member later still splits it
+        sp.sharedBy = (set.size === all.length && all.every((x) => set.has(x))) ? null : all.filter((x) => set.has(x));
+        save(); renderTrips();
+      });
     }
 
     // ---- group split handlers ----
@@ -2666,6 +2693,16 @@
       };
       $$("[data-delm]").forEach((b3) => b3.onclick = () => { SPLIT.removeMember(t, b3.dataset.delm); save(); renderTrips(); });
       $$("[data-renamem]").forEach((inp) => inp.onchange = () => { SPLIT.renameMember(t, inp.dataset.renamem, inp.value); save(); renderTrips(); });
+      if ($("#sp-share")) $("#sp-share").onclick = async () => {
+        const o = SPLIT.overview(t);
+        const cur = (t.budget && t.budget.currency) || "INR";
+        const text = SPLIT.summaryText(o, (n) => BUD.fmt(n, cur), t.title);
+        try {
+          if (navigator.share) { await navigator.share({ title: "Settle up", text }); return; }
+        } catch (e) { /* user cancelled the share sheet — fall through to copy */ }
+        try { await navigator.clipboard.writeText(text); toast("Settle-up copied — paste it to your group."); }
+        catch (e2) { toast("Couldn't copy automatically. Long-press to select the settle-up text above."); }
+      };
     }
   }
 

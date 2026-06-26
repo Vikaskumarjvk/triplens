@@ -170,10 +170,32 @@
     };
   }
 
+  // a plain-text settle-up summary the group can paste anywhere (WhatsApp etc).
+  // Pure: takes the overview + a money formatter so currency stays consistent.
+  // fmt(amount) -> string. title is the trip name.
+  function summaryText(o, fmt, title) {
+    fmt = fmt || ((n) => String(n));
+    const lines = [];
+    lines.push("Settle up" + (title ? " — " + title : ""));
+    if (!o.transfers.length) {
+      lines.push(o.attributedCount === 0
+        ? "No spends tagged with who paid yet."
+        : "All square — nobody owes anyone.");
+    } else {
+      o.transfers.forEach((x) => lines.push(x.fromName + " pays " + x.toName + " " + fmt(x.amount)));
+    }
+    if (o.unattributedCount > 0) {
+      lines.push("(" + o.unattributedCount + " spend" + (o.unattributedCount > 1 ? "s" : "") +
+        " worth " + fmt(o.unattributedTotal) + " not yet tagged with who paid)");
+    }
+    lines.push("— split with TripLens");
+    return lines.join("\n");
+  }
+
   const Engine = {
     round2, paise, rupees,
     ensureGroup, seedMembers, members, addMember, renameMember, removeMember,
-    splitEvenly, sharersFor, balances, settle, overview,
+    splitEvenly, sharersFor, balances, settle, overview, summaryText,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Engine;
   root.LL_SPLIT = Engine;

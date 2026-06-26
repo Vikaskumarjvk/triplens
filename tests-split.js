@@ -149,6 +149,59 @@ ok("settle is deterministic (same input, same plan)", () => {
   assert.strictEqual(a, b);
 });
 
+// ---- uneven / subset splits ----------------------------------------------
+ok("subset share: a solo cost only burdens the sharers, not everyone", () => {
+  // m-1 pays 200 for a museum that only m-1 and m-2 went to
+  const t = tripWith(M3, [{ id: "sp-1", amount: 200, paidBy: "m-1", sharedBy: ["m-1", "m-2"] }]);
+  const net = {}; S.balances(t).members.forEach((m) => (net[m.id] = m.net));
+  assert.strictEqual(net["m-1"], 100);  // paid 200, owes 100 share -> +100
+  assert.strictEqual(net["m-2"], -100); // owes their 100 share
+  assert.strictEqual(net["m-3"], 0);    // didn't go -> owes nothing
+});
+ok("subset share still nets to exactly zero", () => {
+  const t = tripWith(M3, [
+    { id: "sp-1", amount: 999.99, paidBy: "m-2", sharedBy: ["m-1", "m-2"] },
+    { id: "sp-2", amount: 100, paidBy: "m-3", sharedBy: ["m-3"] }, // self only -> no effect on others
+  ]);
+  assert.strictEqual(sum(S.balances(t).members.map((m) => m.net)), 0);
+});
+ok("a sharedBy that names a non-member is ignored, valid ones still split", () => {
+  const t = tripWith(M3, [{ id: "sp-1", amount: 100, paidBy: "m-1", sharedBy: ["m-1", "m-99"] }]);
+  // m-99 isn't in the group; only m-1 is a valid sharer -> m-1 paid for self
+  const net = {}; S.balances(t).members.forEach((m) => (net[m.id] = m.net));
+  assert.strictEqual(net["m-1"], 0);
+  assert.strictEqual(sum(S.balances(t).members.map((m) => m.net)), 0);
+});
+
+// ---- summaryText (shareable settle-up) -----------------------------------
+ok("summaryText lists each transfer with the formatter", () => {
+  const t = tripWith(M3, [{ id: "sp-1", amount: 300, paidBy: "m-1", sharedBy: ["m-1", "m-2", "m-3"] }]);
+  const txt = S.summaryText(S.overview(t), (n) => "Rs" + n, "Goa trip");
+  assert.ok(/Goa trip/.test(txt));
+  assert.ok(/Asha pays You Rs100/.test(txt));
+  assert.ok(/Ravi pays You Rs100/.test(txt));
+});
+ok("summaryText says all-square when spends are tagged but balanced", () => {
+  // each person pays an equal third-share, so nobody owes anyone
+  const t = tripWith(M3, [
+    { id: "sp-1", amount: 90, paidBy: "m-1", sharedBy: ["m-1", "m-2", "m-3"] },
+    { id: "sp-2", amount: 90, paidBy: "m-2", sharedBy: ["m-1", "m-2", "m-3"] },
+    { id: "sp-3", amount: 90, paidBy: "m-3", sharedBy: ["m-1", "m-2", "m-3"] },
+  ]);
+  const txt = S.summaryText(S.overview(t), (n) => "Rs" + n, "x");
+  assert.ok(/all square/i.test(txt));
+});
+ok("summaryText on an empty trip says nothing tagged (not 'all square')", () => {
+  const t = tripWith(M3, []);
+  const txt = S.summaryText(S.overview(t), (n) => "Rs" + n, "x");
+  assert.ok(/no spends tagged/i.test(txt));
+});
+ok("summaryText flags untagged spends, never invents who paid", () => {
+  const t = tripWith(M3, [{ id: "sp-1", amount: 500, paidBy: null }]);
+  const txt = S.summaryText(S.overview(t), (n) => "Rs" + n, "x");
+  assert.ok(/not yet tagged|no spends tagged/i.test(txt));
+});
+
 // ---- honesty: never invents money ----------------------------------------
 ok("empty trip -> zero everything, nothing fabricated", () => {
   const t = tripWith(M3, []);
