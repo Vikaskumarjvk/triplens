@@ -7869,7 +7869,21 @@ window.LL_HOLIDAYS = {
   const ACCT_KEY = "loungelens.accounts";
   const SESSION_KEY = "loungelens.session";
   function loadAccounts() { try { return JSON.parse(localStorage.getItem(ACCT_KEY)) || {}; } catch (e) { return {}; } }
-  function saveAccounts(s) { localStorage.setItem(ACCT_KEY, JSON.stringify(s)); }
+  // safe localStorage write: never throws (so no caller crashes mid-interaction),
+  // returns true on success. On quota/blocked storage (private mode, full disk) it
+  // warns ONCE so the user knows their changes aren't persisting, then stays quiet.
+  let storageWarned = false;
+  function safeWrite(key, value) {
+    try { localStorage.setItem(key, value); return true; }
+    catch (e) {
+      if (!storageWarned) {
+        storageWarned = true;
+        try { toast("Storage is full or blocked — your changes won't be saved on this device. Free up space or leave private mode."); } catch (e2) { /* toast may not be ready */ }
+      }
+      return false;
+    }
+  }
+  function saveAccounts(s) { return safeWrite(ACCT_KEY, JSON.stringify(s)); }
   let accounts = loadAccounts();
   let activeUser = localStorage.getItem(SESSION_KEY) || null;
 
@@ -7879,7 +7893,7 @@ window.LL_HOLIDAYS = {
   }
 
   function save() {
-    localStorage.setItem(KEY, JSON.stringify(state)); // device fallback copy
+    safeWrite(KEY, JSON.stringify(state)); // device fallback copy — never throws
     if (activeUser && accounts[activeUser]) {
       accounts = AUTH.saveAccountData(accounts, activeUser, state);
       saveAccounts(accounts);
@@ -8909,7 +8923,7 @@ window.LL_HOLIDAYS = {
         accounts = AUTH.createAccount(accounts, u, pin, seed);
         saveAccounts(accounts);
         activeUser = AUTH.normUser(u);
-        localStorage.setItem(SESSION_KEY, activeUser);
+        safeWrite(SESSION_KEY, activeUser);
         state = accounts[activeUser].data;
         $("#login-modal").hidden = true;
         render(); renderAuthBar();
@@ -8919,7 +8933,7 @@ window.LL_HOLIDAYS = {
       const v = AUTH.verifyLogin(accounts, u, pin);
       if (!v.ok) { loginError(v.reason === "wrong PIN" ? "Wrong PIN, try again." : "No profile with that username on this device. Create one?"); return; }
       activeUser = AUTH.normUser(u);
-      localStorage.setItem(SESSION_KEY, activeUser);
+      safeWrite(SESSION_KEY, activeUser);
       state = v.data || blank();
       $("#login-modal").hidden = true;
       render(); renderAuthBar();
@@ -11071,6 +11085,24 @@ window.LL_HOLIDAYS = {
       pill(cities, "cities") +
       pill(issuers, "banks");
   }
+
+  // ---- global error boundary --------------------------------------------
+  // A single uncaught error (a bad data record, a browser quirk) should never
+  // leave a dead screen with no explanation. Catch them, keep the app alive, and
+  // tell the user once. Dev still sees the real error in the console.
+  let errorToasted = false;
+  function softFail(where, err) {
+    // console keeps the full error for debugging; user gets one calm notice
+    try { console.error("[TripLens] " + where, err); } catch (e) {}
+    if (!errorToasted) {
+      errorToasted = true;
+      try { toast("Something hiccuped, but your data is safe. If it looks wrong, reload the page."); } catch (e) {}
+      // allow another notice later once this one has cleared
+      setTimeout(() => { errorToasted = false; }, 5000);
+    }
+  }
+  window.addEventListener("error", (e) => softFail("error", e && (e.error || e.message)));
+  window.addEventListener("unhandledrejection", (e) => softFail("promise", e && e.reason));
 
   // init
   applyMode();
