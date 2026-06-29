@@ -2479,8 +2479,43 @@
       }</div>`).join("")}
       <p class="card-sub" style="margin-top:8px;">Tick the trip flags above to tailor the list. Checks save to this trip.</p>`;
 
-    return head + readinessBlock(t) + `<div class="itin-days">${days}</div>` + budgetBlock(t) + groupSplitBlock(t) + packing +
+    return head + destSnapshot(t) + readinessBlock(t) + `<div class="itin-days">${days}</div>` + budgetBlock(t) + groupSplitBlock(t) + packing +
       `<div class="honesty-note" style="margin-top:14px;">Your itinerary, budget + links are saved on this device only. The links open the real booking sites. Every rupee in the budget is a number you typed — TripLens never guesses a price. Export to share the whole plan.</div>`;
+  }
+
+  // a short, honest orientation at the top of an open trip: what the place is
+  // known for + its vibe (common-knowledge character from data/destinations.js),
+  // a slot for the LIVE forecast (filled async by fillDestWeather), and a one-tap
+  // link to explore it on a real map. Invents nothing — no price, no venue.
+  function destSnapshot(t) {
+    const dest = TE ? TE.resolvePlace(t.to, FLIGHTS) : null;
+    const code = dest && dest.code;
+    const d = (DESTS && code) ? DESTS.get(code) : null;
+    const city = (d && d.city) || t.to || "your destination";
+    if (!d || (!d.knownFor && !d.vibe)) return ""; // only show when we have honest character to show
+    const mapsUrl = "https://www.google.com/maps/search/" + encodeURIComponent("top things to do in " + city);
+    return `<div class="dest-snap">
+      <div class="ds-main">
+        <div class="ds-city">📍 ${esc(city)}${d.vibe ? ` <span class="ds-vibe">${esc(d.vibe)}</span>` : ""}</div>
+        ${d.knownFor ? `<div class="ds-known">Known for ${esc(d.knownFor)}.</div>` : ""}
+        <div class="ds-weather" id="ds-weather"><span class="card-sub">⛅ checking the forecast for your dates…</span></div>
+      </div>
+      <a class="act ghost mini ds-map" href="${esc(mapsUrl)}" target="_blank" rel="noopener">🗺️ Explore on map ↗</a>
+    </div>`;
+  }
+  // fill the live forecast into the snapshot. async + graceful: if there are no
+  // coords or the fetch fails, the slot just clears. Real numbers only.
+  function fillDestWeather(t) {
+    const el = $("#ds-weather"); if (!el || !LD || !GEO) return;
+    const dest = TE ? TE.resolvePlace(t.to, FLIGHTS) : null;
+    const coords = dest && dest.code && GEO.AIRPORT_COORDS[dest.code];
+    if (!coords) { el.innerHTML = ""; return; }
+    LD.getWeather(coords[0], coords[1], 14).then((wx) => {
+      const w = wx && wx.parsed; if (!w || w.avgMax == null) { el.innerHTML = ""; return; }
+      const flags = [];
+      if (w.suggest) { if (w.suggest.monsoon) flags.push("🌧️ rain likely"); if (w.suggest.cold) flags.push("🧥 pack warm"); if (w.suggest.hot) flags.push("☀️ hot"); }
+      el.innerHTML = `<span class="ds-wx">⛅ next 2 weeks: <b>${w.lowMin != null ? Math.round(w.lowMin) + "–" : ""}${Math.round(w.avgMax)}°C</b>${w.peakRain != null ? ` · up to ${w.peakRain}% rain` : ""}${flags.length ? ` · ${flags.join(" · ")}` : ""}</span> <span class="card-sub">${wx.fromCache ? "cached" : "live"} forecast</span>`;
+    }).catch(() => { el.innerHTML = ""; });
   }
 
   // pre-departure readiness block: countdown + tickable checklist (docs/money/packing).
@@ -2669,6 +2704,7 @@
   }
 
   function wireItinerary(t) {
+    fillDestWeather(t); // load the live forecast into the destination snapshot
     if ($("#itin-back")) $("#itin-back").onclick = () => { state.openTripId = null; save(); renderTrips(); };
     if ($("#itin-jump-pack")) $("#itin-jump-pack").onclick = () => { const p = $("#itin-pack"); if (p) p.scrollIntoView({ behavior: "smooth" }); };
     if ($("#itin-jump-budget")) $("#itin-jump-budget").onclick = () => { const p = $("#itin-budget"); if (p) p.scrollIntoView({ behavior: "smooth" }); };
