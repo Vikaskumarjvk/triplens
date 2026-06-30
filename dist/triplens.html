@@ -1260,18 +1260,37 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .qs-sub { font-size: 13.5px; color: var(--dim); margin: 0; line-height: 1.45; }
 .qs-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
 .qs-chip {
+  position: relative; overflow: hidden;
   display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
   text-align: left; min-height: 76px; padding: 12px 14px;
   background: var(--panel-solid); border: 1px solid var(--line); border-radius: var(--r-md);
-  color: var(--txt); cursor: pointer; transition: border-color .15s, transform .12s, box-shadow .15s;
+  color: var(--txt); cursor: pointer;
+  transition: border-color .16s ease, transform .14s cubic-bezier(.2,.8,.3,1), box-shadow .18s ease;
 }
-.qs-chip:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+/* a soft per-destination corner glow (decorative; behind the text) */
+.qs-chip::before {
+  content: ""; position: absolute; top: -40%; right: -30%; width: 120px; height: 120px;
+  background: radial-gradient(circle, hsla(var(--chip-hue,250), 85%, 62%, .22), transparent 70%);
+  pointer-events: none; transition: opacity .18s ease; opacity: .8;
+}
+.qs-chip:hover { border-color: hsla(var(--chip-hue,250), 70%, 65%, .8); transform: translateY(-3px); box-shadow: 0 10px 26px hsla(var(--chip-hue,250), 60%, 40%, .28); }
+.qs-chip:hover::before { opacity: 1; }
+.qs-chip:active { transform: translateY(-1px) scale(.985); }
 .qs-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.qs-emoji { font-size: 22px; line-height: 1; }
+.qs-chip > * { position: relative; z-index: 1; }
+.qs-emoji { font-size: 23px; line-height: 1; }
 .qs-city { font-size: 15.5px; font-weight: 700; }
 .qs-known { font-size: 12px; color: var(--dim); line-height: 1.35; }
-.qs-more { display: inline-block; margin-top: 12px; font-size: 13.5px; background: none; border: none; padding: 4px 0; cursor: pointer; }
+.qs-foot { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+.qs-surprise { font-size: 13.5px; }
+.qs-more { display: inline-block; font-size: 13.5px; background: none; border: none; padding: 4px 0; cursor: pointer; }
 @media (max-width: 600px) { .qs-chips { grid-template-columns: 1fr 1fr; } }
+
+/* gentle view-switch fade (motion-safe only) */
+@media (prefers-reduced-motion: no-preference) {
+  .view.active { animation: viewfade .22s ease both; }
+  @keyframes viewfade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+}
 
 /* --- Destination snapshot: honest orientation at top of an open trip --- */
 .dest-snap {
@@ -1383,7 +1402,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
           <p class="qs-sub">Tap a place and I'll build you a trip — day-by-day ideas, real map searches, the best card to pay with. Change anything after. No sign-up, no fake prices.</p>
         </div>
         <div class="qs-chips" id="qs-chips"></div>
-        <button class="qs-more link" id="qs-or-type">or type your own trip ↓</button>
+        <div class="qs-foot">
+          <button class="act ghost mini qs-surprise" id="qs-surprise">🎲 Surprise me</button>
+          <button class="qs-more link" id="qs-or-type">or type your own trip ↓</button>
+        </div>
       </div>
       <div class="trip-builder plan-builder">
         <div class="fb-row">
@@ -7886,11 +7908,23 @@ window.LL_HOLIDAYS = {
     };
   }
 
+  // "surprise me": pick a featured place from a seed (no Math.random, stays
+  // pure + testable). `avoid` (optional IATA) is skipped so two taps in a row
+  // don't land on the same place. Returns the chosen featured entry, or null.
+  function surprise(destData, seed, avoid) {
+    var list = featured(destData);
+    if (!list.length) return null;
+    if (avoid && list.length > 1) list = list.filter(function (f) { return f.code !== avoid; });
+    var idx = Math.abs(seed | 0) % list.length;
+    return list[idx];
+  }
+
   var Engine = {
     FEATURED: FEATURED,
     featured: featured,
     quickTrip: quickTrip,
     isoPlusDays: isoPlusDays,
+    surprise: surprise,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Engine;
   root.LL_QUICKSTART = Engine;
@@ -9850,13 +9884,32 @@ window.LL_HOLIDAYS = {
     const wrap = $("#qs-chips"); if (!wrap || !QS || !DESTS) { const q = $("#quickstart"); if (q) q.hidden = true; return; }
     const chips = QS.featured(DESTS);
     if (!chips.length) { const q = $("#quickstart"); if (q) q.hidden = true; return; }
-    wrap.innerHTML = chips.map((c) =>
-      `<button class="qs-chip" data-qs="${esc(c.code)}" aria-label="Plan a trip to ${esc(c.city)}">
+    // a tasteful accent hue per destination so the cards feel alive (decorative
+    // only — it tints a soft corner glow, never affects text contrast).
+    const HUES = { GOI: 28, GOX: 28, DXB: 41, JAI: 14, SIN: 168, BKK: 280, SXR: 205, COK: 150, DEL: 8, BOM: 200, BLR: 130, HYD: 320, MAA: 190, CCU: 50, LHR: 220, JFK: 230 };
+    wrap.innerHTML = chips.map((c) => {
+      const hue = HUES[c.code] != null ? HUES[c.code] : 250;
+      return `<button class="qs-chip" data-qs="${esc(c.code)}" style="--chip-hue:${hue}" aria-label="Plan a trip to ${esc(c.city)}">
         <span class="qs-emoji" aria-hidden="true">${c.emoji}</span>
         <span class="qs-city">${esc(c.city)}</span>
         <span class="qs-known">${esc(c.knownFor)}</span>
-      </button>`).join("");
+      </button>`;
+    }).join("");
     $$("[data-qs]").forEach((b) => b.onclick = () => quickStartTrip(b.dataset.qs));
+    // 🎲 Surprise me: pick a random featured place (rotating seed so repeated
+    // taps vary; never the same place twice in a row) and build that trip.
+    if ($("#qs-surprise")) $("#qs-surprise").onclick = () => {
+      if (!QS) return;
+      // step the seed and run it through a simple integer hash so successive
+      // taps spread across ALL featured places, not ping-pong between two.
+      state.surpriseSeed = ((state.surpriseSeed || 0) + 1) % 100000;
+      let h = state.surpriseSeed * 2654435761;
+      h = (h ^ (h >>> 13)) >>> 0; // mix the bits
+      const pick = QS.surprise(DESTS, h, state.lastSurprise);
+      if (!pick) return;
+      state.lastSurprise = pick.code; save();
+      quickStartTrip(pick.code);
+    };
     // "or type your own" just drops focus into the form below
     if ($("#qs-or-type")) $("#qs-or-type").onclick = () => {
       const f = $("#tp-from") || $("#tp-to"); if (f) { f.scrollIntoView({ behavior: "smooth", block: "center" }); f.focus(); }

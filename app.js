@@ -1302,13 +1302,32 @@
     const wrap = $("#qs-chips"); if (!wrap || !QS || !DESTS) { const q = $("#quickstart"); if (q) q.hidden = true; return; }
     const chips = QS.featured(DESTS);
     if (!chips.length) { const q = $("#quickstart"); if (q) q.hidden = true; return; }
-    wrap.innerHTML = chips.map((c) =>
-      `<button class="qs-chip" data-qs="${esc(c.code)}" aria-label="Plan a trip to ${esc(c.city)}">
+    // a tasteful accent hue per destination so the cards feel alive (decorative
+    // only — it tints a soft corner glow, never affects text contrast).
+    const HUES = { GOI: 28, GOX: 28, DXB: 41, JAI: 14, SIN: 168, BKK: 280, SXR: 205, COK: 150, DEL: 8, BOM: 200, BLR: 130, HYD: 320, MAA: 190, CCU: 50, LHR: 220, JFK: 230 };
+    wrap.innerHTML = chips.map((c) => {
+      const hue = HUES[c.code] != null ? HUES[c.code] : 250;
+      return `<button class="qs-chip" data-qs="${esc(c.code)}" style="--chip-hue:${hue}" aria-label="Plan a trip to ${esc(c.city)}">
         <span class="qs-emoji" aria-hidden="true">${c.emoji}</span>
         <span class="qs-city">${esc(c.city)}</span>
         <span class="qs-known">${esc(c.knownFor)}</span>
-      </button>`).join("");
+      </button>`;
+    }).join("");
     $$("[data-qs]").forEach((b) => b.onclick = () => quickStartTrip(b.dataset.qs));
+    // 🎲 Surprise me: pick a random featured place (rotating seed so repeated
+    // taps vary; never the same place twice in a row) and build that trip.
+    if ($("#qs-surprise")) $("#qs-surprise").onclick = () => {
+      if (!QS) return;
+      // step the seed and run it through a simple integer hash so successive
+      // taps spread across ALL featured places, not ping-pong between two.
+      state.surpriseSeed = ((state.surpriseSeed || 0) + 1) % 100000;
+      let h = state.surpriseSeed * 2654435761;
+      h = (h ^ (h >>> 13)) >>> 0; // mix the bits
+      const pick = QS.surprise(DESTS, h, state.lastSurprise);
+      if (!pick) return;
+      state.lastSurprise = pick.code; save();
+      quickStartTrip(pick.code);
+    };
     // "or type your own" just drops focus into the form below
     if ($("#qs-or-type")) $("#qs-or-type").onclick = () => {
       const f = $("#tp-from") || $("#tp-to"); if (f) { f.scrollIntoView({ behavior: "smooth", block: "center" }); f.focus(); }

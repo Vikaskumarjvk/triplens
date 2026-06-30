@@ -68,5 +68,17 @@ const banned = ["price", "total", "fare", "cost", "amount", "inr", "venue", "rat
 const blob = JSON.stringify(QS.quickTrip("GOI", DESTS, "2026-06-29")).toLowerCase();
 ok("quickTrip spec carries no fabricated price/venue fields", !banned.some((b) => blob.includes('"' + b + '"')));
 
+// ---- surprise(): random-but-pure featured pick ----
+const sp0 = QS.surprise(DESTS, 0);
+ok("surprise returns a real featured place", sp0 && DESTS.get(sp0.code) && DESTS.get(sp0.code).city === sp0.city);
+ok("surprise deterministic for same seed", QS.surprise(DESTS, 5).code === QS.surprise(DESTS, 5).code);
+ok("surprise varies across seeds", new Set([0,1,2,3,4,5,6,7].map((s) => QS.surprise(DESTS, s).code)).size > 1);
+ok("surprise never repeats the avoided code", (() => {
+  for (let s = 0; s < 30; s++) { const r = QS.surprise(DESTS, s, "GOI"); if (r.code === "GOI") return false; } return true;
+})());
+ok("surprise handles negative seed", QS.surprise(DESTS, -3) && QS.surprise(DESTS, -3).code.length === 3);
+ok("surprise with no profiles returns null", QS.surprise({ get: () => null }, 0) === null);
+ok("surprise picks are all real featured entries", [10,20,30,40].every((s) => { const r = QS.surprise(DESTS, s); return r && r.emoji && r.knownFor; }));
+
 console.log("==== " + pass + " passed, " + fail + " failed ====");
 if (fail) process.exit(1);

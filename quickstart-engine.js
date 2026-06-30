@@ -95,11 +95,23 @@
     };
   }
 
+  // "surprise me": pick a featured place from a seed (no Math.random, stays
+  // pure + testable). `avoid` (optional IATA) is skipped so two taps in a row
+  // don't land on the same place. Returns the chosen featured entry, or null.
+  function surprise(destData, seed, avoid) {
+    var list = featured(destData);
+    if (!list.length) return null;
+    if (avoid && list.length > 1) list = list.filter(function (f) { return f.code !== avoid; });
+    var idx = Math.abs(seed | 0) % list.length;
+    return list[idx];
+  }
+
   var Engine = {
     FEATURED: FEATURED,
     featured: featured,
     quickTrip: quickTrip,
     isoPlusDays: isoPlusDays,
+    surprise: surprise,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Engine;
   root.LL_QUICKSTART = Engine;
