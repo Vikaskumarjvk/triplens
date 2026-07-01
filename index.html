@@ -83,8 +83,20 @@
       <div class="quickstart" id="quickstart">
         <div class="qs-head">
           <h2 class="qs-title">Where to?</h2>
-          <p class="qs-sub">Tap a place and I'll build you a trip — day-by-day ideas, real map searches, the best card to pay with. Change anything after. No sign-up, no fake prices.</p>
+          <p class="qs-sub">Just type your trip, or tap a place below. I'll build it — day-by-day ideas, real map searches, the best card to pay with. Change anything after. No sign-up, no fake prices.</p>
         </div>
+        <!-- JUST TYPE IT: say the trip in plain words, see what I understood, tap Go.
+             100% on-device — no sign-up, no server, works offline. -->
+        <div class="qs-nlp" id="qs-nlp">
+          <div class="qs-nlp-row">
+            <input class="qs-nlp-input" id="qs-nlp-input" autocomplete="off" enterkeyhint="go"
+                   placeholder="e.g. 5 days in Goa from Delhi next month for 2"
+                   aria-label="Describe your trip in plain words" />
+            <button class="qs-nlp-go" id="qs-nlp-go" disabled aria-label="Build this trip">Go</button>
+          </div>
+          <div class="qs-nlp-read" id="qs-nlp-read" hidden aria-live="polite"></div>
+        </div>
+        <div class="qs-or"><span>or tap a place</span></div>
         <div class="qs-chips" id="qs-chips"></div>
         <div class="qs-home">
           <label class="qs-home-lbl" for="qs-home">✈️ Flying from?</label>
@@ -739,6 +751,7 @@
   <script src="itinerary-planner.js"></script>
   <script src="quickstart-engine.js"></script>
   <script src="season-engine.js"></script>
+  <script src="nlp-engine.js"></script>
   <script src="selfcheck.js"></script>
   <script src="profile.js"></script>
   <script src="auth.js"></script>

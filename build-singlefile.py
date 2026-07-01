@@ -58,6 +58,7 @@ js_files = [
     "itinerary-planner.js",
     "quickstart-engine.js",
     "season-engine.js",
+    "nlp-engine.js",
     "selfcheck.js",
     "profile.js",
     "auth.js",

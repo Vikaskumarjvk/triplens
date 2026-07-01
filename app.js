@@ -20,6 +20,7 @@
   const PLANNER = window.LL_PLANNER, DESTS = window.LL_DESTINATIONS;
   const QS = window.LL_QUICKSTART;
   const SEASON = window.LL_SEASON;
+  const NLP = window.LL_NLP;
   // international hubs in our data — the ONE source for "is this trip international?".
   // shared by autoWeatherFlags + the readiness checklist so they never disagree.
   const INTL_CODES = ["DXB", "SIN", "BKK", "LHR", "JFK"];
@@ -1402,10 +1403,21 @@
   // starter items, auto-plans the days with real Maps searches, opens it.
   // Honesty: dates are a clearly-flagged sensible default; nothing is fabricated.
   function quickStartTrip(code) {
-    if (!QS || !IT || !DESTS) return;
+    if (!QS || !DESTS) return;
     const spec = QS.quickTrip(code, DESTS, todayISO());
-    // use the remembered home city as the origin so the flight links actually
-    // search from where the traveller is (spec.from is blank by design).
+    buildAndOpenTrip({ code: spec.code, city: spec.city, from: "", to: spec.to, depart: spec.depart, nights: spec.nights, adults: spec.adults });
+  }
+
+  // the shared trip-builder both the tap-a-chip and the type-a-sentence paths
+  // use, so a typed trip is built by the exact same real pipeline as a tapped
+  // one: create -> seed the flight/hotel scaffold -> auto-plan themed days with
+  // live Maps links -> open. Nothing here fabricates a price or a venue.
+  //   spec = { code, city, from, to, depart, nights, adults }
+  //   msg  = optional toast (defaults to the "dates are a guess" hint)
+  function buildAndOpenTrip(spec, msg) {
+    if (!IT || !DESTS) return null;
+    // use the remembered home city as the origin when none was given, so the
+    // flight links actually search from where the traveller is.
     const from = spec.from || state.homeCity || "";
     const t = IT.newTrip({ title: spec.city, from: from, to: spec.to, depart: spec.depart, nights: spec.nights, adults: spec.adults, seed: nextSeq() });
     // 1. seed the real optimizer starter (flight/lounge/hotel scaffold) if available
@@ -1415,7 +1427,7 @@
       IT.seedFromPlan(t, plan, { seedStart: countAllItemsSeed() });
     }
     // 2. auto-fill the themed day-by-day ideas with real Maps links
-    if (PLANNER) {
+    if (PLANNER && spec.code) {
       const dplan = PLANNER.buildPlan({ code: spec.code, city: spec.city }, t.days.length, DESTS);
       dplan.days.forEach((pd) => {
         const day = t.days[pd.dayIndex]; if (!day) return;
@@ -1430,7 +1442,57 @@
     autoWeatherFlags(t);
     showView("trips", true);
     renderTrips();
-    toast("Trip to " + spec.city + " ready. The dates are a guess — tap “edit dates” up top to change them.");
+    toast(msg || ("Trip to " + spec.city + " ready. The dates are a guess — tap “edit dates” up top to change them."));
+    return t;
+  }
+
+  // "just type your trip" — parse the sentence, show exactly what we understood
+  // (honesty: never build a wrong city/date silently), and let one tap build it.
+  // Deterministic + offline: LL_NLP does all the reading, no network, no LLM.
+  function renderNlpBox() {
+    const input = $("#qs-nlp-input"), out = $("#qs-nlp-read"), go = $("#qs-nlp-go");
+    if (!input || !NLP || !FLIGHTS) { const box = $("#qs-nlp"); if (box) box.hidden = true; return; }
+    const cities = (FLIGHTS.airports || []).map((a) => ({ code: a.code, city: a.city }));
+    let last = null;
+
+    const paint = () => {
+      const text = input.value || "";
+      const parsed = NLP.parseTrip(text, { cities: cities, todayISO: todayISO() });
+      last = parsed;
+      if (!text.trim()) { out.innerHTML = ""; out.hidden = true; if (go) go.disabled = true; return; }
+      out.hidden = false;
+      if (!parsed.understood.length) {
+        out.innerHTML = `<span class="qs-nlp-none">couldn’t read a place yet — try “5 days in Goa from Delhi next month”</span>`;
+        if (go) go.disabled = true;
+        return;
+      }
+      // show it back as chips: this is the honesty surface — you see what it read
+      const chips = parsed.understood.map((u) =>
+        `<span class="qs-nlp-chip"><span aria-hidden="true">${u.icon}</span> ${esc(u.label)}</span>`).join("");
+      const need = parsed.ready ? "" : `<span class="qs-nlp-none">need a place I know — tap a chip above, or name a city</span>`;
+      out.innerHTML = `<span class="qs-nlp-lbl">got it:</span> ${chips} ${need}`;
+      if (go) go.disabled = !parsed.ready;
+    };
+
+    const build = () => {
+      if (!last || !last.ready || !NLP) return;
+      const r = NLP.resolve(last, { todayISO: todayISO() });
+      if (!r.to) return;
+      const code = r.to.code, city = r.to.city;
+      const from = (r.from && r.from.code) || "";
+      // note in the toast anything we had to assume, so it's never a hidden guess
+      let msg = "Trip to " + city + " ready.";
+      if (r.assumed && r.assumed.length) {
+        msg += " I filled in " + r.assumed.map((a) => a.label.toLowerCase()).join(" and ") + " — tap “edit dates” up top to change.";
+      }
+      input.value = ""; paint();
+      buildAndOpenTrip({ code: code, city: city, from: from, to: city, depart: r.depart, nights: r.nights, adults: r.adults }, msg);
+    };
+
+    input.oninput = paint;
+    input.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); build(); } };
+    if (go) go.onclick = build;
+    paint();
   }
 
   function renderPlanStats() {
@@ -1462,6 +1524,7 @@
     if ($("#tp-plan")) $("#tp-plan").onclick = () => { persist(); renderPlanResult(); const r = $("#plan-result"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); };
     renderNextTrip();
     renderQuickstart();
+    renderNlpBox();
   }
   function todayISO() { const n = new Date(); return n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2) + "-" + ("0" + n.getDate()).slice(-2); }
 
