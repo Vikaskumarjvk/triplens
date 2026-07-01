@@ -11,6 +11,7 @@
 "use strict";
 const assert = require("assert");
 global.window = global;
+require("./data/flights.js");
 const DEST = require("./data/destinations.js");
 const P = require("./itinerary-planner.js");
 
@@ -128,6 +129,14 @@ ok("every theme has a label, icon, kind, and a {CITY} query", () => {
 });
 ok("generic fallback themes all resolve", () => {
   DEST.GENERIC_THEMES.forEach((id) => assert.ok(DEST.theme(id), "generic theme missing: " + id));
+});
+// coverage guard: every airport a user can fly to must have a curated profile,
+// so a bookable destination never falls back to a characterless generic plan.
+ok("every known airport has a destination profile", () => {
+  const airports = (global.LL_FLIGHTS && global.LL_FLIGHTS.airports) || [];
+  assert.ok(airports.length > 0, "flights data loaded");
+  const missing = airports.filter((a) => !DEST.get(a.code)).map((a) => a.code + " " + a.city);
+  assert.strictEqual(missing.length, 0, "airports without a destination profile: " + missing.join(", "));
 });
 
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);

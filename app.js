@@ -26,7 +26,7 @@
   // a tasteful accent hue per destination so cards feel alive (decorative only —
   // it tints a soft corner glow, never affects text contrast). Shared by the
   // home place-chips and the saved-trip cards so the app looks cohesive.
-  const DEST_HUES = { GOI: 28, GOX: 28, DXB: 41, JAI: 14, SIN: 168, BKK: 280, SXR: 205, COK: 150, DEL: 8, BOM: 200, BLR: 130, HYD: 320, MAA: 190, CCU: 50, LHR: 220, JFK: 230 };
+  const DEST_HUES = { GOI: 28, GOX: 28, DXB: 41, JAI: 14, SIN: 168, BKK: 280, SXR: 205, COK: 150, DEL: 8, BOM: 200, BLR: 130, HYD: 320, MAA: 190, CCU: 50, LHR: 220, JFK: 230, TRV: 155, PNQ: 95, AMD: 35, VNS: 300, ATQ: 45, DED: 110, IXB: 120, IXZ: 185, LKO: 25, PAT: 210, GAU: 140, BBI: 285, IXC: 100, CCJ: 160, NAG: 30, VTZ: 195, RPR: 260, IDR: 18, BHO: 215, IXR: 135, IXM: 310, TIR: 55, RJA: 180, JLR: 175, STV: 12, BDQ: 340 };
   const destHue = (t) => { const d = (TE && t) ? TE.resolvePlace(t.to, FLIGHTS) : null; const c = d && d.code; return (c && DEST_HUES[c] != null) ? DEST_HUES[c] : 250; };
   const PROFILE = window.LL_PROFILE, SOURCES = window.LL_SOURCES, SLINKS = window.LL_SOURCE_LINKS, AUTH = window.LL_AUTH, SUGGEST = window.LL_SUGGEST;
   const $ = (s, r) => (r || document).querySelector(s);

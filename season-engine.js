@@ -73,6 +73,29 @@
     // Temperate
     LHR: { windows: [{ type: "grey", months: [11, 12, 1, 2] }] },
     JFK: { windows: [{ type: "cold", months: [12, 1, 2] }, { type: "heat", months: [7, 8] }] },
+    // North + central Indian plains: hot Apr-Jun, then monsoon Jun/Jul-Sep
+    LKO: { windows: [{ type: "heat", months: [4, 5, 6] }, { type: "monsoon", months: [7, 8, 9] }] },
+    PAT: { windows: [{ type: "heat", months: [4, 5, 6] }, { type: "monsoon", months: [7, 8, 9] }] },
+    IXC: { windows: [{ type: "heat", months: [5, 6] }, { type: "monsoon", months: [7, 8] }] },
+    NAG: { windows: [{ type: "heat", months: [4, 5, 6] }] },
+    RPR: { windows: [{ type: "heat", months: [4, 5, 6] }] },
+    IDR: { windows: [{ type: "monsoon", months: [7, 8, 9] }] },
+    BHO: { windows: [{ type: "monsoon", months: [7, 8, 9] }] },
+    JLR: { windows: [{ type: "heat", months: [4, 5] }, { type: "monsoon", months: [7, 8] }] },
+    // Gujarat: hot pre-monsoon
+    STV: { windows: [{ type: "heat", months: [4, 5] }, { type: "monsoon", months: [6, 7, 8, 9] }] },
+    BDQ: { windows: [{ type: "heat", months: [4, 5, 6] }] },
+    // East + NE India: strong monsoon
+    GAU: { windows: [{ type: "monsoon", months: [6, 7, 8, 9] }] },
+    IXR: { windows: [{ type: "monsoon", months: [6, 7, 8, 9] }] },
+    // East coast: hot summer + retreating monsoon later
+    BBI: { windows: [{ type: "heat", months: [4, 5] }, { type: "monsoon", months: [6, 7, 8, 9] }] },
+    VTZ: { windows: [{ type: "heat", months: [4, 5] }] },
+    RJA: { windows: [{ type: "heat", months: [4, 5] }] },
+    // South: hot Apr-Jun
+    CCJ: { windows: [{ type: "monsoon", months: [6, 7, 8, 9] }] },
+    IXM: { windows: [{ type: "heat", months: [4, 5, 6] }] },
+    TIR: { windows: [{ type: "heat", months: [4, 5] }] },
   };
 
   // compress a sorted unique month list into label ranges, handling Dec->Jan wrap.
