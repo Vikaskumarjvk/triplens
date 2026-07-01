@@ -191,5 +191,29 @@ ok("deterministic", () => {
   assert.strictEqual(I.nextUpcomingTrip(list, "2026-07-01").id, I.nextUpcomingTrip(list, "2026-07-01").id);
 });
 
+// ---- tripDateSpan: clear start -> end -> nights ----------------------------
+ok("span shows start -> end -> nights", () => {
+  const t = I.newTrip({ title: "Goa", to: "Goa", depart: "2026-07-13", nights: 3, adults: 2, seed: 1 });
+  assert.strictEqual(I.tripDateSpan(t), "13 Jul → 16 Jul · 3 nights");
+});
+ok("span singular night", () => {
+  const t = I.newTrip({ title: "X", to: "X", depart: "2026-07-13", nights: 1, adults: 1, seed: 2 });
+  assert.strictEqual(I.tripDateSpan(t), "13 Jul → 14 Jul · 1 night");
+});
+ok("span crosses a month boundary", () => {
+  const t = I.newTrip({ title: "X", to: "X", depart: "2026-07-30", nights: 4, adults: 1, seed: 3 });
+  assert.strictEqual(I.tripDateSpan(t), "30 Jul → 3 Aug · 4 nights");
+});
+ok("span with no dates is graceful", () => {
+  const t = I.newTrip({ title: "X", to: "X", depart: "", nights: 2, adults: 1, seed: 4 });
+  assert.ok(/no dates yet/.test(I.tripDateSpan(t)) && /2 nights/.test(I.tripDateSpan(t)));
+});
+ok("span null trip doesn't throw", () => { assert.strictEqual(I.tripDateSpan(null), "no dates yet"); });
+ok("shortDate formats without weekday", () => { assert.strictEqual(I.shortDate("2026-07-13"), "13 Jul"); });
+ok("span deterministic", () => {
+  const t = I.newTrip({ title: "X", to: "X", depart: "2026-07-13", nights: 3, adults: 1, seed: 5 });
+  assert.strictEqual(I.tripDateSpan(t), I.tripDateSpan(t));
+});
+
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);

@@ -5819,6 +5819,22 @@ window.LL_HOLIDAYS = {
     const dt = new Date(Date.UTC(p.y, p.mo - 1, p.d));
     return WD[dt.getUTCDay()] + ", " + p.d + " " + MO[p.mo - 1];
   }
+  // short "13 Jul" style (no weekday) — used inside the start -> end span.
+  function shortDate(iso) { const p = parseISO(iso); return p ? (p.d + " " + MO[p.mo - 1]) : ""; }
+
+  // a clear, human trip span: "13 Jul → 16 Jul · 3 nights". The end date is the
+  // last DAY of the trip (depart + nights), which is the day you travel home.
+  // Falls back gracefully when the trip has no dates yet. Pure + deterministic.
+  function tripDateSpan(trip) {
+    if (!trip) return "no dates yet";
+    const nights = Math.max(0, +trip.nights || 0);
+    const start = trip.depart;
+    if (!parseISO(start)) return "no dates yet · " + (nights || "?") + " night" + (nights === 1 ? "" : "s");
+    const end = addDays(start, nights);
+    const nightsLabel = nights + " night" + (nights === 1 ? "" : "s");
+    if (!parseISO(end) || nights === 0) return shortDate(start) + " · " + nightsLabel;
+    return shortDate(start) + " → " + shortDate(end) + " · " + nightsLabel;
+  }
 
   // a small deterministic id: prefix + seed counter, so tests are stable.
   function mkId(prefix, seed) { return prefix + "-" + seed; }
@@ -6151,7 +6167,7 @@ window.LL_HOLIDAYS = {
   const Engine = {
     parseISO, addDays, dayLabel, mkId,
     newTrip, dayCount, addItem, removeItem, moveItem, sortDay, countItems,
-    seedFromPlan, packingList, packKey, tripSummary, nextUpcomingTrip, exportTrip, importTrip, toICS, shareText, reschedule,
+    seedFromPlan, packingList, packKey, tripSummary, tripDateSpan, shortDate, nextUpcomingTrip, exportTrip, importTrip, toICS, shareText, reschedule,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Engine;
   root.LL_ITINERARY = Engine;
@@ -9998,7 +10014,7 @@ window.LL_HOLIDAYS = {
         ${countdown ? `<span class="nt-count">🗓️ ${esc(countdown)}</span>` : ""}
       </div>
       <div class="nt-city">🧭 ${esc(t.title)}</div>
-      <div class="nt-sub">${esc(s.dateRange)}${packLeft ? ` · 🎒 ${esc(packLeft)}` : ""}</div>
+      <div class="nt-sub">${esc(IT.tripDateSpan(t))}${packLeft ? ` · 🎒 ${esc(packLeft)}` : ""}</div>
       <div class="nt-weather" id="nt-weather"></div>
       <button class="act nt-open" id="nt-open">Open this trip →</button>`;
     if ($("#nt-open")) $("#nt-open").onclick = () => { state.openTripId = t.id; save(); showView("trips", true); renderTrips(); };
@@ -11166,7 +11182,7 @@ window.LL_HOLIDAYS = {
         return `<div class="trip-card" data-opentrip="${esc(t.id)}" style="--chip-hue:${destHue(t)}">
           <div class="tc-main">
             <div class="tc-title">🧭 ${esc(s.title)}</div>
-            <div class="card-sub">${esc(s.dateRange)} · ${s.dayCount} days · ${s.itemCount} items · ${s.adults} traveller${s.adults > 1 ? "s" : ""}</div>
+            <div class="card-sub">${esc(IT.tripDateSpan(t))} · ${s.itemCount} items · ${s.adults} traveller${s.adults > 1 ? "s" : ""}</div>
           </div>
           <div class="tc-actions">
             <button class="act mini" data-opentrip="${esc(t.id)}">Open →</button>
@@ -11188,7 +11204,7 @@ window.LL_HOLIDAYS = {
     const head = `<div class="itin-head">
       <button class="act ghost mini" id="itin-back">← All trips</button>
       <div class="itin-title"><b>${esc(t.title)}</b>
-        <button class="itin-dates-btn" id="itin-dates-btn" aria-expanded="false" aria-controls="itin-dates-edit">${esc(s.dateRange)} · ${s.adults} traveller${s.adults > 1 ? "s" : ""} <span class="idb-edit">✏️ edit dates</span></button>
+        <button class="itin-dates-btn" id="itin-dates-btn" aria-expanded="false" aria-controls="itin-dates-edit">${esc(IT.tripDateSpan(t))} · ${s.adults} traveller${s.adults > 1 ? "s" : ""} <span class="idb-edit">✏️ edit dates</span></button>
       </div>
       <div class="itin-tools">
         <button class="act mini" id="itin-autoplan">✨ Plan my days</button>
@@ -11207,8 +11223,10 @@ window.LL_HOLIDAYS = {
     </div>`;
 
     const days = t.days.map((day, di) => {
-      const dl = day.date ? IT.dayLabel(day.date) : ("Day " + (di + 1));
-      const tag = di === 0 ? `<span class="chip">arrival</span>` : di === t.days.length - 1 ? `<span class="chip rail">departure</span>` : "";
+      // always show the day number, and the date when we have one, so start/end
+      // are unmistakable: "Day 1 · Mon, 13 Jul" ... "Day 4 · Thu, 16 Jul".
+      const dl = "Day " + (di + 1) + (day.date ? " · " + IT.dayLabel(day.date) : "");
+      const tag = di === 0 ? `<span class="chip">start</span>` : di === t.days.length - 1 ? `<span class="chip rail">last day</span>` : "";
       const items = day.items.length ? day.items.map((it) => {
         const link = it.link ? ` <a class="fl-verify" href="${esc(it.link)}" target="_blank" rel="noopener">open ↗</a>` : "";
         return `<div class="itin-item kind-${esc(it.kind)}">

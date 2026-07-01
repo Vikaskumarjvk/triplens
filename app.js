@@ -1335,7 +1335,7 @@
         ${countdown ? `<span class="nt-count">🗓️ ${esc(countdown)}</span>` : ""}
       </div>
       <div class="nt-city">🧭 ${esc(t.title)}</div>
-      <div class="nt-sub">${esc(s.dateRange)}${packLeft ? ` · 🎒 ${esc(packLeft)}` : ""}</div>
+      <div class="nt-sub">${esc(IT.tripDateSpan(t))}${packLeft ? ` · 🎒 ${esc(packLeft)}` : ""}</div>
       <div class="nt-weather" id="nt-weather"></div>
       <button class="act nt-open" id="nt-open">Open this trip →</button>`;
     if ($("#nt-open")) $("#nt-open").onclick = () => { state.openTripId = t.id; save(); showView("trips", true); renderTrips(); };
@@ -2503,7 +2503,7 @@
         return `<div class="trip-card" data-opentrip="${esc(t.id)}" style="--chip-hue:${destHue(t)}">
           <div class="tc-main">
             <div class="tc-title">🧭 ${esc(s.title)}</div>
-            <div class="card-sub">${esc(s.dateRange)} · ${s.dayCount} days · ${s.itemCount} items · ${s.adults} traveller${s.adults > 1 ? "s" : ""}</div>
+            <div class="card-sub">${esc(IT.tripDateSpan(t))} · ${s.itemCount} items · ${s.adults} traveller${s.adults > 1 ? "s" : ""}</div>
           </div>
           <div class="tc-actions">
             <button class="act mini" data-opentrip="${esc(t.id)}">Open →</button>
@@ -2525,7 +2525,7 @@
     const head = `<div class="itin-head">
       <button class="act ghost mini" id="itin-back">← All trips</button>
       <div class="itin-title"><b>${esc(t.title)}</b>
-        <button class="itin-dates-btn" id="itin-dates-btn" aria-expanded="false" aria-controls="itin-dates-edit">${esc(s.dateRange)} · ${s.adults} traveller${s.adults > 1 ? "s" : ""} <span class="idb-edit">✏️ edit dates</span></button>
+        <button class="itin-dates-btn" id="itin-dates-btn" aria-expanded="false" aria-controls="itin-dates-edit">${esc(IT.tripDateSpan(t))} · ${s.adults} traveller${s.adults > 1 ? "s" : ""} <span class="idb-edit">✏️ edit dates</span></button>
       </div>
       <div class="itin-tools">
         <button class="act mini" id="itin-autoplan">✨ Plan my days</button>
@@ -2544,8 +2544,10 @@
     </div>`;
 
     const days = t.days.map((day, di) => {
-      const dl = day.date ? IT.dayLabel(day.date) : ("Day " + (di + 1));
-      const tag = di === 0 ? `<span class="chip">arrival</span>` : di === t.days.length - 1 ? `<span class="chip rail">departure</span>` : "";
+      // always show the day number, and the date when we have one, so start/end
+      // are unmistakable: "Day 1 · Mon, 13 Jul" ... "Day 4 · Thu, 16 Jul".
+      const dl = "Day " + (di + 1) + (day.date ? " · " + IT.dayLabel(day.date) : "");
+      const tag = di === 0 ? `<span class="chip">start</span>` : di === t.days.length - 1 ? `<span class="chip rail">last day</span>` : "";
       const items = day.items.length ? day.items.map((it) => {
         const link = it.link ? ` <a class="fl-verify" href="${esc(it.link)}" target="_blank" rel="noopener">open ↗</a>` : "";
         return `<div class="itin-item kind-${esc(it.kind)}">

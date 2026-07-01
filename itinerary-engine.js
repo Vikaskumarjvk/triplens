@@ -31,6 +31,22 @@
     const dt = new Date(Date.UTC(p.y, p.mo - 1, p.d));
     return WD[dt.getUTCDay()] + ", " + p.d + " " + MO[p.mo - 1];
   }
+  // short "13 Jul" style (no weekday) — used inside the start -> end span.
+  function shortDate(iso) { const p = parseISO(iso); return p ? (p.d + " " + MO[p.mo - 1]) : ""; }
+
+  // a clear, human trip span: "13 Jul → 16 Jul · 3 nights". The end date is the
+  // last DAY of the trip (depart + nights), which is the day you travel home.
+  // Falls back gracefully when the trip has no dates yet. Pure + deterministic.
+  function tripDateSpan(trip) {
+    if (!trip) return "no dates yet";
+    const nights = Math.max(0, +trip.nights || 0);
+    const start = trip.depart;
+    if (!parseISO(start)) return "no dates yet · " + (nights || "?") + " night" + (nights === 1 ? "" : "s");
+    const end = addDays(start, nights);
+    const nightsLabel = nights + " night" + (nights === 1 ? "" : "s");
+    if (!parseISO(end) || nights === 0) return shortDate(start) + " · " + nightsLabel;
+    return shortDate(start) + " → " + shortDate(end) + " · " + nightsLabel;
+  }
 
   // a small deterministic id: prefix + seed counter, so tests are stable.
   function mkId(prefix, seed) { return prefix + "-" + seed; }
@@ -363,7 +379,7 @@
   const Engine = {
     parseISO, addDays, dayLabel, mkId,
     newTrip, dayCount, addItem, removeItem, moveItem, sortDay, countItems,
-    seedFromPlan, packingList, packKey, tripSummary, nextUpcomingTrip, exportTrip, importTrip, toICS, shareText, reschedule,
+    seedFromPlan, packingList, packKey, tripSummary, tripDateSpan, shortDate, nextUpcomingTrip, exportTrip, importTrip, toICS, shareText, reschedule,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Engine;
   root.LL_ITINERARY = Engine;
