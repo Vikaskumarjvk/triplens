@@ -156,5 +156,40 @@ ok("real origin produces a from->to labelled flight", () => {
   assert.ok(/→/.test(out.title) && !/ {2}/.test(out.title), "outbound has a clean from -> to label");
 });
 
+// ---- nextUpcomingTrip: greet the returning user with the right trip --------
+const mk = (id, depart, nights) => ({ id, title: id, to: id, depart, nights, days: [] });
+ok("picks the soonest FUTURE trip", () => {
+  const list = [mk("far", "2026-09-01", 3), mk("soon", "2026-07-10", 2), mk("mid", "2026-08-01", 4)];
+  assert.strictEqual(I.nextUpcomingTrip(list, "2026-07-01").id, "soon");
+});
+ok("ignores trips that already ended", () => {
+  const list = [mk("past", "2026-06-01", 3), mk("future", "2026-07-20", 2)];
+  assert.strictEqual(I.nextUpcomingTrip(list, "2026-07-01").id, "future");
+});
+ok("an ONGOING trip (started, not ended) is chosen over a later one", () => {
+  const list = [mk("ongoing", "2026-06-29", 5), mk("later", "2026-07-15", 2)]; // ongoing ends 2026-07-04
+  assert.strictEqual(I.nextUpcomingTrip(list, "2026-07-01").id, "ongoing");
+});
+ok("a trip ending exactly today still counts as upcoming/ongoing", () => {
+  const list = [mk("endstoday", "2026-06-28", 3)]; // ends 2026-07-01
+  assert.strictEqual(I.nextUpcomingTrip(list, "2026-07-01").id, "endstoday");
+});
+ok("undated trips are ignored", () => {
+  const list = [mk("nodate", "", 3), mk("dated", "2026-07-10", 2)];
+  assert.strictEqual(I.nextUpcomingTrip(list, "2026-07-01").id, "dated");
+});
+ok("returns null when nothing is upcoming", () => {
+  assert.strictEqual(I.nextUpcomingTrip([mk("past", "2026-05-01", 2)], "2026-07-01"), null);
+});
+ok("returns null for empty / bad input", () => {
+  assert.strictEqual(I.nextUpcomingTrip([], "2026-07-01"), null);
+  assert.strictEqual(I.nextUpcomingTrip(null, "2026-07-01"), null);
+  assert.strictEqual(I.nextUpcomingTrip([mk("a", "2026-07-10", 2)], "bad-date"), null);
+});
+ok("deterministic", () => {
+  const list = [mk("a", "2026-07-10", 2), mk("b", "2026-07-05", 1)];
+  assert.strictEqual(I.nextUpcomingTrip(list, "2026-07-01").id, I.nextUpcomingTrip(list, "2026-07-01").id);
+});
+
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail ? 1 : 0);

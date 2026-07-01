@@ -1288,6 +1288,27 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .qs-emoji { font-size: 23px; line-height: 1; }
 .qs-city { font-size: 15.5px; font-weight: 700; }
 .qs-known { font-size: 12px; color: var(--dim); line-height: 1.35; }
+/* --- Welcome-back hero: your next upcoming trip, at the top of home --- */
+.nexttrip {
+  position: relative; overflow: hidden;
+  border: 1px solid hsla(var(--chip-hue,250), 60%, 55%, .35); border-radius: var(--r-lg);
+  background: linear-gradient(135deg, hsla(var(--chip-hue,250), 55%, 22%, .55), var(--panel-solid) 70%);
+  padding: 16px 18px; margin: 0 0 18px;
+}
+.nexttrip::before {
+  content: ""; position: absolute; top: -50%; right: -15%; width: 180px; height: 180px;
+  background: radial-gradient(circle, hsla(var(--chip-hue,250), 90%, 62%, .28), transparent 70%); pointer-events: none;
+}
+.nexttrip > * { position: relative; z-index: 1; }
+.nt-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.nt-eyebrow { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--dim); }
+.nt-count { font-size: 13px; font-weight: 700; color: hsla(var(--chip-hue,250), 85%, 78%, 1); background: hsla(var(--chip-hue,250), 60%, 40%, .28); border-radius: 999px; padding: 3px 11px; white-space: nowrap; }
+.nt-city { font-size: 22px; font-weight: 800; letter-spacing: -.4px; margin-top: 8px; }
+.nt-sub { font-size: 13.5px; color: var(--dim); margin-top: 3px; }
+.nt-weather { margin-top: 7px; min-height: 0; }
+.nt-wx { font-size: 13.5px; }
+.nt-open { margin-top: 13px; }
+
 .qs-home { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 .qs-home-lbl { font-size: 13.5px; font-weight: 700; white-space: nowrap; }
 .qs-home-input { flex: 1 1 180px; min-width: 150px; }
@@ -1406,6 +1427,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   <main>
     <!-- PLAN A TRIP (the front door: the Trip Cost Optimizer) -->
     <section id="view-plan" class="view active">
+      <!-- WELCOME BACK: for returning users with an upcoming trip, this greets
+           them with the trip (countdown + live weather + what's left to pack).
+           Hidden for newbies, so they still land on the clean "Where to?". -->
+      <div class="nexttrip" id="nexttrip" hidden></div>
       <!-- ONE-TAP START: the first thing a newbie sees. Tap a place, get a trip. -->
       <div class="quickstart" id="quickstart">
         <div class="qs-head">
@@ -5984,6 +6009,31 @@ window.LL_HOLIDAYS = {
     };
   }
 
+  // pick the trip to greet a returning user with: the one that is happening now
+  // or coming up soonest. Ignores trips that already ended and undated ones.
+  // Pure — `todayISO` is injected so it stays deterministic + testable.
+  //   returns the trip object, or null if none is upcoming/ongoing.
+  function nextUpcomingTrip(trips, todayISO) {
+    const today = parseISO(todayISO);
+    if (!today || !Array.isArray(trips)) return null;
+    const todayN = today.y * 10000 + today.mo * 100 + today.d;
+    let best = null, bestKey = null;
+    trips.forEach((t) => {
+      const dp = parseISO(t.depart);
+      if (!dp) return;                                   // undated -> skip
+      const departN = dp.y * 10000 + dp.mo * 100 + dp.d;
+      const nights = Math.max(0, +t.nights || 0);
+      const endISO = addDays(t.depart, nights);          // last day of the trip
+      const ep = parseISO(endISO);
+      const endN = ep ? ep.y * 10000 + ep.mo * 100 + ep.d : departN;
+      if (endN < todayN) return;                         // already ended -> skip
+      // rank: soonest departure wins (ongoing trips have departN <= today, which
+      // naturally sorts them first since their departN is smallest among live ones)
+      if (bestKey == null || departN < bestKey) { best = t; bestKey = departN; }
+    });
+    return best;
+  }
+
   // ---- calendar export (.ics) ---------------------------------------------
   // Turn the trip's day-by-day items into a standard iCalendar file the user can
   // import into Google/Apple/Outlook calendar. This is purely THEIR plan in a
@@ -6101,7 +6151,7 @@ window.LL_HOLIDAYS = {
   const Engine = {
     parseISO, addDays, dayLabel, mkId,
     newTrip, dayCount, addItem, removeItem, moveItem, sortDay, countItems,
-    seedFromPlan, packingList, packKey, tripSummary, exportTrip, importTrip, toICS, shareText, reschedule,
+    seedFromPlan, packingList, packKey, tripSummary, nextUpcomingTrip, exportTrip, importTrip, toICS, shareText, reschedule,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Engine;
   root.LL_ITINERARY = Engine;
@@ -8871,6 +8921,8 @@ window.LL_HOLIDAYS = {
     if (moreBox && moreBox.querySelector('button[data-view="' + view + '"]')) setNavMore(true);
     const activeView = $("#view-" + view);
     $$(".view").forEach((v) => v.classList.toggle("active", v === activeView));
+    // keep the "your next trip" greeting fresh every time the home view opens
+    if (view === "plan") renderNextTrip();
     updateNavToggleLabel(view);
     // on mobile, fold the menu away after a pick so it stops covering the page
     if (isMobileNav()) setNavCollapsed(true);
@@ -9914,6 +9966,57 @@ window.LL_HOLIDAYS = {
     if (!state.plan) state.plan = { from: "", to: "", depart: "", nights: 3, adults: 2 };
     return state.plan;
   }
+  // WELCOME BACK: greet a returning user with their soonest upcoming/ongoing
+  // trip — countdown, live weather, what's still to pack, one tap to open it.
+  // Only shows when there IS an upcoming trip, so newbies keep the clean start.
+  // Everything here is honest: real dates, real forecast, real checklist counts.
+  function renderNextTrip() {
+    const box = $("#nexttrip"); if (!box || !IT) return;
+    const t = IT.nextUpcomingTrip(trips(), todayISO());
+    if (!t) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    const hue = destHue(t);
+    // countdown (honest label from the readiness engine)
+    let countdown = "";
+    if (READY && t.depart) {
+      const n = READY.daysToGo(t.depart, todayISO());
+      if (n != null) countdown = READY.countdownLabel(n);
+    }
+    // what's left to pack (real counts, only if the user has started packing/flags)
+    let packLeft = "";
+    if (t.packFlags && Object.keys(t.packFlags).length) {
+      const pk = IT.packingList(t, t.packFlags);
+      const done = pk.filter((p) => t.packing && t.packing.checked && t.packing.checked[IT.packKey(p)]).length;
+      if (pk.length && done < pk.length) packLeft = (pk.length - done) + " to pack";
+      else if (pk.length && done === pk.length) packLeft = "all packed ✅";
+    }
+    const s = IT.tripSummary(t);
+    box.style.setProperty("--chip-hue", hue);
+    box.innerHTML = `
+      <div class="nt-top">
+        <span class="nt-eyebrow">Your next trip</span>
+        ${countdown ? `<span class="nt-count">🗓️ ${esc(countdown)}</span>` : ""}
+      </div>
+      <div class="nt-city">🧭 ${esc(t.title)}</div>
+      <div class="nt-sub">${esc(s.dateRange)}${packLeft ? ` · 🎒 ${esc(packLeft)}` : ""}</div>
+      <div class="nt-weather" id="nt-weather"></div>
+      <button class="act nt-open" id="nt-open">Open this trip →</button>`;
+    if ($("#nt-open")) $("#nt-open").onclick = () => { state.openTripId = t.id; save(); showView("trips", true); renderTrips(); };
+    // live forecast into the hero, async + graceful (real numbers only)
+    if (LD && GEO && TE) {
+      const dest = TE.resolvePlace(t.to, FLIGHTS);
+      const coords = dest && dest.code && GEO.AIRPORT_COORDS[dest.code];
+      const el = $("#nt-weather");
+      if (coords && el) {
+        LD.getWeather(coords[0], coords[1], 14).then((wx) => {
+          const w = wx && wx.parsed; if (!w || w.avgMax == null) { el.innerHTML = ""; return; }
+          const flags = [];
+          if (w.suggest) { if (w.suggest.monsoon) flags.push("🌧️ rain likely"); if (w.suggest.cold) flags.push("🧥 pack warm"); if (w.suggest.hot) flags.push("☀️ hot"); }
+          el.innerHTML = `<span class="nt-wx">⛅ <b>${w.lowMin != null ? Math.round(w.lowMin) + "–" : ""}${Math.round(w.avgMax)}°C</b>${w.peakRain != null ? ` · up to ${w.peakRain}% rain` : ""}${flags.length ? ` · ${flags.join(" · ")}` : ""}</span> <span class="card-sub">${wx.fromCache ? "cached" : "live"} forecast</span>`;
+        }).catch(() => { el.innerHTML = ""; });
+      }
+    }
+  }
   // ONE-TAP START: render the "tap a place" chips and wire each to build a
   // complete, auto-planned trip with zero typing. This is the newbie front door.
   function renderQuickstart() {
@@ -10020,6 +10123,7 @@ window.LL_HOLIDAYS = {
     ["#tp-from", "#tp-to", "#tp-depart", "#tp-nights", "#tp-adults"].forEach((s) => { const el = $(s); if (el) el.oninput = persist; });
     if ($("#tp-swap")) $("#tp-swap").onclick = () => { const a = $("#tp-from"), b = $("#tp-to"); if (a && b) { const t = a.value; a.value = b.value; b.value = t; persist(); } };
     if ($("#tp-plan")) $("#tp-plan").onclick = () => { persist(); renderPlanResult(); const r = $("#plan-result"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); };
+    renderNextTrip();
     renderQuickstart();
   }
   function todayISO() { const n = new Date(); return n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2) + "-" + ("0" + n.getDate()).slice(-2); }

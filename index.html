@@ -75,6 +75,10 @@
   <main>
     <!-- PLAN A TRIP (the front door: the Trip Cost Optimizer) -->
     <section id="view-plan" class="view active">
+      <!-- WELCOME BACK: for returning users with an upcoming trip, this greets
+           them with the trip (countdown + live weather + what's left to pack).
+           Hidden for newbies, so they still land on the clean "Where to?". -->
+      <div class="nexttrip" id="nexttrip" hidden></div>
       <!-- ONE-TAP START: the first thing a newbie sees. Tap a place, get a trip. -->
       <div class="quickstart" id="quickstart">
         <div class="qs-head">

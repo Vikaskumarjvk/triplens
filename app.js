@@ -258,6 +258,8 @@
     if (moreBox && moreBox.querySelector('button[data-view="' + view + '"]')) setNavMore(true);
     const activeView = $("#view-" + view);
     $$(".view").forEach((v) => v.classList.toggle("active", v === activeView));
+    // keep the "your next trip" greeting fresh every time the home view opens
+    if (view === "plan") renderNextTrip();
     updateNavToggleLabel(view);
     // on mobile, fold the menu away after a pick so it stops covering the page
     if (isMobileNav()) setNavCollapsed(true);
@@ -1301,6 +1303,57 @@
     if (!state.plan) state.plan = { from: "", to: "", depart: "", nights: 3, adults: 2 };
     return state.plan;
   }
+  // WELCOME BACK: greet a returning user with their soonest upcoming/ongoing
+  // trip — countdown, live weather, what's still to pack, one tap to open it.
+  // Only shows when there IS an upcoming trip, so newbies keep the clean start.
+  // Everything here is honest: real dates, real forecast, real checklist counts.
+  function renderNextTrip() {
+    const box = $("#nexttrip"); if (!box || !IT) return;
+    const t = IT.nextUpcomingTrip(trips(), todayISO());
+    if (!t) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    const hue = destHue(t);
+    // countdown (honest label from the readiness engine)
+    let countdown = "";
+    if (READY && t.depart) {
+      const n = READY.daysToGo(t.depart, todayISO());
+      if (n != null) countdown = READY.countdownLabel(n);
+    }
+    // what's left to pack (real counts, only if the user has started packing/flags)
+    let packLeft = "";
+    if (t.packFlags && Object.keys(t.packFlags).length) {
+      const pk = IT.packingList(t, t.packFlags);
+      const done = pk.filter((p) => t.packing && t.packing.checked && t.packing.checked[IT.packKey(p)]).length;
+      if (pk.length && done < pk.length) packLeft = (pk.length - done) + " to pack";
+      else if (pk.length && done === pk.length) packLeft = "all packed ✅";
+    }
+    const s = IT.tripSummary(t);
+    box.style.setProperty("--chip-hue", hue);
+    box.innerHTML = `
+      <div class="nt-top">
+        <span class="nt-eyebrow">Your next trip</span>
+        ${countdown ? `<span class="nt-count">🗓️ ${esc(countdown)}</span>` : ""}
+      </div>
+      <div class="nt-city">🧭 ${esc(t.title)}</div>
+      <div class="nt-sub">${esc(s.dateRange)}${packLeft ? ` · 🎒 ${esc(packLeft)}` : ""}</div>
+      <div class="nt-weather" id="nt-weather"></div>
+      <button class="act nt-open" id="nt-open">Open this trip →</button>`;
+    if ($("#nt-open")) $("#nt-open").onclick = () => { state.openTripId = t.id; save(); showView("trips", true); renderTrips(); };
+    // live forecast into the hero, async + graceful (real numbers only)
+    if (LD && GEO && TE) {
+      const dest = TE.resolvePlace(t.to, FLIGHTS);
+      const coords = dest && dest.code && GEO.AIRPORT_COORDS[dest.code];
+      const el = $("#nt-weather");
+      if (coords && el) {
+        LD.getWeather(coords[0], coords[1], 14).then((wx) => {
+          const w = wx && wx.parsed; if (!w || w.avgMax == null) { el.innerHTML = ""; return; }
+          const flags = [];
+          if (w.suggest) { if (w.suggest.monsoon) flags.push("🌧️ rain likely"); if (w.suggest.cold) flags.push("🧥 pack warm"); if (w.suggest.hot) flags.push("☀️ hot"); }
+          el.innerHTML = `<span class="nt-wx">⛅ <b>${w.lowMin != null ? Math.round(w.lowMin) + "–" : ""}${Math.round(w.avgMax)}°C</b>${w.peakRain != null ? ` · up to ${w.peakRain}% rain` : ""}${flags.length ? ` · ${flags.join(" · ")}` : ""}</span> <span class="card-sub">${wx.fromCache ? "cached" : "live"} forecast</span>`;
+        }).catch(() => { el.innerHTML = ""; });
+      }
+    }
+  }
   // ONE-TAP START: render the "tap a place" chips and wire each to build a
   // complete, auto-planned trip with zero typing. This is the newbie front door.
   function renderQuickstart() {
@@ -1407,6 +1460,7 @@
     ["#tp-from", "#tp-to", "#tp-depart", "#tp-nights", "#tp-adults"].forEach((s) => { const el = $(s); if (el) el.oninput = persist; });
     if ($("#tp-swap")) $("#tp-swap").onclick = () => { const a = $("#tp-from"), b = $("#tp-to"); if (a && b) { const t = a.value; a.value = b.value; b.value = t; persist(); } };
     if ($("#tp-plan")) $("#tp-plan").onclick = () => { persist(); renderPlanResult(); const r = $("#plan-result"); if (r) r.scrollIntoView({ behavior: "smooth", block: "start" }); };
+    renderNextTrip();
     renderQuickstart();
   }
   function todayISO() { const n = new Date(); return n.getFullYear() + "-" + ("0" + (n.getMonth() + 1)).slice(-2) + "-" + ("0" + n.getDate()).slice(-2); }

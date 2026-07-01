@@ -221,6 +221,31 @@
     };
   }
 
+  // pick the trip to greet a returning user with: the one that is happening now
+  // or coming up soonest. Ignores trips that already ended and undated ones.
+  // Pure — `todayISO` is injected so it stays deterministic + testable.
+  //   returns the trip object, or null if none is upcoming/ongoing.
+  function nextUpcomingTrip(trips, todayISO) {
+    const today = parseISO(todayISO);
+    if (!today || !Array.isArray(trips)) return null;
+    const todayN = today.y * 10000 + today.mo * 100 + today.d;
+    let best = null, bestKey = null;
+    trips.forEach((t) => {
+      const dp = parseISO(t.depart);
+      if (!dp) return;                                   // undated -> skip
+      const departN = dp.y * 10000 + dp.mo * 100 + dp.d;
+      const nights = Math.max(0, +t.nights || 0);
+      const endISO = addDays(t.depart, nights);          // last day of the trip
+      const ep = parseISO(endISO);
+      const endN = ep ? ep.y * 10000 + ep.mo * 100 + ep.d : departN;
+      if (endN < todayN) return;                         // already ended -> skip
+      // rank: soonest departure wins (ongoing trips have departN <= today, which
+      // naturally sorts them first since their departN is smallest among live ones)
+      if (bestKey == null || departN < bestKey) { best = t; bestKey = departN; }
+    });
+    return best;
+  }
+
   // ---- calendar export (.ics) ---------------------------------------------
   // Turn the trip's day-by-day items into a standard iCalendar file the user can
   // import into Google/Apple/Outlook calendar. This is purely THEIR plan in a
@@ -338,7 +363,7 @@
   const Engine = {
     parseISO, addDays, dayLabel, mkId,
     newTrip, dayCount, addItem, removeItem, moveItem, sortDay, countItems,
-    seedFromPlan, packingList, packKey, tripSummary, exportTrip, importTrip, toICS, shareText, reschedule,
+    seedFromPlan, packingList, packKey, tripSummary, nextUpcomingTrip, exportTrip, importTrip, toICS, shareText, reschedule,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = Engine;
   root.LL_ITINERARY = Engine;
